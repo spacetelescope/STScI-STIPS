@@ -746,9 +746,9 @@ class Instrument(object):
         """Base function for adding in residual error"""
         self._log("info","Adding residual error")
         if flat:
-            flat = AstroImage.initDataFromFits(self.flatfile,ext='PRIMARY',logger=self.logger)
+            flat = AstroImage.initDataFromFits(self.flatfile,ext='COMPRESSED_IMAGE',logger=self.logger)
         if dark:
-            dark = AstroImage.initDataFromFits(self.darkfile,ext='PRIMARY',logger=self.logger)
+            dark = AstroImage.initDataFromFits(self.darkfile,ext='COMPRESSED_IMAGE',logger=self.logger)
             dark *= exptime
         if readnoise:
             rn = self.generateReadnoise(exptime)
