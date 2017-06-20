@@ -48,8 +48,8 @@ class NIRCamBase(JwstInstrument):
         if self.filter not in self.FILTERS:
             raise ValueError("Filter %s is not a valid %s filter" % (self.filter,self.classname))
         have_psf = False
-        if os.path.exists(os.path.join(self.in_path, "psf_cache", "psf_{}_{}_{}.fits".format("NIRCam", self.filter, self.oversample))):
-            with pyfits.open(os.path.join(self.in_path, "psf_cache", "psf_{}_{}_{}.fits".format("NIRCam", self.filter, self.oversample))) as psf:
+        if os.path.exists(os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("NIRCam", self.filter, self.oversample))):
+            with pyfits.open(os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("NIRCam", self.filter, self.oversample))) as psf:
                 if psf[0].header['VERSION'] >= webbpsf.__version__ and (self.psf_commands is None or self.psf_commands == ''):
                     self.psf = AstroImage(data=psf[0].data, detname="NIRCam {} PSF".format(self.filter), logger=self.logger)
                     have_psf = True
@@ -65,7 +65,7 @@ class NIRCamBase(JwstInstrument):
             self._log("info", "PSF choosing between {}, {}, and {}".format(max_safe_size, max_ins_size, max_conv_size))
             psf = ins.calcPSF(oversample=self.oversample,fov_pixels=min(max_safe_size, max_ins_size, max_conv_size))
             psf[0].header['VERSION'] = webbpsf.__version__
-            dest = os.path.join(self.in_path, "psf_cache", "psf_{}_{}_{}.fits".format("NIRCam", self.filter, self.oversample))
+            dest = os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("NIRCam", self.filter, self.oversample))
             pyfits.writeto(dest, psf[0].data, header=psf[0].header, clobber=True)
             self.psf = AstroImage(data=psf[0].data,detname="NIRCam %s PSF" % (self.filter),logger=self.logger)
     

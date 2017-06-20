@@ -321,6 +321,84 @@ class AstroImage(object):
         """Adds an entry to the header history list."""
         self.history.append(v)
     
+    def addTable(self, t, dist=False):
+        """
+        Add a catalogue table to the Image. The Table must have the following columns:
+            RA: RA of source
+            DEC: DEC of source
+            FLUX: flux of source
+            TYPE: type of source (point, sersic)
+            N: sersic index
+            Re: radius containing half of the light of the sersic profile
+            Phi: angle of the major axis of the sersic profile
+            Ratio: axial ratio of the Sersic profile
+            ID: id of source in catalogue
+            Notes: any notes of important
+        The following will then be done:
+            - the table will be shifted from RA,DEC to X,Y (and items outside the FOV will be omitted)
+            - the table will be split into point sources and sersic profiles
+            - the point sources will be added via addPoints
+            - the Sersic Profiles will be iteratively added via addSersicProfile
+        The converted table (with X,Y instead of ra,dec and non-visible points removed) will be returned.
+        """
+        ras = t['ra']
+        decs = t['dec']
+        self._log("info", "Determining pixel co-ordinates")
+        if dist and self.distorted:
+            xs, ys = self.wcs.all_world2pix(t['ra'], t['dec'],1, quiet=True, adaptive=True, detect_divergence=True)
+        else:
+            xs, ys = self.wcs.wcs_world2pix(t['ra'], t['dec'],1)
+        to_keep = np.where((xs > 0) & (xs <= self.xsize) & (ys > 0) & (ys <= self.ysize))
+        self._log("info", "Keeping {} items".format(len(xs[to_keep])))
+        ot = None
+        if len(xs[to_keep]) > 0:
+            xs = xs[to_keep]
+            ys = ys[to_keep]
+            xfs, yfs = self.remap(xs, ys)
+            fluxes = t['flux'][to_keep]
+            types = t['type'][to_keep]
+            ns = t['n'][to_keep]
+            res = t['re'][to_keep]
+            phis = t['phi'][to_keep]
+            ratios = t['ratio'][to_keep]
+            ids = t['id'][to_keep]
+            old_notes = t['notes'][to_keep]
+            notes = np.empty_like(xs, dtype="S6")
+            notes = np.where(old_notes != "", old_notes,"")
+            vegamags = -2.512 * np.log10(fluxes) - self.zeropoint
+            stmags = -2.5 * np.log10(fluxes * self.photflam) - 21.10
+            stars_idx = np.where(types == 'point')
+            if len(xs[stars_idx]) > 0:
+                self._log("info", "Writing {} stars".format(len(xs[stars_idx])))
+                self.addPoints(xs[stars_idx], ys[stars_idx], fluxes[stars_idx])
+            gals_idx = np.where(types == 'sersic')
+            if len(xs[gals_idx]) > 0:
+                self._log("info","Writing {} galaxies".format(len(xs[gals_idx])))
+                gxs = xs[gals_idx]
+                gys = ys[gals_idx]
+                gfluxes = fluxes[gals_idx]
+                gtypes = types[gals_idx]
+                gns = ns[gals_idx]
+                gres = res[gals_idx]
+                gphis = phis[gals_idx]
+                gratios = ratios[gals_idx]
+                counter = 1
+                total = len(gxs)
+                for (x, y, flux, n, re, phi, ratio) in zip(gxs, gys, gfluxes, gns, gres, gphis, gratios):
+                    self.addSersicProfile(x, y, flux, n, re, phi, ratio)
+                    self._log("info", "Finished Galaxy {} of {}".format(counter, total))
+                    counter += 1
+            ot = Table()
+            ot['x'] = Column(data=xfs, unit='pixels')
+            ot['y'] = Column(data=yfs, unit='pixels')
+            ot['type'] = Column(data=types)
+            ot['vegamag'] = Column(data=vegamags)
+            ot['stmag'] = Column(data=stmags)
+            ot['countrate'] = Column(data=fluxes, unit='counts/s')
+            ot['id'] = Column(data=ids)
+            ot['notes'] = Column(data=notes)
+        return ot
+    
     def addCatalogue(self, cat, dist=False):
         """
         Add a catalogue to the Image. The Catalogue must have the following columns:
@@ -345,64 +423,11 @@ class AstroImage(object):
         self._log("info","Adding catalogue %s to AstroImage %s" % (catname, self.name))
         obsname = os.path.join(self.out_path, os.path.splitext(catname)[0]+"_observed_%s.txt" % (self.name))
         self.addHistory("Adding items from catalogue %s" % (cat))
-        for i, t in enumerate(read_table(cat)):
-            ras = t['ra']
-            decs = t['dec']
-            self._log("info", "Determining pixel co-ordinates for chunk {}".format(i+1))
-            if dist and self.distorted:
-                xs, ys = self.wcs.all_world2pix(t['ra'], t['dec'],1, quiet=True, adaptive=True, detect_divergence=True)
-            else:
-                xs, ys = self.wcs.wcs_world2pix(t['ra'], t['dec'],1)
-            to_keep = np.where((xs > 0) & (xs <= self.xsize) & (ys > 0) & (ys <= self.ysize))
-            self._log("info", "Keeping {} items from chunk {}".format(len(xs[to_keep]), i+1))
-            if len(xs[to_keep]) > 0:
-                xs = xs[to_keep]
-                ys = ys[to_keep]
-                xfs, yfs = self.remap(xs, ys)
-                fluxes = t['flux'][to_keep]
-                types = t['type'][to_keep]
-                ns = t['n'][to_keep]
-                res = t['re'][to_keep]
-                phis = t['phi'][to_keep]
-                ratios = t['ratio'][to_keep]
-                ids = t['id'][to_keep]
-                old_notes = t['notes'][to_keep]
-                notes = np.empty_like(xs, dtype="S6")
-                notes = np.where(old_notes != "", old_notes,"")
-                vegamags = -2.512 * np.log10(fluxes) - self.zeropoint
-                stmags = -2.5 * np.log10(fluxes * self.photflam) - 21.10
-                stars_idx = np.where(types == 'point')
-                if len(xs[stars_idx]) > 0:
-                    self._log("info", "Writing {} stars for chunk {}".format(len(xs[stars_idx]), i+1))
-                    self.addPoints(xs[stars_idx],ys[stars_idx], fluxes[stars_idx])
-                gals_idx = np.where(types == 'sersic')
-                if len(xs[gals_idx]) > 0:
-                    self._log("info","Writing {} galaxies for chunk {}".format(len(xs[gals_idx]), i+1))
-                    gxs = xs[gals_idx]
-                    gys = ys[gals_idx]
-                    gfluxes = fluxes[gals_idx]
-                    gtypes = types[gals_idx]
-                    gns = ns[gals_idx]
-                    gres = res[gals_idx]
-                    gphis = phis[gals_idx]
-                    gratios = ratios[gals_idx]
-                    counter = 1
-                    total = len(gxs)
-                    for (x, y, flux, n, re, phi, ratio) in zip(gxs, gys, gfluxes, gns, gres, gphis, gratios):
-                        self.addSersicProfile(x, y, flux, n, re, phi, ratio)
-                        self._log("info", "Finished Galaxy {} of {}".format(counter, total))
-                        counter += 1
-                self._log("info", "Writing observed table, chunk {}".format(i+1))
-                ot = Table()
-                ot['x'] = Column(data=xfs, unit='pixels')
-                ot['y'] = Column(data=yfs, unit='pixels')
-                ot['type'] = Column(data=types)
-                ot['vegamag'] = Column(data=vegamags)
-                ot['stmag'] = Column(data=stmags)
-                ot['countrate'] = Column(data=fluxes, unit='counts/s')
-                ot['id'] = Column(data=ids)
-                ot['notes'] = Column(data=notes)
-                with open(obsname, 'a') as outf:
+        data = None
+        with open(obsname, 'w') as outf:
+            for i, t in enumerate(read_table(cat)):
+                ot = self.addTable(t, dist)
+                if ot is not None:
                     data = StringIO()
                     ot.write(data, format='ascii.ipac')
                     data.seek(0)
@@ -412,13 +437,10 @@ class AstroImage(object):
                         data.readline()
                         data.readline()
                     outf.write(data.read())
-        if not os.path.exists(obsname):
-            f = open(obsname,"w")
-            f.write("No sources from catalogue were visible.\n")
-            f.close()
+            if data is None:
+                outf.write("No sources from catalogue were visible.\n")
         self._log("info","Added catalogue %s to AstroImage %s" % (catname, self.name))
-        return obsname
-            
+        return obsname            
     
     def addPoints(self, xs, ys, rates):
         """Adds a set of point sources to the image given their co-ordinates and count rates."""
@@ -449,10 +471,13 @@ class AstroImage(object):
         with ImageData(self.fname, self.shape) as dat:
             img = mod(x, y)
             central_flux, fluxerr, flag = sep.sum_circle(img, posX, posY, re)
-            factor = flux / central_flux
-            img *= factor
-            new_central_flux, fluxerr, flag = sep.sum_circle(img, posX, posY, re)
-            self._log("info", "Flux within half-light radius is {} ({} input)".format(new_central_flux*1., flux))
+            if central_flux != 0.:
+                factor = flux / central_flux
+                img *= factor
+                new_central_flux, fluxerr, flag = sep.sum_circle(img, posX, posY, re)
+                self._log("info", "Flux within half-light radius is {} ({} input)".format(new_central_flux*1., flux))
+            else:
+                self._log("info", "Flux within half-light radius is {} ({} input)".format(central_flux*1, flux))
             dat += img
         
 #         s = Sersic(px,py,n,xs=self.xsize,ys=self.ysize,flux=flux,q=axialRatio,phi=p,re=re,lf=self._log)

@@ -230,6 +230,26 @@ class Instrument(object):
         return cats
         self._log("info","Finished Adding Catalogue")
     
+    def addTable(self, table, table_type):
+        """
+            Takes an input table (still in memory), and observes that table with all detectors.
+            
+            It assumes that the table type is a supported type.
+
+            Obtaining the correct values for FLUX (if not done before initialization) is a job for
+            the subclasses.
+        """
+        self._log("info","Adding {} table".format(table_type))
+        conversion_fn = self.getTableFunction(table_type)
+        internal_table = conversion_fn(table, self.bandpass)
+        self._log("info","Finished converting table to internal format")
+        tables = [internal_table]
+        for detector in self.detectors:
+            self._log("info","Adding table to detector %s" % (detector.name))
+            tables.append(detector.addTable(internal_table, dist=self.distortion))
+        self._log("info","Finished Adding Catalogue")        
+        return tables
+    
     def convertToCounts(self,unit,scalex=None,scaley=None):
         """
         Convert input to Counts.
@@ -260,7 +280,7 @@ class Instrument(object):
             # Combined as follows
             return 1.e14 * self.photplam**2 * (scalex*scaley/42545250225.) / (3.e8 * self.photfnu)
 
-    def convertCatalogue(self,catalogue,obs_num):
+    def convertCatalogue(self, catalogue, obs_num):
         """
         Converts a catalogue to the expected format for AstroImage, including doing unit conversions
         of columns if necessary. Acceptable formats are:
@@ -283,40 +303,49 @@ class Instrument(object):
         if 'keywords' in t.meta:
             if 'type' in t.meta['keywords']:
                 table_type = t.meta['keywords']['type']['value']
-        if table_type == 'phoenix':
-            cat = self.convertPhoenixCatalogue(catalogue,obsname)
-        elif table_type == 'phoenix_realtime':
-            cat = self.convertPhoenixRealtime(catalogue, obsname)
-        elif table_type == 'bc95':
-            cat = self.convertBc95Catalogue(catalogue,obsname)
+        if table_type in ['phoenix', 'phoenix_realtime', 'bc95']:
+            pass
         elif table_type == 'internal':
             filter = t.meta['keywords']['filter']['value']
-            if filter != self.filter: raise ValueError("Adding catalogue with filter {} to {} {}".format(filter, self.DETECTOR, self.filter))
-            cat = catalogue
+            if filter != self.filter: 
+                raise ValueError("Adding catalogue with filter {} to {} {}".format(filter, self.DETECTOR, self.filter))
+            return catalogue
         elif table_type == 'mixed':
             filter = t.meta['keywords']['filter']['value']
-            if filter != self.filter: raise ValueError("Adding catalogue with filter %s to NIRCamShort %s" % (filter,self.filter))
-            cat = self.convertMixedCatalogue(catalogue,obsname)
+            if filter != self.filter: 
+                raise ValueError("Adding catalogue with filter {} to {} {}".format(filter, self.DETECTOR, self.filter))
         elif table_type == 'multifilter':
-            if self.filter in t.columns:
-                cat = self.convertMultiCatalogue(catalogue, obsname)
+            if self.filter not in t.columns:
+                raise ValueError("Adding catalogue with filters {} to {} {}".format(t.columns, self.DETECTOR, self.filter))
         else: #check for necessary columns
             #We want RA, DEC, and count rate in the appropriate filter
-            if 'ra' in t.columns and 'dec' in t.columns and self.filter.lower() in t.columns:
-                cat = self.convertGenericCatalogue(catalogue,obsname)
-            else:
+            if 'ra' not in t.columns or 'dec' not in t.columns or self.filter.lower() not in t.columns:
                 raise ValueError("Can't parse catalogue without proper columns")
-        del t
-        return cat
+        return self.handleConversion(catalogue, table_type, obsname)
     
-    def convertPhoenixCatalogue(self, catalogue, obsname):
+    def getTableFunction(self, table_type):
+        if table_type == 'phoenix':
+            return self.readPhoenixTable
+        elif table_type == 'phoenix_realtime':
+            return self.readPhoenixRealtimeTable
+        elif table_type == 'bc95':
+            return self.readBC95Table
+        elif table_type == 'mixed':
+            return self.readMixedTable
+        elif table_type == 'multifilter':
+            return self.readMultiTable
+        return self.readGenericTable
+    
+    def handleConversion(self, catalogue, table_type, obsname):
         """
-        Converts a Phoenix grid of sources into the internal source table standard
+        Converts an input catalogue into an internal format catalogue. Needs the appropriate 
+        function (e.g. readPhoenixTable) in order to call it.
         """
-        self._log("info","Converting Phoenix catalogues")
+        self._log("info","Converting {} catalogue".format(table_type))
         self._log("info", "Preparing output table")
         if os.path.isfile(obsname): 
             os.remove(obsname)
+        cat_function = self.getTableFunction(table_type)
         
         with open(obsname, 'w') as f:
             f.write('\\ Internal Format Catalogue\n')
@@ -326,65 +355,11 @@ class Instrument(object):
             f.write('\\type="internal"\n')
             f.write('\\filter="%s"\n'%(self.filter))
             f.write('\\ \n')
-
-        bp = self.bandpass
-        cached = -1.
-        for i, table in enumerate(read_table(catalogue)):
-            ids = table['id']
-            datasets = table['dataset']
-            ras = table['ra']
-            decs = table['dec']
-            ages = table['age']
-            metallicities = table['metallicity']
-            masses = table['mass']
-            distances = table['distance']
-            binaries = table['binary']
-            rates = numpy.zeros_like(ras)
-            all_datasets = numpy.unique(datasets)
-            self._log("info","Chunk {}: {} datasets".format(i+1, len(all_datasets)))
-            for dataset in all_datasets:
-                idx = numpy.where(datasets == dataset)
-                if len(idx[0]) > 0:
-                    stargen = StarGenerator(ages[idx][0], metallicities[idx][0], logger=self.logger)
-                    rates[idx] = stargen.make_cluster_rates(masses[idx], self.INSTRUMENT, self.filter, bp, self.REFS)
-                    del stargen
-            rates = rates * 100 / (distances**2) #convert absolute to apparent rates
-            if cached > 0:
-                rates[0] += cached
-                cached = -1.
-            #Now, deal with binaries. Remember that if Binary == 1, then the star below is the binary companion.
-            idx = numpy.where(binaries==1.0)[0] #Stars with binary companions
-            idxp = (idx+1) #binary companions
-            if len(idxp) > 0 and idxp[-1] >= len(rates): #last one is a binary. Cache it.
-                cached = rates[-1]
-                idx, idxp = idx[:-1], idxp[:-1]
-                ids, datasets, ras, decs, ages, metallicities, = ids[:-1], datasets[:-1], ras[:-1], decs[:-1], ages[:-1], metallicities[:-1]
-                masses, distances, binaries, rates = masses[:-1], distances[:-1], binaries[:-1], rates[:-1]
-            rates[idx] += rates[idxp] #add count rates together
-            # Now that we've added rates together, remove the binary companions
-            ras = numpy.delete(ras,idxp)
-            decs = numpy.delete(decs,idxp)
-            rates = numpy.delete(rates,idxp)
-            ids = numpy.delete(ids,idxp)
-            binaries = numpy.delete(binaries,idxp)
-            notes = numpy.empty_like(ras,dtype="S6")
-            notes[numpy.where(binaries==1)] = 'Binary'
-            notes[numpy.where(binaries!=1)] = 'None'
-            types = numpy.full_like(ras,"point",dtype="S6")
-        
-            t = Table()
-            t['ra'] = Column(data=ras)
-            t['dec'] = Column(data=decs)
-            t['flux'] = Column(data=rates)
-            t['type'] = Column(data=types)
-            t['n'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-            t['re'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-            t['phi'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-            t['ratio'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-            t['id'] = Column(data=ids)
-            t['notes'] = Column(data=notes)
-
-            with open(obsname, 'a') as outf:
+            bp = self.bandpass
+            cached = -1.
+            for i, table in enumerate(read_table(catalogue)):
+                self._log("info", "Converting chunk {}".format(i+1))
+                t, cached = cat_function(table, bp, cached)
                 data = StringIO()
                 t.write(data, format='ascii.ipac')
                 data.seek(0)
@@ -393,336 +368,250 @@ class Instrument(object):
                     data.readline()
                     data.readline()
                     data.readline()
-                outf.write(data.read())
+                f.write(data.read())
                 del data
-            del t
         self._log("info","Finished output table")
         return obsname
+    
+    def readPhoenixTable(self, table, bp, cached=-1):
+        """
+        Takes a table (or fraction of a table) with the data in the Phoenix catalogue format, and 
+        return an output table (not yet in ascii form) in the internal format, with those sources
+        in it.
+        """
+        self._log("info","Converting Phoenix Table to Internal format")
+        ids = table['id']
+        datasets = table['dataset']
+        ras = table['ra']
+        decs = table['dec']
+        ages = table['age']
+        metallicities = table['metallicity']
+        masses = table['mass']
+        distances = table['distance']
+        binaries = table['binary']
+        rates = numpy.zeros_like(ras)
+        all_datasets = numpy.unique(datasets)
+        self._log("info","{} datasets".format(len(all_datasets)))
+        for dataset in all_datasets:
+            idx = numpy.where(datasets == dataset)
+            if len(idx[0]) > 0:
+                stargen = StarGenerator(ages[idx][0], metallicities[idx][0], logger=self.logger)
+                rates[idx] = stargen.make_cluster_rates(masses[idx], self.INSTRUMENT, self.filter, bp, self.REFS)
+                del stargen
+        rates = rates * 100 / (distances**2) #convert absolute to apparent rates
+        if cached > 0:
+            rates[0] += cached
+            cached = -1.
+        #Now, deal with binaries. Remember that if Binary == 1, then the star below is the binary companion.
+        idx = numpy.where(binaries==1.0)[0] #Stars with binary companions
+        idxp = (idx+1) #binary companions
+        if len(idxp) > 0 and idxp[-1] >= len(rates): #last one is a binary. Cache it.
+            cached = rates[-1]
+            idx, idxp = idx[:-1], idxp[:-1]
+            ids, datasets, ras, decs, ages, metallicities, = ids[:-1], datasets[:-1], ras[:-1], decs[:-1], ages[:-1], metallicities[:-1]
+            masses, distances, binaries, rates = masses[:-1], distances[:-1], binaries[:-1], rates[:-1]
+        rates[idx] += rates[idxp] #add count rates together
+        # Now that we've added rates together, remove the binary companions
+        ras = numpy.delete(ras,idxp)
+        decs = numpy.delete(decs,idxp)
+        rates = numpy.delete(rates,idxp)
+        ids = numpy.delete(ids,idxp)
+        binaries = numpy.delete(binaries,idxp)
+        notes = numpy.empty_like(ras,dtype="S6")
+        notes[numpy.where(binaries==1)] = 'Binary'
+        notes[numpy.where(binaries!=1)] = 'None'
+        t = Table()
+        t['ra'] = Column(data=ras)
+        t['dec'] = Column(data=decs)
+        t['flux'] = Column(data=rates)
+        t['type'] = Column(data=numpy.full_like(ras,"point",dtype="S6"))
+        t['n'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
+        t['re'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
+        t['phi'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
+        t['ratio'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
+        t['id'] = Column(data=ids)
+        t['notes'] = Column(data=notes)
+        
+        return t, cached
 
-    def convertPhoenixRealtime(self, catalogue, obsname):
+    def readPhoenixRealtimeTable(self, table, bp, cached=-1):
         """
         Converts a set of Phoenix sources specified as (id, ra, dec, T, Z, log(g), apparent) into individual stars, observes them,
         and then produces an output catalogue
         """
-        self._log("info","Converting Phoenix Realtime catalogues")
-        self._log("info", "Preparing output table")
-        if os.path.isfile(obsname): 
-            os.remove(obsname)
-        
-        with open(obsname, 'w') as f:
-            f.write('\\ Internal Format Catalogue\n')
-            f.write('\\ \n')
-            f.write('\\ Parameters:\n')
-            f.write('\\ \n')
-            f.write('\\type="internal"\n')
-            f.write('\\filter="%s"\n'%(self.filter))
-            f.write('\\ \n')
-
         ps.setref(**self.REFS)
         renorm_bp = ps.ObsBandpass('johnson,i')
-        bp = self.bandpass
-        cached = -1.
-        for i, table in enumerate(read_table(catalogue)):
-            ids = table['id']
-            ras = table['ra']
-            decs = table['dec']
-            temps = table['teff']
-            gravs = table['log_g']
-            metallicities = table['metallicity']
-            apparents = table['apparent']
-            rates = numpy.zeros_like(ras)
-            for index in range(len(ids)):
-                t, g, Z, a = temps[index], gravs[index], metallicities[index], apparents[index]
-                sp = ps.Icat('phoenix', t, Z, g)
-                sp = sp.renorm(a, 'abmag', renorm_bp)
-                obs = ps.Observation(sp, self.bandpass)
-                rates[index] = obs.countrate()
-            notes = numpy.full_like(ras,"None",dtype="S6")
-            types = numpy.full_like(ras,"point",dtype="S6")
+        ids = table['id']
+        ras = table['ra']
+        decs = table['dec']
+        temps = table['teff']
+        gravs = table['log_g']
+        metallicities = table['metallicity']
+        apparents = table['apparent']
+        rates = numpy.zeros_like(ras)
+        for index in range(len(ids)):
+            t, g, Z, a = temps[index], gravs[index], metallicities[index], apparents[index]
+            sp = ps.Icat('phoenix', t, Z, g)
+            sp = sp.renorm(a, 'abmag', renorm_bp)
+            obs = ps.Observation(sp, self.bandpass)
+            rates[index] = obs.countrate()
+        t = Table()
+        t['ra'] = Column(data=ras)
+        t['dec'] = Column(data=decs)
+        t['flux'] = Column(data=rates)
+        t['type'] = Column(data=numpy.full_like(ras,"point",dtype="S6"))
+        t['n'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
+        t['re'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
+        t['phi'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
+        t['ratio'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
+        t['id'] = Column(data=ids)
+        t['notes'] = Column(data=numpy.full_like(ras,"None",dtype="S6"))
         
-            t = Table()
-            t['ra'] = Column(data=ras)
-            t['dec'] = Column(data=decs)
-            t['flux'] = Column(data=rates)
-            t['type'] = Column(data=types)
-            t['n'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-            t['re'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-            t['phi'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-            t['ratio'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-            t['id'] = Column(data=ids)
-            t['notes'] = Column(data=notes)
-
-            with open(obsname, 'a') as outf:
-                data = StringIO()
-                t.write(data, format='ascii.ipac')
-                data.seek(0)
-                if i != 0: # get rid of the header lines
-                    data.readline()
-                    data.readline()
-                    data.readline()
-                    data.readline()
-                outf.write(data.read())
-                del data
-            del t
-        self._log("info","Finished output table")
-        return obsname
-
-    def convertBc95Catalogue(self, catalogue, obsname):
+        return t, cached
+    
+    def readBC95Table(self, table, bp, cached=-1):
         """
         Converts a BC95 galaxy grid of sources into the internal source table standard
         """
         self._log("info", "Converting BC95 Catalogue")
         proflist = {"expdisk":1,"devauc":4}
-        if os.path.isfile(obsname): 
-            os.remove(obsname) # No append
-        
-        with open(obsname, 'w') as f:
-            f.write('\\ Internal Format Catalogue\n')
-            f.write('\\ \n')
-            f.write('\\ Parameters:\n')
-            f.write('\\ \n')
-            f.write('\\type="internal"\n')
-            f.write('\\filter="{}"\n'.format(self.filter))
-            f.write('\\ \n')
-
         ps.setref(**self.REFS)
         renorm_bp = ps.ObsBandpass('johnson,v')
         distance_type = "redshift"
-        for i, table in enumerate(read_table(catalogue)):
-            ids = table['id']
-            ras = table['ra']
-            decs = table['dec']
+        ids = table['id']
+        ras = table['ra']
+        decs = table['dec']
+        try:
+            zs = table['redshift']
+        except KeyError: #distances instead
+            zs = table['distance']
+            distance_type = "pc"
+        models = table['model']
+        ages = table['age']
+        profiles = table['profile']
+        radii = table['radius']/self.SCALE[0] #at some point, may want to figure out multiple scales.
+        ratios = table['axial_ratio']
+        pas = (table['pa'] + (self.pa*180./numpy.pi) )%360.
+        vmags = table['apparent']
+        rates = numpy.array(())
+        indices = numpy.array(())
+        notes = numpy.array((),dtype='object')
+        for (z,model,age,profile,radius,ratio,pa,mag) in zip(zs,models,ages,profiles,radii,ratios,pas,vmags):
+            fname = "bc95_%s_%s.fits" % (model,age)
             try:
-                zs = table['redshift']
-            except KeyError: #distances instead
-                zs = table['distance']
-                distance_type = "pc"
-            models = table['model']
-            ages = table['age']
-            profiles = table['profile']
-            radii = table['radius']/self.SCALE[0] #at some point, may want to figure out multiple scales.
-            ratios = table['axial_ratio']
-            pas = (table['pa'] + (self.pa*180./numpy.pi) )%360.
-            vmags = table['apparent']
-            rates = numpy.array(())
-            indices = numpy.array(())
-            notes = numpy.array((),dtype='object')
-            for (z,model,age,profile,radius,ratio,pa,mag) in zip(zs,models,ages,profiles,radii,ratios,pas,vmags):
-                fname = "bc95_%s_%s.fits" % (model,age)
-                try:
-                    sp = ps.FileSpectrum(os.path.join(os.environ['PYSYN_CDBS'],"grid","bc95","templates",fname))
-                    if distance_type == "redshift":
-                        sp = sp.redshift(z)
-                    sp = sp.renorm(mag,'abmag',renorm_bp)
-                    obs = ps.Observation(sp,self.bandpass,force='taper')
-                    rate = obs.countrate()
-                except ValueError, v:
-                    rate = 0.
-                rates = numpy.append(rates,rate)
-                indices = numpy.append(indices,proflist[profile])
-                notes = numpy.append(notes,"BC95 %s %s %f" % (model,age,mag))
-            types = numpy.full_like(ras,'sersic',dtype='S6')
+                sp = ps.FileSpectrum(os.path.join(os.environ['PYSYN_CDBS'],"grid","bc95","templates",fname))
+                if distance_type == "redshift":
+                    sp = sp.redshift(z)
+                sp = sp.renorm(mag,'abmag',renorm_bp)
+                obs = ps.Observation(sp,self.bandpass,force='taper')
+                rate = obs.countrate()
+            except ValueError, v:
+                rate = 0.
+            rates = numpy.append(rates,rate)
+            indices = numpy.append(indices,proflist[profile])
+            notes = numpy.append(notes,"BC95 %s %s %f" % (model,age,mag))
+        t = Table()
+        t['ra'] = Column(data=ras)
+        t['dec'] = Column(data=decs)
+        t['flux'] = Column(data=rates)
+        t['type'] = Column(data=numpy.full_like(ras,'sersic',dtype='S6'))
+        t['n'] = Column(data=indices)
+        t['re'] = Column(data=radii)
+        t['phi'] = Column(data=pas)
+        t['ratio'] = Column(data=ratios)
+        t['id'] = Column(data=ids)
+        t['notes'] = Column(data=notes)
         
-            t = Table()
-            t['ra'] = Column(data=ras)
-            t['dec'] = Column(data=decs)
-            t['flux'] = Column(data=rates)
-            t['type'] = Column(data=types)
-            t['n'] = Column(data=indices)
-            t['re'] = Column(data=radii)
-            t['phi'] = Column(data=pas)
-            t['ratio'] = Column(data=ratios)
-            t['id'] = Column(data=ids)
-            t['notes'] = Column(data=notes)
-
-            with open(obsname, 'a') as outf:
-                data = StringIO()
-                t.write(data, format='ascii.ipac')
-                data.seek(0)
-                if i != 0: # get rid of the header lines
-                    data.readline()
-                    data.readline()
-                    data.readline()
-                    data.readline()
-                outf.write(data.read())
-                del data
-            del t
-
-        return obsname
-
-    def convertMixedCatalogue(self, catalogue, obsname):
+        return t, cached
+        
+    def readMixedTable(self, table, bp, cached=-1):
         """
         Converts a mixed internal list of sources into the internal source table standard
         """
+        ras = table['ra']
+        decs = table['dec']
+        types = table['type']
+        indices = table['n']
+        radii = table['re']
+        pas = table['phi']
+        ratios = table['ratio']
+        ids = table['id']
+        notes = table['notes']
 
-        if os.path.isfile(obsname): 
-            os.remove(obsname) # No append
+        rates = table['flux']
+        units = table['units']
+        idxp = numpy.where(units == 'p')
+        rates[idxp] *= convertToCounts('p')
+        idxe = numpy.where(units == 'e')
+        rates[idxe] *= convertToCounts('e')
+        idxj = numpy.where(units == 'j')
+        rates[idxj] *= convertToCounts('j')
+        t = Table()
+        t['ra'] = Column(data=ras)
+        t['dec'] = Column(data=decs)
+        t['flux'] = Column(data=rates)
+        t['type'] = Column(data=types)
+        t['n'] = Column(data=indices)
+        t['re'] = Column(data=radii)
+        t['phi'] = Column(data=pas)
+        t['ratio'] = Column(data=ratios)
+        t['id'] = Column(data=ids)
+        t['notes'] = Column(data=notes)
         
-        with open(obsname, 'w') as f:
-            f.write('\\ Internal Format Catalogue\n')
-            f.write('\\ \n')
-            f.write('\\ Parameters:\n')
-            f.write('\\ \n')
-            f.write('\\type="internal"\n')
-            f.write('\\filter="{}"\n'.format(self.filter))
-            f.write('\\ \n')
-
-        for i, table in enumerate(read_table(catalogue)):
-            ras = table['ra']
-            decs = table['dec']
-            types = table['type']
-            indices = table['n']
-            radii = table['re']
-            pas = table['phi']
-            ratios = table['ratio']
-            ids = table['id']
-            notes = table['notes']
-
-            rates = table['flux']
-            units = table['units']
-            idxp = numpy.where(units == 'p')
-            rates[idxp] *= convertToCounts('p')
-            idxe = numpy.where(units == 'e')
-            rates[idxe] *= convertToCounts('e')
-            idxj = numpy.where(units == 'j')
-            rates[idxj] *= convertToCounts('j')
-
-            t = Table()
-            t['ra'] = Column(data=ras)
-            t['dec'] = Column(data=decs)
-            t['flux'] = Column(data=rates)
-            t['type'] = Column(data=types)
-            t['n'] = Column(data=indices)
-            t['re'] = Column(data=radii)
-            t['phi'] = Column(data=pas)
-            t['ratio'] = Column(data=ratios)
-            t['id'] = Column(data=ids)
-            t['notes'] = Column(data=notes)
-
-            with open(obsname, 'a') as outf:
-                data = StringIO()
-                t.write(data, format='ascii.ipac')
-                data.seek(0)
-                if i != 0: # get rid of the header lines
-                    data.readline()
-                    data.readline()
-                    data.readline()
-                    data.readline()
-                outf.write(data.read())
-                del data
-            del t
-
-        return obsname
-
-    def convertMultiCatalogue(self, catalogue, obsname):
+        return t, cached
+    
+    def readMultiTable(self, table, bp, cached=-1):
         """
         Converts an internal multifilter list of sources into the internal source table standard
         """
-
-        if os.path.isfile(obsname): 
-            os.remove(obsname) # No append
+        ras = table['ra']
+        decs = table['dec']
+        types = table['type']
+        indices = table['n']
+        radii = table['re']/self.SCALE[0] #at some point, may want to figure out multiple scales.
+        pas = table['phi']
+        ratios = table['ratio']
+        ids = table['id']
+        notes = table['notes']
+        rates = table[self.filter]
+        t = Table()
+        t['ra'] = Column(data=ras)
+        t['dec'] = Column(data=decs)
+        t['flux'] = Column(data=rates)
+        t['type'] = Column(data=types)
+        t['n'] = Column(data=indices)
+        t['re'] = Column(data=radii)
+        t['phi'] = Column(data=pas)
+        t['ratio'] = Column(data=ratios)
+        t['id'] = Column(data=ids)
+        t['notes'] = Column(data=notes)
         
-        with open(obsname, 'w') as f:
-            f.write('\\ Internal Format Catalogue\n')
-            f.write('\\ \n')
-            f.write('\\ Parameters:\n')
-            f.write('\\ \n')
-            f.write('\\type="internal"\n')
-            f.write('\\filter="%s"\n'%(self.filter))
-            f.write('\\ \n')
+        return t, cached
 
-        for i, table in enumerate(read_table(catalogue)):
-            ras = table['ra']
-            decs = table['dec']
-            types = table['type']
-            indices = table['n']
-            radii = table['re']/self.SCALE[0] #at some point, may want to figure out multiple scales.
-            pas = table['phi']
-            ratios = table['ratio']
-            ids = table['id']
-            notes = table['notes']
-            rates = table[self.filter]
-
-            t = Table()
-            t['ra'] = Column(data=ras)
-            t['dec'] = Column(data=decs)
-            t['flux'] = Column(data=rates)
-            t['type'] = Column(data=types)
-            t['n'] = Column(data=indices)
-            t['re'] = Column(data=radii)
-            t['phi'] = Column(data=pas)
-            t['ratio'] = Column(data=ratios)
-            t['id'] = Column(data=ids)
-            t['notes'] = Column(data=notes)
-
-            with open(obsname, 'a') as outf:
-                data = StringIO()
-                t.write(data, format='ascii.ipac')
-                data.seek(0)
-                if i != 0: # get rid of the header lines
-                    data.readline()
-                    data.readline()
-                    data.readline()
-                    data.readline()
-                outf.write(data.read())
-                del data
-            del t
-
-        return obsname
-
-    def convertGenericCatalogue(self, catalogue, obsname):
+    def readGenericTable(self, table, bp, cached=-1):
         """
         Converts a generic list of point sources into the internal source table standard
         """
-
-        if os.path.isfile(obsname): 
-            os.remove(obsname) # No append
-
-        with open(obsname, 'w') as f:
-            f.write('\\ Internal Format Catalogue\n')
-            f.write('\\ \n')
-            f.write('\\ Parameters:\n')
-            f.write('\\ \n')
-            f.write('\\type="internal"\n')
-            f.write('\\filter="%s"\n'%(self.filter))
-            f.write('\\ \n')
-
-        for i, table in enumerate(read_table(catalogue)):
-            ras = table['ra']
-            decs = table['dec']
-            rates = table[self.filter.lower()]
-            types = numpy.full_like(ras,"point",dtype="S6")
-            if 'id' in table:
-                ids = table['id']
-            else:
-                ids = numpy.arange(len(ras),dtype=int)
+        ras = table['ra']
+        decs = table['dec']
+        rates = table[self.filter.lower()]
+        if 'id' in table:
+            ids = table['id']
+        else:
+            ids = numpy.arange(len(ras),dtype=int)
+        t = Table()
+        t['ra'] = Column(data=ras)
+        t['dec'] = Column(data=decs)
+        t['flux'] = Column(data=rates)
+        t['type'] = Column(data=numpy.full_like(ras,"point",dtype="S6"))
+        t['n'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
+        t['re'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
+        t['phi'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
+        t['ratio'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
+        t['id'] = Column(data=ids)
+        t['notes'] = Column(data=numpy.full_like(ras, "N/A", dtype="S3"))
         
-            t = Table()
-            t['ra'] = Column(data=ras)
-            t['dec'] = Column(data=decs)
-            t['flux'] = Column(data=rates)
-            t['type'] = Column(data=types)
-            t['n'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-            t['re'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-            t['phi'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-            t['ratio'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-            t['id'] = Column(data=ids)
-            t['notes'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-
-            with open(obsname, 'a') as outf:
-                data = StringIO()
-                t.write(data, format='ascii.ipac')
-                data.seek(0)
-                if i != 0: # get rid of the header lines
-                    data.readline()
-                    data.readline()
-                    data.readline()
-                    data.readline()
-                outf.write(data.read())
-                del data
-            del t
-
-        return obsname
+        return t, cached
 
     def generateReadnoise(self,exptime):
         """Base function for adding read noise"""
