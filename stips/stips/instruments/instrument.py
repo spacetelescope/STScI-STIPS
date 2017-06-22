@@ -241,7 +241,7 @@ class Instrument(object):
         """
         self._log("info","Adding {} table".format(table_type))
         conversion_fn = self.getTableFunction(table_type)
-        internal_table = conversion_fn(table, self.bandpass)
+        internal_table, cache = conversion_fn(table, self.bandpass)
         self._log("info","Finished converting table to internal format")
         tables = [internal_table]
         for detector in self.detectors:
@@ -631,7 +631,7 @@ class Instrument(object):
                 my_dithers.append((x+i,y+j))
         return my_dithers
     
-    def addError(self,poisson=True,readnoise=True,flat=True,dark=True,cosmic=True,exptime=1.,coadd=1):
+    def addError(self,poisson=True,readnoise=True,flat=True,dark=True,cosmic=True,exptime=1.):
         """Base function for adding in residual error"""
         self._log("info","Adding residual error")
         if flat:
@@ -644,7 +644,7 @@ class Instrument(object):
         for detector in self.detectors:
             self._log("info","Adding error to detector %s" % (detector.name))
             self._log("info","Adding background")
-            bkg = float(self.background/numpy.sqrt(coadd))
+            bkg = float(self.background)
             self._log("info","Background is {}".format(bkg))
             detector += bkg
             self._log("info","Inserting correct exposure time")

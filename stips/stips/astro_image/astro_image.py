@@ -2,7 +2,7 @@ from __future__ import absolute_import,division
 __filetype__ = "base"
 
 #External Modules
-import inspect, logging, os, pytest, scipy, sep, shutil, sys, time, tempfile, uuid
+import inspect, logging, os, pytest, scipy, shutil, sys, time, tempfile, uuid
 
 import numpy as np
 
@@ -10,6 +10,7 @@ from astropy import wcs
 from astropy.convolution import convolve_fft
 from astropy.io import fits as pyfits
 from astropy.table import Table,Column
+from photutils import CircularAperture, aperture_photometry
 
 from copy import deepcopy
 
@@ -470,14 +471,17 @@ class AstroImage(object):
         mod = Sersic2D(amplitude=flux, r_eff=re, n=n, x_0=posX, y_0=posY, ellip=axialRatio, theta=(np.radians(phi) + 0.5*np.pi))
         with ImageData(self.fname, self.shape) as dat:
             img = mod(x, y)
-            central_flux, fluxerr, flag = sep.sum_circle(img, posX, posY, re)
+            aperture = CircularAperture((posX, posY), re)
+            flux_table = aperture_photometry(img, aperture)
+            central_flux = flux_table['aperture_sum'][0]
             if central_flux != 0.:
                 factor = flux / central_flux
                 img *= factor
-                new_central_flux, fluxerr, flag = sep.sum_circle(img, posX, posY, re)
-                self._log("info", "Flux within half-light radius is {} ({} input)".format(new_central_flux*1., flux))
+                new_flux_table = aperture_photometry(img, aperture)
+                new_central_flux = new_flux_table['aperture_sum'][0]
+                self._log("info", "Flux within half-light radius is {} ({} input)".format(new_central_flux, flux))
             else:
-                self._log("info", "Flux within half-light radius is {} ({} input)".format(central_flux*1, flux))
+                self._log("info", "Flux within half-light radius is {} ({} input)".format(central_flux, flux))
             dat += img
         
 #         s = Sersic(px,py,n,xs=self.xsize,ys=self.ysize,flux=flux,q=axialRatio,phi=p,re=re,lf=self._log)
@@ -762,6 +766,7 @@ class AstroImage(object):
             mean, std = noise_data.mean(), noise_data.std()
             dat += noise_data
             del noise_data
+        self.updateHeader('exptime', exptime)
         self.addHistory("Adding Cosmic Ray residual with mean %f and standard deviation %f" % (mean, std))
         self._log("info","Adding Cosmic Ray residual with mean %f and standard deviation %f" % (mean, std))
 

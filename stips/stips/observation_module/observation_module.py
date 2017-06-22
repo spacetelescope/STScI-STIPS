@@ -49,13 +49,12 @@ class ObservationModule(object):
         self.filters = obs.get('filters', [])
         self.offsets = obs.get('offsets', [])
         self._log('info', "Got offsets as {}".format(self.offsets))
-        self.coadd = int(obs.get('coadd', 1))
         self.oversample = int(obs.get('oversample', 1))
         self.psf_commands = obs.get('pupil_mask', "")
         self.id = int(obs.get('observations_id', 0))
         self.detectors = int(obs.get('detectors', 1))
         self.excludes = obs.get('excludes', [])
-        self.exptime = float(obs.get('exptime', 1.)) * self.coadd
+        self.exptime = float(obs.get('exptime', 1.))
         self.distortion = obs.get('distortion', False)
         self.background = obs.get('background', 'none')
         
@@ -190,6 +189,28 @@ class ObservationModule(object):
         return cats
 
     #-----------
+    def addTable(self, table, table_type):
+        """
+        Add an in-memory data table to the internal image
+        
+        Parameters
+        ----------
+        
+        self: obj
+            Class instance.
+        
+        table: astropy.table.Table
+            table of observation data
+        
+        table_type: string
+            what type of table it is
+        """
+        self._log("info","Running {} table".format(table_type))
+        tables = self.instrument.addTable(table, table_type)
+        self._log("info", "Finished {} table".format(table_type))
+        return tables
+
+    #-----------
     def addImage(self, img, units):
         """
         Create an internal image from a user-provided file
@@ -227,12 +248,12 @@ class ObservationModule(object):
         self.instrument.psf.toFits(psf_name)
         self._log("info","Adding Error")
         #readnoise is always true
-        self.instrument.addError(self.poisson,True,self.flat,self.dark,self.cosmic,self.exptime,self.coadd)
+        self.instrument.addError(self.poisson,True,self.flat,self.dark,self.cosmic,self.exptime)
         self._log("info","Finished Adding Error")
         return psf_name
         
     #-----------
-    def finalize(self):
+    def finalize(self, mosaic=True):
         """
         Finalize FITS file
         
@@ -243,7 +264,9 @@ class ObservationModule(object):
             Class instance.
         """
         self.instrument.toFits("%s_%d.fits" % (self.imgbase,self.obs_count))
-        mosaics = self.instrument.toMosaic("%s_%d_mosaic.fits"%(self.imgbase,self.obs_count))
+        mosaics = None
+        if mosaic:
+            mosaics = self.instrument.toMosaic("%s_%d_mosaic.fits"%(self.imgbase,self.obs_count))
         return "%s_%d.fits"%(self.imgbase,self.obs_count),mosaics,self.params
     
     #-----------

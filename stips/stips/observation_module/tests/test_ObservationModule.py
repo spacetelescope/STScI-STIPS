@@ -22,7 +22,6 @@ def verifyParameters(obs,results):
     assert obs.instrument_name == results['instrument_name']
     assert obs.filters == results['filters']
     assert obs.offsets == results['offsets']
-    assert obs.coadd == results['coadd']
     assert obs.exptime == results['exptime']
     assert obs.oversample == results['oversample']
     assert obs.psf_commands == results['psf_commands']
@@ -45,7 +44,7 @@ creation_data =         [
                             (
                                 {},
                                 {},
-                                {'instrument_name':'NIRCamShort','filters':[],'offsets':[],'coadd':1,
+                                {'instrument_name':'NIRCamShort','filters':[],'offsets':[],
                                  'exptime':1.,'oversample':1,'psf_commands':"",'ra':0.,'dec':0.,
                                  'pa':0.,'seed':0,'id':0,'prefix':'sim','in_path':os.getcwd(),
                                  'cat_path':os.getcwd(),'out_path':os.getcwd(),'poisson':True,
@@ -53,7 +52,7 @@ creation_data =         [
                             ),
                             (
                                 {'instrument':'MIRI','filters':['F1130W'],'offset':[{'offset_ra':1.3,
-                                 'offset_dec':-3.9,'offset_pa':38.3}],'coadd':32,'exptime':500.,
+                                 'offset_dec':-3.9,'offset_pa':38.3}],'exptime':500.,
                                  'oversample':12,'pupil_mask':'Commanding','id':7},
                                 {'out_prefix':'testing_alpha','in_path':'/path/to/somewhere',
                                  'out_path':'/path/to/somewhere/else','general':{'ra':7.3,'dec':-9.1,
@@ -61,7 +60,7 @@ creation_data =         [
                                  'do_err_dark':False,'do_err_cray':False},'version':'9.5'},
                                 {'instrument_name':'MIRI','filters':['F1130W'],
                                  'offsets':[{'offset_ra':1.3,'offset_dec':-3.9,'offset_pa':38.3}],
-                                 'coadd':32,'exptime':16000.,'oversample':12,
+                                 'exptime':16000.,'oversample':12,
                                  'psf_commands':"Commanding",'ra':7.3,'dec':-9.1,'pa':-12.5,
                                  'seed':3210,'id':7,'prefix':'testing_alpha',
                                  'in_path':'/path/to/somewhere','cat_path':'/path/to/somewhere/else',
@@ -202,7 +201,7 @@ def test_nextObservation(obs,kwargs,results):
 #         self.instrument.psf.toFits(psf_name)
 #         self.logger.info("Adding Error")
 #         readnoise is always true
-#         self.instrument.addError(self.poisson,True,self.flat,self.dark,self.cosmic,self.exptime,self.coadd)
+#         self.instrument.addError(self.poisson,True,self.flat,self.dark,self.cosmic,self.exptime)
 #         self.logger.info("Finished Adding Error")
 #         return psf_name
 #         
