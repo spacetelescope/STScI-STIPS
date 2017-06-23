@@ -68,6 +68,7 @@ class AstroImage(object):
         self.out_path = kwargs.get('out_path', os.getcwd())
         self.name = kwargs.get('detname', "")
         
+        self.profile_multiplier = kwargs.get('profile_multiplier', 100.)
         self.oversample = kwargs.get('oversample', 1)
         psf_shape = kwargs.get('psf_shape', (0, 0))
         data = kwargs.get('data', None)
@@ -452,7 +453,7 @@ class AstroImage(object):
         with ImageData(self.fname, self.shape) as dat:
             dat[ys, xs] += rates
     
-    def addSersicProfile(self,posX,posY,flux,n,re,phi,axialRatio):
+    def addSersicProfile(self, posX, posY, flux, n, re, phi, axialRatio):
         """
         Adds a single sersic profile to the image given its co-ordinates, count rate, and source 
         type.
@@ -467,22 +468,38 @@ class AstroImage(object):
         self.addHistory("Adding Sersic profile at (%f,%f) with flux %f, index %f, Re %f, Phi %f, and axial ratio %f" % (posX,posY,flux,n,re,phi,axialRatio))
         self._log("info","Adding sersic profile to AstroImage %s" % (self.name))
         from astropy.modeling.models import Sersic2D
-        x, y, = np.meshgrid(np.arange(self.xsize), np.arange(self.ysize))
-        mod = Sersic2D(amplitude=flux, r_eff=re, n=n, x_0=posX, y_0=posY, ellip=axialRatio, theta=(np.radians(phi) + 0.5*np.pi))
-        with ImageData(self.fname, self.shape) as dat:
-            img = mod(x, y)
-            aperture = CircularAperture((posX, posY), re)
-            flux_table = aperture_photometry(img, aperture)
-            central_flux = flux_table['aperture_sum'][0]
-            if central_flux != 0.:
-                factor = flux / central_flux
-                img *= factor
-                new_flux_table = aperture_photometry(img, aperture)
-                new_central_flux = new_flux_table['aperture_sum'][0]
-                self._log("info", "Flux within half-light radius is {} ({} input)".format(new_central_flux, flux))
-            else:
-                self._log("info", "Flux within half-light radius is {} ({} input)".format(central_flux, flux))
-            dat += img
+        # ***** Include some way to specify full-frame?
+        model_size = int(np.floor(self.profile_multiplier*re))
+        self._log("info", "Creating a {}x{} array for the Sersic model".format(model_size, model_size))
+        x, y, = np.meshgrid(np.arange(model_size), np.arange(model_size))
+        # In order to get fractional flux per pixel correct, carry the non-integer portion of the model centre through.
+        fractional_x, fractional_y = posX - np.floor(posX), posY - np.floor(posY)
+        xc, yc = model_size//2 + fractional_x, model_size//2 + fractional_y
+        self._log("info", "Centre moved from {},{} to {},{}".format(posX, posY, xc, yc))
+        mod = Sersic2D(amplitude=flux, r_eff=re, n=n, x_0=xc, y_0=yc, ellip=axialRatio, theta=(np.radians(phi) + 0.5*np.pi))
+        img = mod(x, y)
+        # Eventually we probably want to apply a circular mask to the image equal to its radius. Or some sort of flux-based mask.
+        aperture = CircularAperture((xc, yc), re)
+        flux_table = aperture_photometry(img, aperture)
+        central_flux = flux_table['aperture_sum'][0]
+        if central_flux != 0.:
+            factor = flux / central_flux
+            img *= factor
+            new_flux_table = aperture_photometry(img, aperture)
+            new_central_flux = new_flux_table['aperture_sum'][0]
+            self._log("info", "Flux within half-light radius is {} ({} input)".format(new_central_flux, flux))
+        else:
+            self._log("info", "Flux within half-light radius is {} ({} input)".format(central_flux, flux))
+        # Centre of profile is (xc, yc)
+        # Centre of image is (self.xsize//2, self.ysize//2)
+        # Centre of profile on image is (posX, posY)
+        # Let's say we have a 20X20 profile, centre is 10,10
+        # Let's say our image is 1024X1024, centre is 512,512
+        # Let's say posX=39, posY=27
+        # So we want to go from 512,512 to 39,27, so offset is -473,-485
+        # Offset is posX-image_centre, posY-image_centre
+        offset_x, offset_y = np.floor(posX) - self.xsize//2, np.floor(posY) - self.ysize//2
+        self._addArrayWithOffset(img, offset_x, offset_y)
         
 #         s = Sersic(px,py,n,xs=self.xsize,ys=self.ysize,flux=flux,q=axialRatio,phi=p,re=re,lf=self._log)
 #         with ImageData(self.fname, self.shape) as dat:
@@ -501,7 +518,7 @@ class AstroImage(object):
                                                                                                 psf.shape, self.shape,
                                                                                                 psf.shape[0] + self.shape[0] - 1))
                 self._log('info', "Using overlapping arrays of size {}".format(sub_shape))
-                overlapadd2(dat, psf, sub_shape, y=fp_result)
+                overlapadd2(dat, psf, sub_shape, y=fp_result, verbose=True, logger=self.logger)
                 self._log('info', "Cropping convolved image down to detector size")
                 centre = (fp_result.shape[0]//2, fp_result.shape[1]//2)
                 half = (self.base_shape[0]//2, self.base_shape[1]//2)
@@ -553,17 +570,14 @@ class AstroImage(object):
             other_copy.rescale(self.scale)
         self._addWithOffset(other_copy, offset_x, offset_y)
     
-    def _addWithOffset(self, other, offset_x, offset_y):
+    def _findCentre(self, xs, ys, offset_x, offset_y):
         """
-        Add a np array to the current image with a given pixel offset. This allows for a smaller
-        memory use for addWithAlignment.
+        Determines the actual pixel offset for adding another image or array with shape (ys,xs) and
+        offset (offset_x, offset_y) to the current image.
         """
-        (ys,xs) = other.shape
-        yc = int(np.floor(ys/2))
-        xc = int(np.floor(xs/2))
+        yc, xc = ys//2, xs//2
         
-        ycenter = int(np.floor(self.ysize/2))
-        xcenter = int(np.floor(self.xsize/2))
+        ycenter, xcenter = self.ysize//2, self.xsize//2
         
         y_overlay = ycenter + offset_y
         x_overlay = xcenter + offset_x
@@ -592,6 +606,34 @@ class AstroImage(object):
             high_y = self.ysize
         
         self._log("info","Adding Other[%d:%d,%d:%d] to AstroImage %s[%d:%d,%d:%d]" % (ly,hy,lx,hx,self.name,low_y,high_y,low_x,high_x))
+        return int(lx), int(ly), int(hx), int(hy), int(low_x), int(low_y), int(high_x), int(high_y)
+    
+    def _addArrayWithOffset(self, other, offset_x, offset_y):
+        """
+        Add an AstroImage to the current image with a given pixel offset. This allows for a smaller
+        memory use for addWithAlignment.
+        """
+        ys, xs = other.shape
+        lx, ly, hx, hy, low_x, low_y, high_x, high_y = self._findCentre(xs, ys, offset_x, offset_y)
+        
+        #If any of these are false, the images are disjoint.
+        if low_x < self.xsize and low_y < self.ysize and high_x > 0 and high_y > 0:
+            with ImageData(self.fname, self.shape, mode='r+') as dat:
+                self._log('info', 'Indices are {},{},{},{} with types {},{},{},{}'.format(low_x,high_x,low_y,high_y,type(low_x),type(high_x),type(low_y),type(high_y)))
+                d = dat[low_y:high_y, low_x:high_x]
+                d = other[ly:hy, lx:hx]
+                dat[low_y:high_y, low_x:high_x] += other[ly:hy, lx:hx]
+        else:
+            self.addHistory("Added image is disjoint")
+            self._log("warning","%s: Image is disjoint" % (self.name))
+        
+    def _addWithOffset(self, other, offset_x, offset_y):
+        """
+        Add an AstroImage to the current image with a given pixel offset. This allows for a smaller
+        memory use for addWithAlignment.
+        """
+        ys, xs = other.shape
+        lx, ly, hx, hy, low_x, low_y, high_x, high_y = self._findCentre(xs, ys, offset_x, offset_y)
         
         #If any of these are false, the images are disjoint.
         if low_x < self.xsize and low_y < self.ysize and high_x > 0 and high_y > 0:
