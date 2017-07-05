@@ -319,9 +319,9 @@ class SceneModule(object):
                 z_low,z_high: float
                     Minimum and maximum redshifts (converted to distances?).
                 rad_low,rad_high: float
-                    Minimum and maximum galactic radii (in arcseconds)
-                vmag_low,vmag_high
-                    Minimum and maximum V-band magnitudes
+                    Minimum and maximum galactic half-light radii (in arcseconds)
+                vmag_low, vmag_high: float
+                    Minimum and maximum V-band average surface brightness within rad
                 distribution: string
                     Stellar distribution in the sky (e.g. power law, inverse power law, uniform, etc.)
                 clustered: bool
@@ -446,8 +446,8 @@ class SceneModule(object):
         t['radius'] = Column(data=rads)
         t['axial_ratio'] = Column(data=axials,unit='degrees')
         t['pa'] = Column(data=angles,unit='degrees')
-        t['absolute'] = Column(data=vmags_abs,unit='johnson,v')
-        t['apparent'] = Column(data=vmags,unit='johnson,v')
+        t['absolute_surface_brightness'] = Column(data=vmags_abs,unit='johnson,v')
+        t['apparent_surface_brightness'] = Column(data=vmags,unit='johnson,v')
         t.write(outList,format='ascii.ipac')
         #
         # For now, re-do the table with parameters since the t.write() doesn't.

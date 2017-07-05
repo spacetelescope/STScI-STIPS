@@ -63,6 +63,7 @@ class ObservationModule(object):
         self.in_path = os.environ.get('stips_data', datadir())
         self.cat_path = kwargs.get('cat_path', os.getcwd())
         self.out_path = kwargs.get('out_path', os.getcwd())
+        self.max_convolve_size = kwargs.get('convolve_size', 4096)
         
         if 'scene_general' in kwargs:
             self.ra = kwargs['scene_general'].get('ra', 0.0)
@@ -84,6 +85,8 @@ class ObservationModule(object):
             self.cosmic = kwargs.get('do_err_cray', True)
         self.poisson = True
         self.version = kwargs.get('version', '0.0')
+        self.set_celery = kwargs.get('set_celery', None)
+        self.get_celery = kwargs.get('get_celery', None)
 
         self.instrument_name = self.instrument_name.encode('ascii')
         
@@ -162,7 +165,7 @@ class ObservationModule(object):
                 ra,dec = OffsetPosition(ra,dec,offset_ra,offset_dec)
                 pa = (pa + offset_pa)%360.
             self._log("info","Observation (RA,DEC) = (%f,%f) with PA=%f" % (ra,dec,pa))
-            self.instrument.reset(ra,dec,pa,filter)
+            self.instrument.reset(ra, dec, pa, filter)
             self._log("info","Reset Instrument")
             self.initParams()
             return self.obs_count
@@ -248,7 +251,7 @@ class ObservationModule(object):
         self.instrument.psf.toFits(psf_name)
         self._log("info","Adding Error")
         #readnoise is always true
-        self.instrument.addError(self.poisson,True,self.flat,self.dark,self.cosmic,self.exptime)
+        self.instrument.addError(self.poisson, True, self.flat, self.dark, self.cosmic, self.max_convolve_size-1)
         self._log("info","Finished Adding Error")
         return psf_name
         
@@ -284,4 +287,12 @@ class ObservationModule(object):
             getattr(self.logger,mtype)(message)
         else:
             sys.stderr.write("%s: %s\n" % (mtype,message))
-        
+    
+    def updateState(self, state):
+        if self.set_celery is not None:
+            self.set_celery(state)
+    
+    def getState(self):
+        if self.get_celery is not None:
+            return self.get_celery()
+        return ""

@@ -36,6 +36,7 @@ class Instrument(object):
         self.THERMFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmt.fits")))
         self.in_path = os.environ.get("stips_data", datadir())
         self.out_path = kwargs.get('out_path', os.getcwd())
+        self.prefix = kwargs.get('prefix', '')
         self.flatfile = os.path.join(self.in_path, "residual_files", self.FLATFILE)
         self.darkfile = os.path.join(self.in_path, "residual_files", self.DARKFILE)
         self.oversample = 1
@@ -43,6 +44,7 @@ class Instrument(object):
         self.dec = kwargs.get('dec', 0.)
         self.pa = kwargs.get('pa', 0.)
         self.distortion = kwargs.get('distortion', False)
+        self.exptime = kwargs.get('exptime', 1.)
         self.filter = None
         self.detectors = None
         if 'logger' in kwargs:
@@ -52,11 +54,14 @@ class Instrument(object):
             stream_handler.setLevel(logging.DEBUG)
             stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
             self.logger = logging.getLogger()
-            self.logger.addHandler(stream_handler)
+            if len(self.logger.handlers) == 0:
+                self.logger.addHandler(stream_handler)
         self.psf_commands = kwargs.get('psf_commands', None)
         self.instrument = kwargs.get('instrument', "")
         self.background_value = kwargs.get('background', 'none')
         self.CENTRAL_OFFSET = (0., 0., 0.)
+        self.set_celery = kwargs.get('set_celery', None)
+        self.get_celery = kwargs.get('get_celery', None)
     
     @classmethod
     def initFromImage(cls, image, **kwargs):
@@ -103,7 +108,7 @@ class Instrument(object):
         self._log("info","Finished initialization")
         return ins
     
-    def reset(self,ra,dec,pa,filter):
+    def reset(self, ra, dec, pa, filter, celery=None):
         """
         Reset instrument parameters.
         """
@@ -144,10 +149,10 @@ class Instrument(object):
             scale = [self.SCALE[0]/self.oversample,self.SCALE[1]/self.oversample]
             self._log("info","Creating Detector with (RA,DEC,PA) = (%f,%f,%f)" % (ra,dec,pa))
             self._log("info","Creating Detector with pixel offset ({},{})".format(delta_ra/scale[0], delta_dec/scale[1]))
-            detector = AstroImage(out_path=self.out_path, shape=(ysize, xsize), scale=scale, ra=ra, dec=dec, pa=pa, 
-                                  header=hdr, history=hist, psf_shape=self.psf.shape, zeropoint=self.zeropoint, 
+            detector = AstroImage(out_path=self.out_path, shape=(ysize, xsize), scale=scale, ra=ra, dec=dec, pa=pa, exptime=self.exptime,
+                                  header=hdr, history=hist, psf_shape=self.psf.shape, zeropoint=self.zeropoint, background=self.background,
                                   photflam=self.photflam, detname=name, logger=self.logger, oversample=self.oversample,
-                                  distortion=distortion)
+                                  distortion=distortion, prefix=self.prefix, set_celery=self.set_celery, get_celery=self.get_celery)
             self.detectors.append(detector)
         
     def toFits(self,outfile):
@@ -220,13 +225,17 @@ class Instrument(object):
             Obtaining the correct values for FLUX (if not done before initialization) is a job for
             the subclasses.
         """
+        base_state = self.getState()
         self._log("info","Adding catalogue %s" % (catalogue))
+        self.updateState(base_state + "<br /><span class='indented'>Converting Catalogue to Internal Format</span>")
         cat = self.convertCatalogue(catalogue, obs_num)
         self._log("info","Finished converting catalogue to internal format")
         cats = [cat]
         for detector in self.detectors:
+            self.updateState(base_state + "<br /><span class='indented'>Detector {}</span>".format(detector.name))
             self._log("info","Adding catalogue to detector %s" % (detector.name))
             cats.append(detector.addCatalogue(cat, dist=self.distortion))
+            self.updateState(base_state)
         return cats
         self._log("info","Finished Adding Catalogue")
     
@@ -440,7 +449,6 @@ class Instrument(object):
         and then produces an output catalogue
         """
         ps.setref(**self.REFS)
-        renorm_bp = ps.ObsBandpass('johnson,i')
         ids = table['id']
         ras = table['ra']
         decs = table['dec']
@@ -448,12 +456,15 @@ class Instrument(object):
         gravs = table['log_g']
         metallicities = table['metallicity']
         apparents = table['apparent']
+        norm_bp = '{}'.format(apparents.unit)
+        if norm_bp == '':
+            norm_bp = 'johnson,i'
         rates = numpy.zeros_like(ras)
         for index in range(len(ids)):
             t, g, Z, a = temps[index], gravs[index], metallicities[index], apparents[index]
             sp = ps.Icat('phoenix', t, Z, g)
-            sp = sp.renorm(a, 'abmag', renorm_bp)
-            obs = ps.Observation(sp, self.bandpass)
+            sp = self.normalize(sp, a, norm_bp)
+            obs = ps.Observation(sp, bp)
             rates[index] = obs.countrate()
         t = Table()
         t['ra'] = Column(data=ras)
@@ -474,6 +485,7 @@ class Instrument(object):
         Converts a BC95 galaxy grid of sources into the internal source table standard
         """
         self._log("info", "Converting BC95 Catalogue")
+        from pandeia.engine.custom_exceptions import PysynphotError
         proflist = {"expdisk":1,"devauc":4}
         ps.setref(**self.REFS)
         renorm_bp = ps.ObsBandpass('johnson,v')
@@ -492,7 +504,10 @@ class Instrument(object):
         radii = table['radius']/self.SCALE[0] #at some point, may want to figure out multiple scales.
         ratios = table['axial_ratio']
         pas = (table['pa'] + (self.pa*180./numpy.pi) )%360.
-        vmags = table['apparent']
+        vmags = table['apparent_surface_brightness']
+        norm_bp = '{}'.format(vmags.unit)
+        if norm_bp == '':
+            norm_bp = 'johnson,v'
         rates = numpy.array(())
         indices = numpy.array(())
         notes = numpy.array((),dtype='object')
@@ -502,10 +517,11 @@ class Instrument(object):
                 sp = ps.FileSpectrum(os.path.join(os.environ['PYSYN_CDBS'],"grid","bc95","templates",fname))
                 if distance_type == "redshift":
                     sp = sp.redshift(z)
-                sp = sp.renorm(mag,'abmag',renorm_bp)
+                sp = self.normalize(sp, mag, norm_bp)
                 obs = ps.Observation(sp,self.bandpass,force='taper')
                 rate = obs.countrate()
-            except ValueError, v:
+            except PysynphotError as e:
+                self._log('warning', 'Pysynphot Error {} encountered'.format(e.message))
                 rate = 0.
             rates = numpy.append(rates,rate)
             indices = numpy.append(indices,proflist[profile])
@@ -613,7 +629,7 @@ class Instrument(object):
         
         return t, cached
 
-    def generateReadnoise(self,exptime):
+    def generateReadnoise(self):
         """Base function for adding read noise"""
         pass
 
@@ -631,45 +647,78 @@ class Instrument(object):
                 my_dithers.append((x+i,y+j))
         return my_dithers
     
-    def addError(self,poisson=True,readnoise=True,flat=True,dark=True,cosmic=True,exptime=1.):
+    def addError(self, poisson=True, readnoise=True, flat=True, dark=True, cosmic=True, max=4095):
         """Base function for adding in residual error"""
         self._log("info","Adding residual error")
+        base_state = self.getState()
         if flat:
             flat = AstroImage.initDataFromFits(self.flatfile,ext='COMPRESSED_IMAGE',logger=self.logger)
         if dark:
             dark = AstroImage.initDataFromFits(self.darkfile,ext='COMPRESSED_IMAGE',logger=self.logger)
-            dark *= exptime
+            dark *= self.exptime
         if readnoise:
-            rn = self.generateReadnoise(exptime)
+            rn = self.generateReadnoise()
         for detector in self.detectors:
+            self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Background</span>".format(detector.name))
             self._log("info","Adding error to detector %s" % (detector.name))
             self._log("info","Adding background")
             bkg = float(self.background)
             self._log("info","Background is {}".format(bkg))
+            self._log("info", "Sum is {}".format(detector.sum))
             detector += bkg
+            self._log("info", "Sum is {}".format(detector.sum))
             self._log("info","Inserting correct exposure time")
-            detector *= exptime
+            self.updateState(base_state + "<br /><span class='indented'>Detector {}: Applying Exposure Time</span>".format(detector.name))
+            detector *= self.exptime
             self._log("info","Convolving with PSF")
-            detector.convolve(self.psf)
+            self.updateState(base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name))
+            detector.convolve(self.psf, max=max)
             if self.oversample != 1:
                 self._log("info","Binning oversampled image")
+                self.updateState(base_state + "<br /><span class='indented'>Detector {}: Binning oversampled image</span>".format(detector.name))
                 detector.bin(self.oversample)
             if poisson: 
                 self._log("info","Adding poisson noise")
+                self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Poisson Noise</span>".format(detector.name))
                 detector.introducePoissonNoise()
             if readnoise:
                 self._log("info","Adding readnoise")
+                self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Readnoise</span>".format(detector.name))
                 detector.introduceReadnoise(rn)
             if flat:
                 self._log("info","Adding flatfield residual")
+                self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Flatfield Residual</span>".format(detector.name))
                 detector.introduceFlatfieldResidual(flat)
             if dark:
                 self._log("info","Adding dark residual")
+                self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Dark Residual</span>".format(detector.name))
                 detector.introduceDarkResidual(dark)
             if cosmic:
                 self._log("info","Adding cosmic ray residual")
-                detector.introduceCosmicRayResidual(self.PIXEL_SIZE,exptime)
+                self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Cosmic Ray Residual</span>".format(detector.name))
+                detector.introduceCosmicRayResidual(self.PIXEL_SIZE)
+            self.updateState(base_state)
         self._log("info","Finished adding error")
+
+    def normalize(self, source_spectrum, norm_flux, bandpass):
+        norm_type = self.get_type(bandpass)
+        from pandeia.engine.normalization import NormalizationFactory
+        
+        norm = NormalizationFactory(type=norm_type, bandpass=bandpass, norm_fluxunit='abmag', norm_flux=norm_flux)
+        wave, flux = norm.from_pysynphot(source_spectrum)
+        norm_wave, norm_flux = norm.normalize(wave, flux)
+        sp = norm.to_pysynphot(norm_wave, norm_flux)
+        sp.convert('angstroms')
+        return sp
+     
+    def get_type(self, bandpass_str):
+        if 'miri' in bandpass_str or 'nircam' in bandpass_str:
+            return 'jwst'
+        elif 'wfi' in bandpass_str or 'wfirst' in bandpass_str:
+            return 'wfirst'
+        elif 'wfc3' in bandpass_str:
+            return 'hst'
+        return 'photsys'
 
     @property
     def bandpass(self):
@@ -695,12 +744,15 @@ class Instrument(object):
         wave = numpy.linspace(wr['wmin'], wr['wmax'], num=500)
         pce = i.get_total_eff(wave)
         
-        return ps.ArrayBandpass(wave=wave*1.e4, throughput=pce, waveunits='angstroms', name='bp_{}_{}'.format(self.instrument, self.filter))
+        bp = ps.ArrayBandpass(wave=wave, throughput=pce, waveunits='micron', name='bp_{}_{}'.format(self.instrument, self.filter))
+        bp.convert('angstroms')
+        return bp
     
     @property
     def zeropoint(self):
         ps.setref(**self.REFS)
         sp = ps.FileSpectrum(os.path.join(os.environ["PYSYN_CDBS"],"standards","alpha_lyr_stis_007.fits"))
+        sp.convert('angstroms')
         bp = self.bandpass
         sp = sp.renorm(0.0,"VEGAMAG",bp)
         obs = ps.Observation(sp,bp)
@@ -711,6 +763,7 @@ class Instrument(object):
     def photflam(self):
         ps.setref(**self.REFS)
         sp = ps.FlatSpectrum(0, fluxunits='stmag')
+        sp.convert('angstroms')
         bp = self.bandpass
         obs = ps.Observation(sp, bp)
         return obs.effstim('flam') / obs.countrate()
@@ -723,4 +776,13 @@ class Instrument(object):
             getattr(self.logger,mtype)(message)
         else:
             sys.stderr.write("%s: %s\n" % (mtype,message))
+    
+    def updateState(self, state):
+        if self.set_celery is not None:
+            self.set_celery(state)
+    
+    def getState(self):
+        if self.get_celery is not None:
+            return self.get_celery()
+        return ""
 

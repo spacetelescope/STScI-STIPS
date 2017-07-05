@@ -50,6 +50,8 @@ class MIRI(JwstInstrument):
                         self.psf = AstroImage(data=psf[0].data, detname="MIRI {} PSF".format(self.filter), logger=self.logger)
                         have_psf = True
         if not have_psf:
+            base_state = self.getState()
+            self.updateState(base_state+"<br /><span class='indented'>Generating PSF</span>")
             self._log("info", "Creating PSF")
             ins = webbpsf.MIRI()
             self._log("info", "Setting PSF attributes")
@@ -69,20 +71,21 @@ class MIRI(JwstInstrument):
                 dest = os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("MIRI", self.filter, self.oversample))
                 pyfits.writeto(dest, psf[0].data, header=psf[0].header, clobber=True)
             self.psf = AstroImage(data=psf[0].data,detname="MIRI %s PSF" % (self.filter),logger=self.logger)
+            self.updateState(base_state)
         
-    def generateReadnoise(self,exptime):
+    def generateReadnoise(self):
         """
         Readnoise formula that is similar to JWST ETC.
         """
         k = self.k
         a = self.a
 
-        if exptime > 1000:
-            numGroups = numpy.ceil(exptime/1000.0)
-            timePerGroup = exptime/numGroups
+        if self.exptime > 1000:
+            numGroups = numpy.ceil(self.exptime/1000.0)
+            timePerGroup = self.exptime/numGroups
         else:
             numGroups = 1
-            timePerGroup = exptime
+            timePerGroup = self.exptime
 
         rdns = numpy.sqrt(numGroups) * k * timePerGroup**(a)
         return rdns
