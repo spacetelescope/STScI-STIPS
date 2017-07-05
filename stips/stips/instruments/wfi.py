@@ -48,6 +48,8 @@ class WFI(WfirstInstrument):
                         self.psf = AstroImage(data=psf[0].data, detname="WFI {} PSF".format(self.filter), logger=self.logger)
                         have_psf = True
         if not have_psf:
+            base_state = self.getState()
+            self.updateState(base_state+"<br /><span class='indented'>Generating PSF</span>")
             from webbpsf import wfirst
             ins = wfirst.WFI()
             if self.psf_commands is not None and self.psf_commands != '':
@@ -64,8 +66,9 @@ class WFI(WfirstInstrument):
                 dest = os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("WFI", self.filter, self.oversample))
                 pyfits.writeto(dest, psf[0].data, header=psf[0].header, clobber=True)
             self.psf = AstroImage(data=psf[0].data, detname="WFI %s PSF" % (self.filter), logger=self.logger)
+            self.updateState(base_state)
         
-    def generateReadnoise(self,exptime):
+    def generateReadnoise(self):
         """
         Readnoise formula that is similar to HST ETC.
         """

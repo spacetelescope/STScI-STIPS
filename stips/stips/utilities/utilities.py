@@ -221,7 +221,7 @@ def overlapadd2(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=Non
         start[YDIM] = 0
         while start[YDIM] <= Na[YDIM]:
             if verbose and logger is not None:
-                logger.info("Starting box {}".format(start))
+                logger.warning("Starting box {}".format(start))
 
             endd[YDIM] = min(start[YDIM] + L[YDIM], Na[YDIM])
             yt = adjust(ifft2(Hf * fft2(Amat[start[YDIM] : endd[YDIM],

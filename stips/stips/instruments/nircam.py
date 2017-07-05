@@ -55,6 +55,8 @@ class NIRCamBase(JwstInstrument):
                         self.psf = AstroImage(data=psf[0].data, detname="NIRCam {} PSF".format(self.filter), logger=self.logger)
                         have_psf = True
         if not have_psf:
+            base_state = self.getState()
+            self.updateState(base_state+"<br /><span class='indented'>Generating PSF</span>")
             ins = webbpsf.NIRCam()
             if self.psf_commands is not None and self.psf_commands != '':
                 for attribute,value in self.psf_commands.iteritems():
@@ -70,20 +72,21 @@ class NIRCamBase(JwstInstrument):
                 dest = os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("NIRCam", self.filter, self.oversample))
                 pyfits.writeto(dest, psf[0].data, header=psf[0].header, clobber=True)
             self.psf = AstroImage(data=psf[0].data,detname="NIRCam %s PSF" % (self.filter),logger=self.logger)
+            self.updateState(base_state)
     
-    def generateReadnoise(self,exptime):
+    def generateReadnoise(self):
         """
         Readnoise formula that is similar to JWST ETC.
         """
         k = 55.07
         a = -0.26
 
-        if exptime > 1000:
-            numGroups = numpy.ceil(exptime/1000.0)
-            timePerGroup = exptime/numGroups
+        if self.exptime > 1000:
+            numGroups = numpy.ceil(self.exptime/1000.0)
+            timePerGroup = self.exptime/numGroups
         else:
             numGroups = 1
-            timePerGroup = exptime
+            timePerGroup = self.exptime
 
         rdns = numpy.sqrt(numGroups) * k * timePerGroup**(a)
         return rdns

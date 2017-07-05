@@ -45,7 +45,7 @@ class WFC3IR(HstInstrument):
         obsmode = "wfc3,ir," + self.filter.lower()
         return ps.ObsBandpass(obsmode)
             
-    def generateReadnoise(self,exptime):
+    def generateReadnoise(self):
         """
         Readnoise formula that is similar to JWST ETC.
         """

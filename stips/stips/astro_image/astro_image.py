@@ -62,13 +62,16 @@ class AstroImage(object):
             stream_handler.setLevel(logging.DEBUG)
             stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
             self.logger = logging.getLogger()
-            self.logger.addHandler(stream_handler)
+            if len(self.logger.handlers) == 0:
+                self.logger.addHandler(stream_handler)
     
         #Set unique ID and figure out where the numpy memmap will be stored
         self.out_path = kwargs.get('out_path', os.getcwd())
+        self.prefix = kwargs.get('prefix', '')
         self.name = kwargs.get('detname', "")
+        self.set_celery = kwargs.get('set_celery', None)
+        self.get_celery = kwargs.get('get_celery', None)
         
-        self.profile_multiplier = kwargs.get('profile_multiplier', 100.)
         self.oversample = kwargs.get('oversample', 1)
         psf_shape = kwargs.get('psf_shape', (0, 0))
         data = kwargs.get('data', None)
@@ -86,11 +89,18 @@ class AstroImage(object):
         self.header = kwargs.get('header', {})
         if self.header == {}:
             self.header = kwargs.get('imh', {})
-        
         self._prepHeader()
+        if 'exptime' in self.header:
+            self.exptime = self.header['exptime']
+        else:
+            self.exptime = kwargs.get('exptime', 1.)
         
         #History
         self.history = kwargs.get('history', [])
+        
+        #Special values for Sersic profile generation
+        self.profile_multiplier = kwargs.get('profile_multiplier', 100.)
+        self.noise_floor = max(kwargs.get('background', 0.), 1./self.exptime)
         
         #Zero Point. Necessary for output catalogues.
         self.zeropoint = kwargs.get('zeropoint', 0.)
@@ -161,6 +171,13 @@ class AstroImage(object):
                 img.updateHeader("ASTROIMAGEVALID", False)
                 img.addHistory("Attempted to create from invalid FITS file %s" % (os.path.split(file)[1]))
                 img._log("warning","Attempted to create AstroImage %s from invalid FITS file %s" % (img.name,os.path.split(file)[1]))
+        return img
+    
+    @classmethod
+    def initFromArray(cls, array, **kwargs):
+        """Convenience to initialize an image from a numpy array."""
+        img = cls(data=array, **kwargs)
+        img._log("info", "Creating AstroImage {} from array".format(img.name))
         return img
     
     @classmethod
@@ -282,7 +299,6 @@ class AstroImage(object):
     @property
     def hdu(self):
         """Output AstroImage as a FITS Primary HDU"""
-        self._log("info","Creating Primary HDU from AstroImage %s" % (self.name))
         with ImageData(self.fname, self.shape, mode='r+') as dat:
             hdu = pyfits.PrimaryHDU(dat, header=self.wcs.to_header(relax=True))
         for k,v in self.header.iteritems():
@@ -353,11 +369,14 @@ class AstroImage(object):
         to_keep = np.where((xs > 0) & (xs <= self.xsize) & (ys > 0) & (ys <= self.ysize))
         self._log("info", "Keeping {} items".format(len(xs[to_keep])))
         ot = None
+        base_state = self.getState()
+        min_scale = min(self.xscale, self.yscale)
         if len(xs[to_keep]) > 0:
             xs = xs[to_keep]
             ys = ys[to_keep]
             xfs, yfs = self.remap(xs, ys)
             fluxes = t['flux'][to_keep]
+            fluxes_observed = np.empty_like(fluxes)
             types = t['type'][to_keep]
             ns = t['n'][to_keep]
             res = t['re'][to_keep]
@@ -365,14 +384,19 @@ class AstroImage(object):
             ratios = t['ratio'][to_keep]
             ids = t['id'][to_keep]
             old_notes = t['notes'][to_keep]
-            notes = np.empty_like(xs, dtype="S6")
-            notes = np.where(old_notes != "", old_notes,"")
+#             notes = np.array((), dtype="S150")
+#             for item in old_notes:
+#                 notes = np.append(notes, "")
+            notes = np.empty_like(xs, dtype="S150")
+            notes[:] = old_notes[:]
             vegamags = -2.512 * np.log10(fluxes) - self.zeropoint
             stmags = -2.5 * np.log10(fluxes * self.photflam) - 21.10
             stars_idx = np.where(types == 'point')
             if len(xs[stars_idx]) > 0:
+                self.updateState(base_state + "<br /><span class='indented'>Adding {} stars</span>".format(len(xs[stars_idx])))
                 self._log("info", "Writing {} stars".format(len(xs[stars_idx])))
                 self.addPoints(xs[stars_idx], ys[stars_idx], fluxes[stars_idx])
+                fluxes_observed[stars_idx] = fluxes[stars_idx]
             gals_idx = np.where(types == 'sersic')
             if len(xs[gals_idx]) > 0:
                 self._log("info","Writing {} galaxies".format(len(xs[gals_idx])))
@@ -384,19 +408,29 @@ class AstroImage(object):
                 gres = res[gals_idx]
                 gphis = phis[gals_idx]
                 gratios = ratios[gals_idx]
+                gids = ids[gals_idx]
                 counter = 1
                 total = len(gxs)
-                for (x, y, flux, n, re, phi, ratio) in zip(gxs, gys, gfluxes, gns, gres, gphis, gratios):
-                    self.addSersicProfile(x, y, flux, n, re, phi, ratio)
+                gfluxes_observed = np.array(())
+                gnotes = np.array((), dtype='S150')
+                for (x, y, flux, n, re, phi, ratio, id) in zip(gxs, gys, gfluxes, gns, gres, gphis, gratios, gids):
+                    item_index = np.where(ids==id)[0][0]
+                    self._log("info", "Index is {}".format(item_index))
+                    self.updateState(base_state + "<br /><span class='indented'>Adding galaxy {} of {}</span>".format(counter, len(xs[gals_idx])))
+                    central_flux = self.addSersicProfile(x, y, flux, n, re, phi, ratio)
+                    gfluxes_observed = np.append(gfluxes_observed, central_flux)
+                    gnotes = np.append(gnotes, "{}: surface brightness {:.3f} yielded flux {:.3f}".format(notes[item_index], flux, central_flux))
                     self._log("info", "Finished Galaxy {} of {}".format(counter, total))
                     counter += 1
+                notes[gals_idx] = gnotes[:]
+                fluxes_observed[gals_idx] = gfluxes_observed
             ot = Table()
             ot['x'] = Column(data=xfs, unit='pixels')
             ot['y'] = Column(data=yfs, unit='pixels')
             ot['type'] = Column(data=types)
             ot['vegamag'] = Column(data=vegamags)
             ot['stmag'] = Column(data=stmags)
-            ot['countrate'] = Column(data=fluxes, unit='counts/s')
+            ot['countrate'] = Column(data=fluxes_observed, unit='counts/s')
             ot['id'] = Column(data=ids)
             ot['notes'] = Column(data=notes)
         return ot
@@ -427,7 +461,11 @@ class AstroImage(object):
         self.addHistory("Adding items from catalogue %s" % (cat))
         data = None
         with open(obsname, 'w') as outf:
+            base_state = self.getState()
+            counter = 0
             for i, t in enumerate(read_table(cat)):
+                table_length = len(t['id'])
+                self.updateState(base_state + "<br /><span class='indented'>Adding sources {} to {}</span>".format(counter, counter+table_length))
                 ot = self.addTable(t, dist)
                 if ot is not None:
                     data = StringIO()
@@ -439,8 +477,10 @@ class AstroImage(object):
                         data.readline()
                         data.readline()
                     outf.write(data.read())
+                counter += table_length
             if data is None:
                 outf.write("No sources from catalogue were visible.\n")
+        self.updateState(base_state)
         self._log("info","Added catalogue %s to AstroImage %s" % (catname, self.name))
         return obsname            
     
@@ -451,14 +491,18 @@ class AstroImage(object):
         xs = np.floor(xs).astype(int)
         ys = np.floor(ys).astype(int)
         with ImageData(self.fname, self.shape) as dat:
+            self._log("info", "Maximum rate is {}, maximum current value is {}".format(np.max(rates), np.max(dat)))
+            self._log("info", "Rate sum is {}, Current sum is {}".format(np.sum(rates), np.sum(dat)))
             dat[ys, xs] += rates
+            self._log("info", "Maximum current value is {}".format(np.max(dat)))
+            self._log("info", "Current sum is {}".format(np.sum(dat)))
     
     def addSersicProfile(self, posX, posY, flux, n, re, phi, axialRatio):
         """
         Adds a single sersic profile to the image given its co-ordinates, count rate, and source 
         type.
         
-        (posX,poxY) are the co-ordinates of the centre of the profile (pixels).
+        (posX,posY) are the co-ordinates of the centre of the profile (pixels).
         flux is the total number of counts to add to the AstroImage.
         n is the Sersic profile index.
         re is the radius enclosing half of the total light (pixels).
@@ -466,30 +510,68 @@ class AstroImage(object):
         axialRatio is the ratio of major axis to minor axis.
         """
         self.addHistory("Adding Sersic profile at (%f,%f) with flux %f, index %f, Re %f, Phi %f, and axial ratio %f" % (posX,posY,flux,n,re,phi,axialRatio))
-        self._log("info","Adding sersic profile to AstroImage %s" % (self.name))
+        self._log("info","Adding sersic profile with re={}, n={}, flux={}, phi={}, ratio={} to AstroImage {}".format(re, n, flux, phi, axialRatio, self.name))
+        avg_scale = 0.5*(self.xscale+self.yscale)
+        pixel_radius = re * self.oversample
         from astropy.modeling.models import Sersic2D
-        # ***** Include some way to specify full-frame?
-        model_size = int(np.floor(self.profile_multiplier*re))
-        self._log("info", "Creating a {}x{} array for the Sersic model".format(model_size, model_size))
-        x, y, = np.meshgrid(np.arange(model_size), np.arange(model_size))
-        # In order to get fractional flux per pixel correct, carry the non-integer portion of the model centre through.
-        fractional_x, fractional_y = posX - np.floor(posX), posY - np.floor(posY)
-        xc, yc = model_size//2 + fractional_x, model_size//2 + fractional_y
-        self._log("info", "Centre moved from {},{} to {},{}".format(posX, posY, xc, yc))
-        mod = Sersic2D(amplitude=flux, r_eff=re, n=n, x_0=xc, y_0=yc, ellip=axialRatio, theta=(np.radians(phi) + 0.5*np.pi))
-        img = mod(x, y)
-        # Eventually we probably want to apply a circular mask to the image equal to its radius. Or some sort of flux-based mask.
-        aperture = CircularAperture((xc, yc), re)
+        # Figure out an appropriate radius. Start at 5X pixel radius, and continue until the highest value on the outer edge is below the noise floor.
+        max_outer_value = 2*self.noise_floor
+        radius_multiplier = 2.5
+        full_frame = False
+        while max_outer_value > self.noise_floor:
+            radius_multiplier *= 2
+            model_size = int(np.ceil(pixel_radius*radius_multiplier))
+            if model_size <= self.xsize or model_size <= self.ysize:
+                self._log("info", "Creating a {}x{} array for the Sersic model at ({},{})".format(model_size, model_size, posX, posY))
+                x, y, = np.meshgrid(np.arange(model_size), np.arange(model_size))
+                # In order to get fractional flux per pixel correct, carry the non-integer portion of the model centre through.
+                fractional_x, fractional_y = posX - np.floor(posX), posY - np.floor(posY)
+                xc, yc = model_size//2 + fractional_x, model_size//2 + fractional_y
+                # Switching back to having flux be average surface brightness
+                mod = Sersic2D(amplitude=flux, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
+#                 mod = Sersic2D(amplitude=100., r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
+                img = mod(x, y)
+#                 aperture = CircularAperture((xc, yc), pixel_radius)
+#                 flux_table = aperture_photometry(img, aperture)
+#                 central_flux = flux_table['aperture_sum'][0]
+#                 self._log("info", "Initial flux within half-light radius is {} ({} input)".format(central_flux, flux))
+#                 if central_flux != 0.:
+#                     factor = flux / central_flux
+#                     img *= factor
+#                     new_flux_table = aperture_photometry(img, aperture)
+#                     new_central_flux = new_flux_table['aperture_sum'][0]
+#                     self._log("info", "Flux within half-light radius is {} ({} input). Total flux {}, max flux {}".format(new_central_flux, flux, np.sum(img), np.max(img)))
+#                 else:
+#                     self._log("info", "Flux within half-light radius is {} ({} input). Total flux {}, max flux {}".format(central_flux, flux, np.sum(img), np.max(img)))
+                max_outer_value = max(np.max(img[0,:]), np.max(img[-1,:]), np.max(img[:,0]), np.max(img[:,-1]))
+                self._log('info', "Max outer value is {}, noise floor is {}".format(max_outer_value, self.noise_floor))
+            else:
+                full_frame = True
+                self._log("info", "Creating full-frame Sersic model at ({},{})".format(posX, posY))
+                x, y = np.meshgrid(np.arange(self.ysize), np.arange(self.xsize))
+                xc, yc = posX, posY
+                # Switching back to having flux be average surface brightness
+                mod = Sersic2D(amplitude=flux, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
+#                 mod = Sersic2D(amplitude=100., r_eff=pixel_radius, n=n, x_0=posX, y_0=posY, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
+                img = mod(x, y)
+#                 aperture = CircularAperture((posX, posY), pixel_radius)
+#                 flux_table = aperture_photometry(img, aperture)
+#                 central_flux = flux_table['aperture_sum'][0]
+#                 self._log("info", "Initial flux within half-light radius is {} ({} input)".format(central_flux, flux))
+#                 if central_flux != 0.:
+#                     factor = flux / central_flux
+#                     img *= factor
+#                     new_flux_table = aperture_photometry(img, aperture)
+#                     new_central_flux = new_flux_table['aperture_sum'][0]
+#                     self._log("info", "Flux within half-light radius is {} ({} input). Total flux {}, max flux {}".format(new_central_flux, flux, np.sum(img), np.max(img)))
+#                 else:
+#                     self._log("info", "Flux within half-light radius is {} ({} input). Total flux {}, max flux {}".format(central_flux, flux, np.sum(img), np.max(img)))
+                max_outer_value = 0.
+#        img = np.where(img >= self.noise_floor, img, 0.)
+        aperture = CircularAperture((xc, yc), pixel_radius)
         flux_table = aperture_photometry(img, aperture)
         central_flux = flux_table['aperture_sum'][0]
-        if central_flux != 0.:
-            factor = flux / central_flux
-            img *= factor
-            new_flux_table = aperture_photometry(img, aperture)
-            new_central_flux = new_flux_table['aperture_sum'][0]
-            self._log("info", "Flux within half-light radius is {} ({} input)".format(new_central_flux, flux))
-        else:
-            self._log("info", "Flux within half-light radius is {} ({} input)".format(central_flux, flux))
+        self._log("info", "Sersic profile has final size {}x{}, maximum value {}, sum {}".format(model_size, model_size, np.max(img), np.sum(img)))
         # Centre of profile is (xc, yc)
         # Centre of image is (self.xsize//2, self.ysize//2)
         # Centre of profile on image is (posX, posY)
@@ -499,26 +581,27 @@ class AstroImage(object):
         # So we want to go from 512,512 to 39,27, so offset is -473,-485
         # Offset is posX-image_centre, posY-image_centre
         offset_x, offset_y = np.floor(posX) - self.xsize//2, np.floor(posY) - self.ysize//2
+        if full_frame:
+            offset_x, offset_y = 0, 0
         self._addArrayWithOffset(img, offset_x, offset_y)
-        
-#         s = Sersic(px,py,n,xs=self.xsize,ys=self.ysize,flux=flux,q=axialRatio,phi=p,re=re,lf=self._log)
-#         with ImageData(self.fname, self.shape) as dat:
-#             dat += s.image
+        return central_flux
 
-    def convolve(self,other):
+    def convolve(self, other, max=4095):
         """Convolves the AstroImage with another (provided) AstroImage, e.g. for PSF convolution."""
         self.addHistory("Convolving with file %s" % (other.name))
         self._log("info","Convolving AstroImage %s with %s" % (self.name,other.name))
         with tempfile.NamedTemporaryFile() as f, tempfile.NamedTemporaryFile(delete=False) as g:
             with ImageData(self.fname, self.shape, mode='r') as dat, ImageData(other.fname, other.shape, mode='r') as psf:
                 fp_result = np.memmap(f.name, dtype='float32', mode='w+', shape=(self.shape[0]+psf.shape[0]-1, self.shape[1]+psf.shape[1]-1))
-                sub_shape = (min(4095 - psf.shape[0], self.shape[0] + psf.shape[0] - 1), min(4095 - psf.shape[1], self.shape[1] + psf.shape[1] - 1))
+                sub_shape = (min(max - psf.shape[0], self.shape[0] + psf.shape[0] - 1), min(max - psf.shape[1], self.shape[1] + psf.shape[1] - 1))
                 self._log('info', "PSF Shape: {}; Current Shape: {}".format(psf.shape, self.shape))
                 self._log('info', "Choosing between 4095 - {} = {} and {} + {} - 1 = {}".format(psf.shape, 4095 - psf.shape[0],
                                                                                                 psf.shape, self.shape,
                                                                                                 psf.shape[0] + self.shape[0] - 1))
                 self._log('info', "Using overlapping arrays of size {}".format(sub_shape))
+                self._log('info', "Sum before Convolution = {}, maximum flux is {}".format(np.sum(dat), np.max(dat)))
                 overlapadd2(dat, psf, sub_shape, y=fp_result, verbose=True, logger=self.logger)
+                self._log('info', "Sum after Convolution = {}, maximum flux is {}".format(np.sum(dat), np.max(dat)))
                 self._log('info', "Cropping convolved image down to detector size")
                 centre = (fp_result.shape[0]//2, fp_result.shape[1]//2)
                 half = (self.base_shape[0]//2, self.base_shape[1]//2)
@@ -619,10 +702,10 @@ class AstroImage(object):
         #If any of these are false, the images are disjoint.
         if low_x < self.xsize and low_y < self.ysize and high_x > 0 and high_y > 0:
             with ImageData(self.fname, self.shape, mode='r+') as dat:
-                self._log('info', 'Indices are {},{},{},{} with types {},{},{},{}'.format(low_x,high_x,low_y,high_y,type(low_x),type(high_x),type(low_y),type(high_y)))
                 d = dat[low_y:high_y, low_x:high_x]
                 d = other[ly:hy, lx:hx]
                 dat[low_y:high_y, low_x:high_x] += other[ly:hy, lx:hx]
+                self._log("info", "Added image. Max now {}, sum now {}".format(np.max(dat), np.sum(dat)))
         else:
             self.addHistory("Added image is disjoint")
             self._log("warning","%s: Image is disjoint" % (self.name))
@@ -677,9 +760,11 @@ class AstroImage(object):
             fp_result = np.memmap(f.name, dtype='float32', mode='w+', shape=new_shape)
             with ImageData(self.fname, self.shape, mode='r+') as dat:
                 flux = dat.sum()
+                self._log("info", "Max flux is {}, sum is {}".format(np.max(dat), flux))
                 zoom(dat, (np.array(self.scale)/np.array(scale)), fp_result)
             factor = flux / fp_result.sum()
             fp_result *= factor
+            self._log("info", "Max flux is {}, sum is {}".format(np.max(fp_result), np.sum(fp_result)))
             del fp_result
             if os.path.exists(self.fname):
                 os.remove(self.fname)
@@ -703,10 +788,8 @@ class AstroImage(object):
     def bin(self,binx,biny=None):
         """Bin xXy pixels into a single pixel. Adjust the scale and size accordingly"""
         if biny is None: biny = binx
-        self._log('info', "Pre-bin: (RA, DEC, PA) = ({}, {}, {})".format(self.ra, self.dec, self.pa))
         self.rescale([self.scale[0]*binx,self.scale[1]*biny])
         self.oversample = 1
-        self._log('info', "Post-bin: (RA, DEC, PA) = ({}, {}, {})".format(self.ra, self.dec, self.pa))
 
     def introducePoissonNoise(self,absVal=False):
         """
@@ -783,20 +866,18 @@ class AstroImage(object):
         self.addHistory("Adding Dark residual with mean %f and standard deviation %f" % (mean, std))
         self._log("info","Adding Dark residual with mean %f and standard deviation %f" % (mean, std))
     
-    def introduceCosmicRayResidual(self,pixel_size,exptime):
+    def introduceCosmicRayResidual(self, pixel_size):
         """
         Simulate CR correction error.
         
         pixel_size: pixel size in microns (on detector)
-        
-        exptime: exposure time for this image.
         
         returns: mean,std: float. Mean and standard deviation of cosmic ray image that was added.
         """
         energies = (600.0,5000.0) # e- (gal, SS)
         rates = (5.0,5.0) # hits/cm^2/s (gal, SS)
         pixarea = pixel_size**2 / 1E8 # cm^2
-        probs = GetCrProbs(rates, pixarea, exptime) # hits
+        probs = GetCrProbs(rates, pixarea, self.exptime) # hits
         cr_size, cr_psf = GetCrTemplate()
 
         with tempfile.NamedTemporaryFile() as n, ImageData(self.fname, self.shape, mode='r+') as dat:
@@ -808,7 +889,7 @@ class AstroImage(object):
             mean, std = noise_data.mean(), noise_data.std()
             dat += noise_data
             del noise_data
-        self.updateHeader('exptime', exptime)
+        self.updateHeader('exptime', self.exptime)
         self.addHistory("Adding Cosmic Ray residual with mean %f and standard deviation %f" % (mean, std))
         self._log("info","Adding Cosmic Ray residual with mean %f and standard deviation %f" % (mean, std))
 
@@ -901,7 +982,6 @@ class AstroImage(object):
             w.wcs.crpix = crpix
         curframe = inspect.currentframe()
         calframe = inspect.getouterframes(curframe, 2)
-        self._log('info', "From {}: Detector {}: Detector Size: {}, CRPIX: {}".format(calframe[1][3], self.name, self.shape, w.wcs.crpix))
         w.wcs.crval = [0.,0.]
         w.wcs.crval[ranum] = ra
         w.wcs.crval[decnum] = dec
@@ -1013,6 +1093,13 @@ class AstroImage(object):
         result.addHistory("Multiplied by %f" % (other))
         return result
 
+    @property
+    def sum(self):
+        """Returns the sum of the flux in the current image"""
+        with ImageData(self.fname, self.shape) as dat:
+            sum = np.sum(dat)
+        return sum
+
     def _log(self,mtype,message):
         """
         Checks if a logger exists. Else prints.
@@ -1047,3 +1134,12 @@ class AstroImage(object):
         x_outs /= self.oversample
         y_outs /= self.oversample
         return x_outs, y_outs
+
+    def updateState(self, state):
+        if self.set_celery is not None:
+            self.set_celery(state)
+    
+    def getState(self):
+        if self.get_celery is not None:
+            return self.get_celery()
+        return ""
