@@ -2,28 +2,22 @@ from __future__ import absolute_import,division
 __filetype__ = "base"
 
 #External Modules
-import inspect, logging, os, pytest, scipy, shutil, sys, time, tempfile, uuid
+import logging, os, shutil, sys, time, tempfile
 
 import numpy as np
 
 from astropy import wcs
-from astropy.convolution import convolve_fft
 from astropy.io import fits as pyfits
-from astropy.table import Table,Column
+from astropy.table import Table, Column
 from photutils import CircularAperture, aperture_photometry
-
-from copy import deepcopy
 
 from cStringIO import StringIO
 
-from scipy.ndimage.interpolation import zoom,rotate
-from scipy.signal import fftconvolve
-from scipy.fftpack import fftn,ifftn
+from scipy.ndimage.interpolation import zoom, rotate
 
 #Local Modules
 from ..utilities import OffsetPosition, overlapadd2, read_table
 from ..errors import GetCrProbs, GetCrTemplate, MakeCosmicRay
-from ..galaxy_module import Sersic
 
 class ImageData(object):
     def __init__(self, fname, shape, mode='r+'):
@@ -980,8 +974,6 @@ class AstroImage(object):
             w.wcs.crpix = [int(np.floor(self.xsize/2.)),int(np.floor(self.ysize/2.))]
         else:
             w.wcs.crpix = crpix
-        curframe = inspect.currentframe()
-        calframe = inspect.getouterframes(curframe, 2)
         w.wcs.crval = [0.,0.]
         w.wcs.crval[ranum] = ra
         w.wcs.crval[decnum] = dec

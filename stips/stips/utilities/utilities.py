@@ -11,7 +11,7 @@ General CGI form functions.
 """
 
 # External modules
-import importlib, inspect, os, tempfile
+import importlib, inspect, os
 import numpy as np
 from numpy.fft import fft2, ifft2
 from astropy.io import ascii

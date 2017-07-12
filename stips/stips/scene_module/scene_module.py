@@ -1,9 +1,11 @@
 from __future__ import absolute_import, division
 
 # External modules
-import logging, numpy, os, sys
+import logging, os, sys
 
-from astropy.table import Table,Column
+import numpy as np
+
+from astropy.table import Table, Column
 from astropy.cosmology import WMAP9 as cosmo
 from astropy import units as u
 from cStringIO import StringIO
@@ -66,7 +68,7 @@ class SceneModule(object):
             self.dec = kwargs.get('dec', 0.0)
             self.seed = kwargs.get('seed', 0)
 
-        numpy.random.seed(self.seed)
+        np.random.seed(self.seed)
         self.params =  [ 'Random seed: %d' % (self.seed) ]
         self.params += [ 'Centre (RA,DEC) = (%f,%f)' % (self.ra,self.dec) ]
         self.catalogues = {}
@@ -134,12 +136,12 @@ class SceneModule(object):
 
         self._log("info","Creating catalogue %s" % (outList))
         n_stars = int(pop['n_stars'])
-        age_l = age_bins[(numpy.abs(age_bins-float(pop['age_low']))).argmin()]
-        age_h = age_bins[(numpy.abs(age_bins-float(pop['age_high']))).argmin()]
-        age_bins = age_bins[numpy.where((age_bins>=age_l) & (age_bins<=age_h))]
-        met_l = met_bins[(numpy.abs(met_bins-float(pop['z_low']))).argmin()]
-        met_h = met_bins[(numpy.abs(met_bins-float(pop['z_high']))).argmin()]
-        met_bins = met_bins[numpy.where((met_bins>=met_l) & (met_bins<=met_h))]
+        age_l = age_bins[(np.abs(age_bins-float(pop['age_low']))).argmin()]
+        age_h = age_bins[(np.abs(age_bins-float(pop['age_high']))).argmin()]
+        age_bins = age_bins[np.where((age_bins>=age_l) & (age_bins<=age_h))]
+        met_l = met_bins[(np.abs(met_bins-float(pop['z_low']))).argmin()]
+        met_h = met_bins[(np.abs(met_bins-float(pop['z_high']))).argmin()]
+        met_bins = met_bins[np.where((met_bins>=met_l) & (met_bins<=met_h))]
         imf = pop['imf']
         alpha = abs(float(pop['alpha']))
         distribution = pop['distribution']
@@ -179,9 +181,9 @@ class SceneModule(object):
         self._log("info","Wrote preamble")
         
         self._log("info","Creating age and metallicity numbers")
-        ages = numpy.random.random(size=len(age_bins))
+        ages = np.random.random(size=len(age_bins))
         ages /= ages.sum()
-        mets = numpy.random.random(size=len(met_bins))
+        mets = np.random.random(size=len(met_bins))
         mets /= mets.sum()
         self._log("info","Created age and metallicity numbers")
         
@@ -200,14 +202,14 @@ class SceneModule(object):
                 self.logger.info("Creating %d stars",num_stars)
                 stargen = StarGenerator(age, met, imf=imf, alpha=alpha, logger=self.logger)
                 all_masses, all_rates, all_temps, all_gravs = stargen.make_cluster(num_stars)
-                all_binaries = numpy.random.binomial(1,binary_fraction,len(all_masses))
-                idx = numpy.where(all_binaries==1)[0]
+                all_binaries = np.random.binomial(1,binary_fraction,len(all_masses))
+                idx = np.where(all_binaries==1)[0]
                 mb, rb, tb, gb = stargen.make_cluster(len(idx))
-                all_masses = numpy.insert(all_masses, idx, mb)
-                all_rates = numpy.insert(all_rates, idx, rb)
-                all_temps = numpy.insert(all_temps, idx, tb)
-                all_gravs = numpy.insert(all_gravs, idx, gb)
-                all_binaries = numpy.insert(all_binaries, idx+1, 0)
+                all_masses = np.insert(all_masses, idx, mb)
+                all_rates = np.insert(all_rates, idx, rb)
+                all_temps = np.insert(all_temps, idx, tb)
+                all_gravs = np.insert(all_gravs, idx, gb)
+                all_binaries = np.insert(all_binaries, idx+1, 0)
                 num_stars += len(idx)
                 cached_ra = 0.
                 cached_dec = 0.
@@ -222,8 +224,8 @@ class SceneModule(object):
                     temps = all_temps[xl:xh]
                     gravs = all_gravs[xl:xh]
                     binaries = all_binaries[xl:xh]
-                    ids = numpy.arange(total + xl, total + xh) + 1
-                    distances = numpy.random.uniform(low=dist_l,high=dist_h,size=star_set)
+                    ids = np.arange(total + xl, total + xh) + 1
+                    distances = np.random.uniform(low=dist_l,high=dist_h,size=star_set)
                     x,y,z = self._MakeCoords(star_set,radius,func=distribution,scale=2.8,do_z=True)
                     x = RadiiUnknown2Arcsec(x,rad_units,distances)
                     y = RadiiUnknown2Arcsec(y,rad_units,distances)
@@ -236,8 +238,8 @@ class SceneModule(object):
                     decs = y/3600. #decimal degrees
                     base_ra,base_dec = OffsetPosition(self.ra,self.dec,offset_ra,offset_dec)
                     decs += base_dec
-                    idxg = numpy.where(decs>90.)
-                    idxl = numpy.where(decs<-90.)
+                    idxg = np.where(decs>90.)
+                    idxl = np.where(decs<-90.)
                     decs[idxg] = 180. - decs[idxg]
                     ras[idxg] = 180. + ras[idxg]
                     decs[idxl] = -180. - decs[idxl]
@@ -245,7 +247,7 @@ class SceneModule(object):
                     ras = (ras + base_ra)%360
                     if cached:
                         ras[0], decs[0], distances[0], cached = cached_ra, cached_dec, cached_distance, False
-                    idx = numpy.where(binaries==1)[0]
+                    idx = np.where(binaries==1)[0]
                     iidx = (idx+1)
                     if len(iidx) > 0 and iidx[-1] >= len(ras):
                         cached_ra, cached_dec, cached_distance, cached = ras[-1], decs[-1], distances[-1], True
@@ -253,20 +255,20 @@ class SceneModule(object):
                     ras[idx] = ras[iidx]
                     decs[idx] = decs[iidx]
                     distances[idx] = distances[iidx]
-                    apparent_rates = rates + (5.0 * numpy.log10(distances) - 5.0)
+                    apparent_rates = rates + (5.0 * np.log10(distances) - 5.0)
 
                     t = Table()
                     t['id'] = Column(data=ids, format="%8d")
                     t['ra'] = Column(data=ras, unit='degrees', format="%17.9e")
                     t['dec'] = Column(data=decs, unit='degrees', format="%17.9e")
                     t['distance'] = Column(data=distances, unit='pc', format="%17.9e")
-                    t['age'] = Column(data=numpy.full_like(ids, age), unit='years', format="%17d")
-                    t['metallicity'] = Column(data=numpy.full_like(ras, met), format="%4.1f")
+                    t['age'] = Column(data=np.full_like(ids, age), unit='years', format="%17d")
+                    t['metallicity'] = Column(data=np.full_like(ras, met), format="%4.1f")
                     t['mass'] = Column(data=masses,unit='solar masses', format="%17.9e")
                     t['teff'] = Column(data=temps, unit='K', format="%13.8f")
                     t['log_g'] = Column(data=gravs, format="%12.9f")
                     t['binary'] = Column(data=binaries, format="%3d")
-                    t['dataset'] = Column(data=numpy.full_like(ids, datasets), format="%6d")
+                    t['dataset'] = Column(data=np.full_like(ids, datasets), format="%6d")
                     t['absolute'] = Column(data=rates,unit='johnson,i', format="%14.6e")
                     t['apparent'] = Column(data=apparent_rates,unit='johnson,i', format="%12.4e")
             
@@ -339,8 +341,8 @@ class SceneModule(object):
         outList: string
             The catalogue file produced
         """
-        bc95_models = numpy.array(('a','b','c','d','e','f'))
-        bc95_ages = numpy.array(("10E5","25E5","50E5","76E5","10E6","25E6","50E6","10E7","50E7","10E8","50E8","10E9"))
+        bc95_models = np.array(('a','b','c','d','e','f'))
+        bc95_ages = np.array(("10E5","25E5","50E5","76E5","10E6","25E6","50E6","10E7","50E7","10E8","50E8","10E9"))
         outList = os.path.join(self.out_path,self.prefix + "_gals_%03d.txt" % (id))
         if os.path.isfile(outList): os.remove(outList) # No append
         t = Table()
@@ -364,14 +366,14 @@ class SceneModule(object):
         self._log("info","Wrote preamble")
         self._log("info","Parameters are: {}".format(gals))
 
-        ids = numpy.arange(n_gals)
+        ids = np.arange(n_gals)
 
         # Roughly 50% spiral, 50% elliptical
         ellipRatio = 0.5
-        binoDist = numpy.random.binomial(1, ellipRatio, n_gals)
-        idx_ellip = numpy.where(binoDist == 1)
-        idx_spiral = numpy.where(binoDist != 1)
-        types = numpy.array( ['expdisk'] * n_gals )
+        binoDist = np.random.binomial(1, ellipRatio, n_gals)
+        idx_ellip = np.where(binoDist == 1)
+        idx_spiral = np.where(binoDist != 1)
+        types = np.array( ['expdisk'] * n_gals )
         types[idx_ellip] = 'devauc'
         n_ellip = len( idx_ellip[0] )
         n_spiral = n_gals - n_ellip
@@ -381,40 +383,40 @@ class SceneModule(object):
         # Elliptical = 0.5 to 1
         axialRatioSpiralMin, axialRatioSpiralMax = 0.1, 1.0
         axialRatioEllipMin,  axialRatioEllipMax  = 0.5, 1.0
-        axials = numpy.zeros(n_gals)
-        axials[idx_spiral] = numpy.random.uniform(axialRatioSpiralMin, axialRatioSpiralMax, n_spiral)
-        axials[idx_ellip] = numpy.random.uniform(axialRatioEllipMin,  axialRatioEllipMax, n_ellip)
+        axials = np.zeros(n_gals)
+        axials[idx_spiral] = np.random.uniform(axialRatioSpiralMin, axialRatioSpiralMax, n_spiral)
+        axials[idx_ellip] = np.random.uniform(axialRatioEllipMin,  axialRatioEllipMax, n_ellip)
         
         # Position angle
         posAngleAlgo = 'uniform'
-        angles = numpy.random.uniform(0.0, 359.9, n_gals)
+        angles = np.random.uniform(0.0, 359.9, n_gals)
 
         # Half-flux radius - uniform
-        rads = numpy.random.uniform(r_l, r_h, n_gals)
+        rads = np.random.uniform(r_l, r_h, n_gals)
         
         # Redshifts
         # If both z_low and z_high are zero, do local galaxies. Distance is 0.5 Mpc -- 50 Mpc.
         # In the future, offer an option for straight distance or redshift.
         if z_l == 0. and z_h == 0.:
             z_label = "distance"
-            distances = numpy.random.uniform(5.e5, 5.e7, n_gals)
+            distances = np.random.uniform(5.e5, 5.e7, n_gals)
             zs = distances / 1.e3
-            convs = numpy.log10(distances)
+            convs = np.log10(distances)
         else:
             z_label = "redshift"
-            zs = numpy.random.uniform(z_l, z_h, n_gals)
-            distances = numpy.array(cosmo.comoving_distance(zs).to(u.pc))
-            convs = numpy.log10(numpy.array(cosmo.luminosity_distance(zs).to(u.pc)))
+            zs = np.random.uniform(z_l, z_h, n_gals)
+            distances = np.array(cosmo.comoving_distance(zs).to(u.pc))
+            convs = np.log10(np.array(cosmo.luminosity_distance(zs).to(u.pc)))
 
         # Luminosity function - power law
         lumPow = -1.8
-        vmags = numpy.random.power(numpy.abs(lumPow)+1.0, size=n_gals)
+        vmags = np.random.power(np.abs(lumPow)+1.0, size=n_gals)
         if lumPow < 0: vmags = 1.0 - vmags
         vmags = RescaleArray(vmags, m_l, m_h)
         vmags_abs = vmags - 5*(convs-1.)
         
-        models = numpy.random.choice(bc95_models,size=n_gals)
-        ages = numpy.random.choice(bc95_ages,size=n_gals)
+        models = np.random.choice(bc95_models,size=n_gals)
+        ages = np.random.choice(bc95_ages,size=n_gals)
 
         self._log("info","Making Co-ordinates")
         x,y = self._MakeCoords(n_gals,radius,func=distribution,scale=2.8)
@@ -428,8 +430,8 @@ class SceneModule(object):
         decs = y/3600. #decimal degrees
         base_ra,base_dec = OffsetPosition(self.ra,self.dec,offset_ra,offset_dec)
         decs += base_dec
-        idxg = numpy.where(decs>90.)
-        idxl = numpy.where(decs<-90.)
+        idxg = np.where(decs>90.)
+        idxl = np.where(decs<-90.)
         decs[idxg] = 180. - decs[idxg]
         ras[idxg] = 180. + ras[idxg]
         decs[idxl] = -180. - decs[idxl]
@@ -519,18 +521,18 @@ class SceneModule(object):
         dy = y - y_cen
         if z is not None:
             dz = z - z_cen
-            d = numpy.sqrt(dy*dy + dx*dx + dz*dz)
+            d = np.sqrt(dy*dy + dx*dx + dz*dz)
         else:
-            d = numpy.sqrt(dy*dy + dx*dx)
-        i_sorted = numpy.argsort(d)
+            d = np.sqrt(dy*dy + dx*dx)
+        i_sorted = np.argsort(d)
 
         # Segregate mass
         m_cut = mass.max() * 0.75 # Arbitrary cut of low/high masses
-        j_lo = numpy.where( mass <= m_cut )[0]
-        j_hi = numpy.where( mass >  m_cut )[0]
+        j_lo = np.where( mass <= m_cut )[0]
+        j_hi = np.where( mass >  m_cut )[0]
 
         # Place high masses with slightly more preference for center
-        j_sorted = numpy.zeros(n_stars, dtype='int')
+        j_sorted = np.zeros(n_stars, dtype='int')
         k_lo, k_hi = 0, 0
         x_fac = n_stars // j_hi.size
         for i in range(n_stars):
@@ -542,7 +544,7 @@ class SceneModule(object):
                 k_lo += 1
 
         # Match sorted coordinates to masses
-        new_x = numpy.zeros(n_stars)
+        new_x = np.zeros(n_stars)
         new_y = x.copy()
         if z is not None:
             new_z = x.copy()
@@ -593,7 +595,7 @@ class SceneModule(object):
             
         """
         self.logger.info("Creating {} objects, max radius {}, function {}, scale {}".format(numObj, radMax, func, scale))
-        x = numpy.array([])
+        x = np.array([])
         y = x.copy()
         if do_z:
             z = x.copy()
@@ -602,17 +604,17 @@ class SceneModule(object):
 
         # Random radii for polar coordinates, except uniform
         if func == 'exp':
-            r_arr = numpy.random.exponential(scale=scale, size=numObj)
+            r_arr = np.random.exponential(scale=scale, size=numObj)
         elif func == 'invpow':
-            r_arr = 1.0 - numpy.random.power(scale, size=numObj)
+            r_arr = 1.0 - np.random.power(scale, size=numObj)
         elif func == 'regpow':
-            r_arr = numpy.random.power(scale, size=numObj)
+            r_arr = np.random.power(scale, size=numObj)
         elif func == 'uniform':
             isPolar = False
-            x = numpy.random.uniform(-radMax, radMax, numObj)
-            y = numpy.random.uniform(-radMax, radMax, numObj)
+            x = np.random.uniform(-radMax, radMax, numObj)
+            y = np.random.uniform(-radMax, radMax, numObj)
             if do_z:
-                z = numpy.random.uniform(-radMax, radMax, numObj)
+                z = np.random.uniform(-radMax, radMax, numObj)
         else:
             raise ValueError('Invalid _MakeCoords func')
 
@@ -622,19 +624,19 @@ class SceneModule(object):
 
             if do_z:
                 # Random angles for spherical co-ordinates
-                t_arr = numpy.random.uniform(0,numpy.pi,numObj)
-                p_arr = numpy.random.uniform(0,numpy.pi*2,numObj)
+                t_arr = np.random.uniform(0,np.pi,numObj)
+                p_arr = np.random.uniform(0,np.pi*2,numObj)
                 
-                x = r_arr * numpy.sin(t_arr) * numpy.cos(p_arr)
-                y = r_arr * numpy.sin(t_arr) * numpy.sin(p_arr)
-                z = r_arr * numpy.cos(t_arr)
+                x = r_arr * np.sin(t_arr) * np.cos(p_arr)
+                y = r_arr * np.sin(t_arr) * np.sin(p_arr)
+                z = r_arr * np.cos(t_arr)
             else:
                 # Random angles for polar coordinates
-                t_arr = numpy.random.uniform(0, numpy.pi*2, numObj)
+                t_arr = np.random.uniform(0, np.pi*2, numObj)
                 
                 # Convert to cartesian coordinates
-                x = r_arr * numpy.cos(t_arr)
-                y = r_arr * numpy.sin(t_arr)
+                x = r_arr * np.cos(t_arr)
+                y = r_arr * np.sin(t_arr)
 
         if do_z:
             return x,y,z

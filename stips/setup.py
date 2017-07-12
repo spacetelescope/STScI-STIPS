@@ -21,5 +21,6 @@ setup(name='stips',
       license='GPLv3',
       packages=find_packages(),
       zip_safe=False,
-      install_requires=['automodinit'],
+      install_requires=['astropy', 'automodinit', 'esutil', 'numpy', 'photutils', 'pysynphot', 
+                        'scipy'],
       include_package_data=True)

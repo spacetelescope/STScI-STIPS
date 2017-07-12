@@ -1,10 +1,10 @@
-from __future__ import absolute_import,division
+from __future__ import absolute_import, division
 __filetype__ = "detector"
 
 #External Modules
-import numpy, os
+import os
 
-import pysynphot as ps
+import numpy as np
 
 from astropy.io import fits as pyfits
 
@@ -61,9 +61,9 @@ class MIRI(JwstInstrument):
                     setattr(ins,attribute,value)
             self._log("info", "Setting PSF filter to '{}'".format(self.filter))
             ins.filter = self.filter
-            max_safe_size = int(numpy.floor(30. * self.PHOTPLAM[self.filter] / (2. * self.SCALE[0])))
+            max_safe_size = int(np.floor(30. * self.PHOTPLAM[self.filter] / (2. * self.SCALE[0])))
             max_ins_size = max(self.DETECTOR_SIZE) * self.oversample
-            max_conv_size = int(numpy.floor(4096 / self.oversample))
+            max_conv_size = int(np.floor(4096 / self.oversample))
             self._log("info", "PSF choosing between {}, {}, and {}".format(max_safe_size, max_ins_size, max_conv_size))
             psf = ins.calcPSF(oversample=self.oversample,fov_pixels=min(max_safe_size, max_ins_size, max_conv_size))
             psf[0].header['VERSION'] = webbpsf.__version__
@@ -81,13 +81,13 @@ class MIRI(JwstInstrument):
         a = self.a
 
         if self.exptime > 1000:
-            numGroups = numpy.ceil(self.exptime/1000.0)
+            numGroups = np.ceil(self.exptime/1000.0)
             timePerGroup = self.exptime/numGroups
         else:
             numGroups = 1
             timePerGroup = self.exptime
 
-        rdns = numpy.sqrt(numGroups) * k * timePerGroup**(a)
+        rdns = np.sqrt(numGroups) * k * timePerGroup**(a)
         return rdns
     
     @classmethod

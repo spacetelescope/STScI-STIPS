@@ -35,8 +35,6 @@ import sqlite3
 
 from scipy.interpolate import RegularGridInterpolator
 
-import pysynphot as ps
-
 from esutil import sqlite_util
 
 from ..utilities import datadir
@@ -272,6 +270,7 @@ class StarGenerator(object):
                 countrates[np.where(mags > mags_max)] = countrates_max[np.where(mags > mags_max)]
         else:
             self.log('warning', 'Could not find result file "result_{}_{}.npy"'.format(translate.get(instrument.lower(), instrument.lower()), filter.lower()))
+            import pysynphot as ps
             countrates = np.array(())
             ps.setref(**refs)
             johnson_i = ps.ObsBandpass('johnson,i')

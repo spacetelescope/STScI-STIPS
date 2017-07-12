@@ -1,10 +1,10 @@
-from __future__ import absolute_import,division
+from __future__ import absolute_import, division
 __filetype__ = "detector"
 
 #External Modules
-import numpy, os
+import os
 
-import pysynphot as ps
+import  numpy as np
 
 from astropy.io import fits as pyfits
 
@@ -56,9 +56,9 @@ class WFI(WfirstInstrument):
                 for attribute,value in self.psf_commands.iteritems():
                     setattr(ins,attribute,value)
             ins.filter = self.filter
-            max_safe_size = int(numpy.floor(30. * self.PHOTPLAM[self.filter] / (2. * self.SCALE[0])))
+            max_safe_size = int(np.floor(30. * self.PHOTPLAM[self.filter] / (2. * self.SCALE[0])))
             max_ins_size = max(self.DETECTOR_SIZE) * self.oversample
-            max_conv_size = int(numpy.floor(2048 / self.oversample))
+            max_conv_size = int(np.floor(2048 / self.oversample))
             self._log("info", "PSF choosing between {}, {}, and {}".format(max_safe_size, max_ins_size, max_conv_size))
             psf = ins.calcPSF(oversample=self.oversample,fov_pixels=min(max_safe_size, max_ins_size, max_conv_size))
             psf[0].header['VERSION'] = webbpsf.__version__
@@ -94,17 +94,6 @@ class WFI(WfirstInstrument):
         subpixel_dithers = cls.DITHER_OFFSETS['SUBPIXEL'][dither_subpixel]
         return cls.doSubpixel(initial_dithers,subpixel_dithers)
     
-    def handleBandpass(self):
-        ote_bp = ps.FileBandpass(os.path.join(os.environ['PYSYN_CDBS'],self.OTE_THROUGHPUT_FILE))
-        ins_bp = ps.Box(*self.convertBandpass(*self.INSTRUMENT_THROUGHPUT))*self.INSTRUMENT_THROUGHPUT[-1]
-        fil_bp = ps.Box(*self.convertBandpass(*self.FILTER_THROUGHPUT[self.filter]))*self.FILTER_THROUGHPUT[self.filter][-1]
-        return ote_bp * ins_bp * fil_bp
-    
-    def convertBandpass(self,low,high,rate):
-        mid = 1.0e4*(low+high)/2. #micron to angstrom
-        width = 1.0e4*abs(high-low) #micron to angstrom
-        return mid,width
-     
     INSTRUMENT = "WFI"
     DETECTOR = "WFI"
     # Offsets are in (arcseconds_ra,arcseconds_dec,degrees_angle)

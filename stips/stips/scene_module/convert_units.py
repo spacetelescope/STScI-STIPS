@@ -20,8 +20,7 @@ Unit conversion functions.
     * 2014/12/03 BAQ removed old un-needed functions as part of moving to instrument classes.
 
 """
-import numpy
-from math import *
+import numpy as np
 
 def RadiiUnknown2Arcsec(radii, rad_units, distances):
     """
@@ -50,8 +49,8 @@ def RadiiUnknown2Arcsec(radii, rad_units, distances):
     if rad_units == "arcsec": #no conversion needed
         arcsecs = radii
     elif rad_units == "pc":
-        r = numpy.arctan(radii/distances) # rad
-        arcsecs = r * 0.5 * 1296000.0 / numpy.pi # rad to arcsec
+        r = np.arctan(radii/distances) # rad
+        arcsecs = r * 0.5 * 1296000.0 / np.pi # rad to arcsec
     
     return arcsecs
 
@@ -82,7 +81,7 @@ def RadiiUnknown2Parsec(radii, rad_units, distances):
     if rad_units == "pc": #no conversion needed
         parsecs = radii
     elif rad_units == "arcsec":
-        parsecs = numpy.tan(2*numpy.pi*radii/1296000.0)*distances
+        parsecs = np.tan(2*np.pi*radii/1296000.0)*distances
     
     return parsecs
 
@@ -121,12 +120,12 @@ def DivideInterval(divisor,reverse=False):
             interval is an integer X:
             interval is 'n' followed by an integer X:
             
-                Use numpy.linspace(low,high,interval) to produce X intervals,
+                Use np.linspace(low,high,interval) to produce X intervals,
                     including both low and high, and evenly divided between them.
             
             interval is 'i' followed by an integer X:
             
-                Use numpy.linspace(low,high,((high-low)/interval)+1) to produce
+                Use np.linspace(low,high,((high-low)/interval)+1) to produce
                     intervals *of* X from low to high, and including both. Uses
                     'linspace' rather than 'arange' because 'linspace' does not
                     produce weird effects at start and end points, and will
@@ -134,7 +133,7 @@ def DivideInterval(divisor,reverse=False):
             
             interval is 'd':
             
-                Use numpy.linspace() called multiple times to produce decades.
+                Use np.linspace() called multiple times to produce decades.
                     For example, '1,10,d' would produce 1,2,3,...,10, whilst
                     '1,100,d' would produce 1,2,3,...,9,10,20,30,...,90,100.
                     '1,150,d' would produce 1,2,3,...,9,10,20,30,...,90,100,110,...,140,150
@@ -147,7 +146,7 @@ def DivideInterval(divisor,reverse=False):
             
             interval is 'd5':
             
-                Use numpy.linspace() called multiple times to produce half-decades.
+                Use np.linspace() called multiple times to produce half-decades.
                     Exactly as before, except that it includes half-intervals, so
                     '1,100,d5' would give 1,1.5,2,2.5,3,...,9.5,10,15,20,25,...,95,100.
                     Same caveats apply as before. If you want d with an arbitrary number
@@ -158,40 +157,40 @@ def DivideInterval(divisor,reverse=False):
     high = float(items[1])
     interval = items[2]
     if interval == "d": #divide by decades
-        interval = numpy.array(())
+        interval = np.array(())
         start = low
         while start <= high:
             end = start * 10
             intervals = 10
             if end > high:
                 intervals = 91
-            arr = numpy.linspace(start,end,intervals)
+            arr = np.linspace(start,end,intervals)
             if end > high:
-                arr = arr[numpy.where(arr<=high)]
-            interval = numpy.append(interval,arr[:-1])
+                arr = arr[np.where(arr<=high)]
+            interval = np.append(interval,arr[:-1])
             start = end
-        interval = numpy.append(interval,high)
+        interval = np.append(interval,high)
     elif interval == "d5": #divide by half-decades
-        interval = numpy.array(())
+        interval = np.array(())
         start = low
         while start <= high:
             end = start * 10
             intervals = 19
             if end > high:
                 intervals = 181
-            arr = numpy.linspace(start,end,intervals)
+            arr = np.linspace(start,end,intervals)
             if end > high:
-                arr = arr[numpy.where(arr<=high)]
-            interval = numpy.append(interval,arr[:-1])
+                arr = arr[np.where(arr<=high)]
+            interval = np.append(interval,arr[:-1])
             start = end
-        interval = numpy.append(interval,high)
+        interval = np.append(interval,high)
     elif interval[0] == "n": #Number of intervals follows the n
-        interval = numpy.linspace(low,high,int(interval[1:]))
+        interval = np.linspace(low,high,int(interval[1:]))
     elif interval[0] == "i": #Interval value follows the n.
         #Note: this is a bit hacky, but linspace gives overall a better set.
-        interval = numpy.linspace(low,high,int(round((high-low)/float(interval[1:])))+1)
+        interval = np.linspace(low,high,int(round((high-low)/float(interval[1:])))+1)
     else: #assume number of intervals, but with no 'n' (backwards compatibility)
-        interval = numpy.linspace(low,high,int(interval))
+        interval = np.linspace(low,high,int(interval))
     if reverse:
-        interval = numpy.flipud(interval)
+        interval = np.flipud(interval)
     return interval

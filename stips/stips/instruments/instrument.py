@@ -2,15 +2,15 @@ from __future__ import absolute_import,division
 __filetype__ = "base"
 
 #External Modules
-import glob, logging, numpy, os, shutil, sys, uuid
+import glob, logging, os, shutil, sys, uuid
 
+import numpy as np
 import pysynphot as ps
 
 from astropy.io import fits as pyfits
-from astropy.table import Table,Column
+from astropy.table import Table, Column
 from cStringIO import StringIO
 from pandeia.engine.instrument_factory import InstrumentFactory
-import montage_wrapper as montage
 
 #Local Modules
 from ..stellar_module import StarGenerator
@@ -174,6 +174,7 @@ class Instrument(object):
         of all of the said files.
         """
         if len(self.detectors) > 1:
+            import montage_wrapper as montage
             self._log("info","Converting to FITS mosaic")
             tmp_dir = os.path.join(self.out_path,"tmp-"+str(uuid.uuid4()))
             os.makedirs(tmp_dir)
@@ -398,11 +399,11 @@ class Instrument(object):
         masses = table['mass']
         distances = table['distance']
         binaries = table['binary']
-        rates = numpy.zeros_like(ras)
-        all_datasets = numpy.unique(datasets)
+        rates = np.zeros_like(ras)
+        all_datasets = np.unique(datasets)
         self._log("info","{} datasets".format(len(all_datasets)))
         for dataset in all_datasets:
-            idx = numpy.where(datasets == dataset)
+            idx = np.where(datasets == dataset)
             if len(idx[0]) > 0:
                 stargen = StarGenerator(ages[idx][0], metallicities[idx][0], logger=self.logger)
                 rates[idx] = stargen.make_cluster_rates(masses[idx], self.INSTRUMENT, self.filter, bp, self.REFS)
@@ -412,7 +413,7 @@ class Instrument(object):
             rates[0] += cached
             cached = -1.
         #Now, deal with binaries. Remember that if Binary == 1, then the star below is the binary companion.
-        idx = numpy.where(binaries==1.0)[0] #Stars with binary companions
+        idx = np.where(binaries==1.0)[0] #Stars with binary companions
         idxp = (idx+1) #binary companions
         if len(idxp) > 0 and idxp[-1] >= len(rates): #last one is a binary. Cache it.
             cached = rates[-1]
@@ -421,23 +422,23 @@ class Instrument(object):
             masses, distances, binaries, rates = masses[:-1], distances[:-1], binaries[:-1], rates[:-1]
         rates[idx] += rates[idxp] #add count rates together
         # Now that we've added rates together, remove the binary companions
-        ras = numpy.delete(ras,idxp)
-        decs = numpy.delete(decs,idxp)
-        rates = numpy.delete(rates,idxp)
-        ids = numpy.delete(ids,idxp)
-        binaries = numpy.delete(binaries,idxp)
-        notes = numpy.empty_like(ras,dtype="S6")
-        notes[numpy.where(binaries==1)] = 'Binary'
-        notes[numpy.where(binaries!=1)] = 'None'
+        ras = np.delete(ras,idxp)
+        decs = np.delete(decs,idxp)
+        rates = np.delete(rates,idxp)
+        ids = np.delete(ids,idxp)
+        binaries = np.delete(binaries,idxp)
+        notes = np.empty_like(ras,dtype="S6")
+        notes[np.where(binaries==1)] = 'Binary'
+        notes[np.where(binaries!=1)] = 'None'
         t = Table()
         t['ra'] = Column(data=ras)
         t['dec'] = Column(data=decs)
         t['flux'] = Column(data=rates)
-        t['type'] = Column(data=numpy.full_like(ras,"point",dtype="S6"))
-        t['n'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-        t['re'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-        t['phi'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-        t['ratio'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
+        t['type'] = Column(data=np.full_like(ras,"point",dtype="S6"))
+        t['n'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['re'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['phi'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['ratio'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
         t['id'] = Column(data=ids)
         t['notes'] = Column(data=notes)
         
@@ -459,7 +460,7 @@ class Instrument(object):
         norm_bp = '{}'.format(apparents.unit)
         if norm_bp == '':
             norm_bp = 'johnson,i'
-        rates = numpy.zeros_like(ras)
+        rates = np.zeros_like(ras)
         for index in range(len(ids)):
             t, g, Z, a = temps[index], gravs[index], metallicities[index], apparents[index]
             sp = ps.Icat('phoenix', t, Z, g)
@@ -470,13 +471,13 @@ class Instrument(object):
         t['ra'] = Column(data=ras)
         t['dec'] = Column(data=decs)
         t['flux'] = Column(data=rates)
-        t['type'] = Column(data=numpy.full_like(ras,"point",dtype="S6"))
-        t['n'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-        t['re'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-        t['phi'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-        t['ratio'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
+        t['type'] = Column(data=np.full_like(ras,"point",dtype="S6"))
+        t['n'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['re'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['phi'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['ratio'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
         t['id'] = Column(data=ids)
-        t['notes'] = Column(data=numpy.full_like(ras,"None",dtype="S6"))
+        t['notes'] = Column(data=np.full_like(ras,"None",dtype="S6"))
         
         return t, cached
     
@@ -503,14 +504,14 @@ class Instrument(object):
         profiles = table['profile']
         radii = table['radius']/self.SCALE[0] #at some point, may want to figure out multiple scales.
         ratios = table['axial_ratio']
-        pas = (table['pa'] + (self.pa*180./numpy.pi) )%360.
+        pas = (table['pa'] + (self.pa*180./np.pi) )%360.
         vmags = table['apparent_surface_brightness']
         norm_bp = '{}'.format(vmags.unit)
         if norm_bp == '':
             norm_bp = 'johnson,v'
-        rates = numpy.array(())
-        indices = numpy.array(())
-        notes = numpy.array((),dtype='object')
+        rates = np.array(())
+        indices = np.array(())
+        notes = np.array((),dtype='object')
         for (z,model,age,profile,radius,ratio,pa,mag) in zip(zs,models,ages,profiles,radii,ratios,pas,vmags):
             fname = "bc95_%s_%s.fits" % (model,age)
             try:
@@ -523,14 +524,14 @@ class Instrument(object):
             except PysynphotError as e:
                 self._log('warning', 'Pysynphot Error {} encountered'.format(e.message))
                 rate = 0.
-            rates = numpy.append(rates,rate)
-            indices = numpy.append(indices,proflist[profile])
-            notes = numpy.append(notes,"BC95 %s %s %f" % (model,age,mag))
+            rates = np.append(rates,rate)
+            indices = np.append(indices,proflist[profile])
+            notes = np.append(notes,"BC95 %s %s %f" % (model,age,mag))
         t = Table()
         t['ra'] = Column(data=ras)
         t['dec'] = Column(data=decs)
         t['flux'] = Column(data=rates)
-        t['type'] = Column(data=numpy.full_like(ras,'sersic',dtype='S6'))
+        t['type'] = Column(data=np.full_like(ras,'sersic',dtype='S6'))
         t['n'] = Column(data=indices)
         t['re'] = Column(data=radii)
         t['phi'] = Column(data=pas)
@@ -556,11 +557,11 @@ class Instrument(object):
 
         rates = table['flux']
         units = table['units']
-        idxp = numpy.where(units == 'p')
+        idxp = np.where(units == 'p')
         rates[idxp] *= convertToCounts('p')
-        idxe = numpy.where(units == 'e')
+        idxe = np.where(units == 'e')
         rates[idxe] *= convertToCounts('e')
-        idxj = numpy.where(units == 'j')
+        idxj = np.where(units == 'j')
         rates[idxj] *= convertToCounts('j')
         t = Table()
         t['ra'] = Column(data=ras)
@@ -614,18 +615,18 @@ class Instrument(object):
         if 'id' in table:
             ids = table['id']
         else:
-            ids = numpy.arange(len(ras),dtype=int)
+            ids = np.arange(len(ras),dtype=int)
         t = Table()
         t['ra'] = Column(data=ras)
         t['dec'] = Column(data=decs)
         t['flux'] = Column(data=rates)
-        t['type'] = Column(data=numpy.full_like(ras,"point",dtype="S6"))
-        t['n'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-        t['re'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-        t['phi'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
-        t['ratio'] = Column(data=numpy.full_like(ras,"N/A",dtype="S3"))
+        t['type'] = Column(data=np.full_like(ras,"point",dtype="S6"))
+        t['n'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['re'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['phi'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['ratio'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
         t['id'] = Column(data=ids)
-        t['notes'] = Column(data=numpy.full_like(ras, "N/A", dtype="S3"))
+        t['notes'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
         
         return t, cached
 
@@ -741,7 +742,7 @@ class Instrument(object):
 
         i = InstrumentFactory(config=conf)
         wr = i.get_wave_range()
-        wave = numpy.linspace(wr['wmin'], wr['wmax'], num=500)
+        wave = np.linspace(wr['wmin'], wr['wmax'], num=500)
         pce = i.get_total_eff(wave)
         
         bp = ps.ArrayBandpass(wave=wave, throughput=pce, waveunits='micron', name='bp_{}_{}'.format(self.instrument, self.filter))

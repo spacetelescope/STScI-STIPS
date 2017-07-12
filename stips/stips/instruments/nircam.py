@@ -1,11 +1,12 @@
-from __future__ import absolute_import,division
+from __future__ import absolute_import, division
 __filetype__ = "detector"
 
 #External Modules
-import numpy, os
+import os
+
+import numpy as np
 
 from astropy.io import fits as pyfits
-import pysynphot as ps
 
 #Local Modules
 from ..astro_image import AstroImage
@@ -62,9 +63,9 @@ class NIRCamBase(JwstInstrument):
                 for attribute,value in self.psf_commands.iteritems():
                     setattr(ins,attribute,value)
             ins.filter = self.filter
-            max_safe_size = int(numpy.floor(30. * self.PHOTPLAM[self.filter] / (2. * self.SCALE[0])))
+            max_safe_size = int(np.floor(30. * self.PHOTPLAM[self.filter] / (2. * self.SCALE[0])))
             max_ins_size = max(self.DETECTOR_SIZE) * self.oversample
-            max_conv_size = int(numpy.floor(2048 / self.oversample))
+            max_conv_size = int(np.floor(2048 / self.oversample))
             self._log("info", "PSF choosing between {}, {}, and {}".format(max_safe_size, max_ins_size, max_conv_size))
             psf = ins.calcPSF(oversample=self.oversample,fov_pixels=min(max_safe_size, max_ins_size, max_conv_size))
             psf[0].header['VERSION'] = webbpsf.__version__
@@ -82,13 +83,13 @@ class NIRCamBase(JwstInstrument):
         a = -0.26
 
         if self.exptime > 1000:
-            numGroups = numpy.ceil(self.exptime/1000.0)
+            numGroups = np.ceil(self.exptime/1000.0)
             timePerGroup = self.exptime/numGroups
         else:
             numGroups = 1
             timePerGroup = self.exptime
 
-        rdns = numpy.sqrt(numGroups) * k * timePerGroup**(a)
+        rdns = np.sqrt(numGroups) * k * timePerGroup**(a)
         return rdns
     
     @classmethod

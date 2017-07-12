@@ -11,7 +11,7 @@ Functions to simulate cosmic rays.
 """
 
 # External modules
-import numpy
+import numpy as np
 
 #-----------
 def GaussPsf2D(npix, fwhm, normalize=True):
@@ -37,19 +37,12 @@ def GaussPsf2D(npix, fwhm, normalize=True):
 
     # Initialize PSF params
     cntrd = (npix - 1.0) * 0.5
-    st_dev = 0.5 * fwhm / numpy.sqrt( 2.0 * numpy.log(2) )
-
-    # Make PSF
-
-    # For loops - too slow
-    #i = range(npix)
-    #psf = numpy.array( [numpy.exp(-(((cntrd-x)/st_dev)**2+((cntrd-y)/st_dev)**2)/2) for x in i for y in i] )
-    #psf = psf.reshape(npix, npix)
+    st_dev = 0.5 * fwhm / np.sqrt( 2.0 * np.log(2) )
 
     # Rene Breton 2011-10-20
     # https://groups.google.com/group/astropy-dev/browse_thread/thread/5ee6cd662236e382
-    x, y = numpy.indices([npix,npix]) - (npix-1)*0.5
-    psf = numpy.exp( -0.5 * ((x**2 + y**2)/st_dev**2) ) 
+    x, y = np.indices([npix,npix]) - (npix-1)*0.5
+    psf = np.exp( -0.5 * ((x**2 + y**2)/st_dev**2) ) 
         
     # Normalize
     if normalize: psf /= psf.sum()
@@ -89,11 +82,11 @@ def MakeCosmicRay(xSize, ySize, crProb, crElectrons, crSize, crPsf, verbose=True
     crArray: array_like
         CR to populate (e-).
     """
-    crArray = numpy.zeros((ySize,xSize))
+    crArray = np.zeros((ySize,xSize))
 
     # See if a CR hit
-    crPoisson = numpy.random.poisson(lam=crProb, size=xSize*ySize)
-    cr_locs = numpy.where(crPoisson >= 1)
+    crPoisson = np.random.poisson(lam=crProb, size=xSize*ySize)
+    cr_locs = np.where(crPoisson >= 1)
     num_crs = len(cr_locs[0])
     if num_crs == 0:
         if verbose: print 'No CR in poisson'
@@ -108,14 +101,14 @@ def MakeCosmicRay(xSize, ySize, crProb, crElectrons, crSize, crPsf, verbose=True
     crXMax = cr_x + crSize
     crYMin = cr_y - crSize
     crYMax = cr_y + crSize
-    idxGood = numpy.where((crXMin > 0) & (crXMax < xSize) & (crYMin > 0) & (crYMax < ySize))
+    idxGood = np.where((crXMin > 0) & (crXMax < xSize) & (crYMin > 0) & (crYMax < ySize))
     numGood = len(idxGood[0])
     if numGood == 0:
         if verbose: print 'No CR fully inside frame'
         return crArray
 
     # CR energy in e-
-    cr_electrons = crElectrons + numpy.sqrt(crElectrons) * numpy.random.randn(numGood)
+    cr_electrons = crElectrons + np.sqrt(crElectrons) * np.random.randn(numGood)
 
     # Populate CR
     for i in range(numGood):

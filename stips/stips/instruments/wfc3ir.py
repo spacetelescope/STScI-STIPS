@@ -1,10 +1,8 @@
-from __future__ import absolute_import,division
+from __future__ import absolute_import, division
 __filetype__ = "detector"
 
 #External Modules
 import os
-
-import pysynphot as ps
 
 #Local Modules
 from ..astro_image import AstroImage
@@ -41,6 +39,7 @@ class WFC3IR(HstInstrument):
 
     @property
     def bandpass(self):
+        import pysynphot as ps
         ps.setref(**self.REFS)
         obsmode = "wfc3,ir," + self.filter.lower()
         return ps.ObsBandpass(obsmode)
