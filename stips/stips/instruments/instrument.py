@@ -2,7 +2,7 @@ from __future__ import absolute_import,division
 __filetype__ = "base"
 
 #External Modules
-import glob, logging, os, shutil, sys, uuid
+import glob, logging, os, shutil, sys, types, uuid
 
 import numpy as np
 import pysynphot as ps
@@ -10,12 +10,15 @@ import pysynphot as ps
 from astropy.io import fits as pyfits
 from astropy.table import Table, Column
 from cStringIO import StringIO
-from pandeia.engine.instrument_factory import InstrumentFactory
+from functools import wraps
 
 #Local Modules
 from ..stellar_module import StarGenerator
 from ..astro_image import AstroImage
 from ..utilities import datadir, OffsetPosition, read_metadata, read_table
+
+import __builtin__
+
 
 class Instrument(object):
     """
@@ -153,6 +156,7 @@ class Instrument(object):
                                   header=hdr, history=hist, psf_shape=self.psf.shape, zeropoint=self.zeropoint, background=self.background,
                                   photflam=self.photflam, detname=name, logger=self.logger, oversample=self.oversample,
                                   distortion=distortion, prefix=self.prefix, set_celery=self.set_celery, get_celery=self.get_celery)
+            self._log("info", "Detector created")
             self.detectors.append(detector)
         
     def toFits(self,outfile):
@@ -338,6 +342,8 @@ class Instrument(object):
             return self.readPhoenixTable
         elif table_type == 'phoenix_realtime':
             return self.readPhoenixRealtimeTable
+        elif table_type == 'pandeia':
+            return self.readPandeiaTable
         elif table_type == 'bc95':
             return self.readBC95Table
         elif table_type == 'mixed':
@@ -481,12 +487,49 @@ class Instrument(object):
         
         return t, cached
     
+    def readPandeiaTable(self, table, bp, cached=-1):
+        """
+        Converts a set of Pandeia phoenix sources specified as (id, ra, dec, key, apparent) into individual stars, observes them,
+        and then produces an output catalogue
+        """
+        from pandeia.engine.sed import SEDFactory
+        ps.setref(**self.REFS)
+        ids = table['id']
+        ras = table['ra']
+        decs = table['dec']
+        keys = table['key']
+        apparents = table['apparent']
+        norm_bp = '{}'.format(apparents.unit)
+        if norm_bp == '':
+            norm_bp = 'johnson,i'
+        rates = np.array((), dtype='float32')
+        for a, key in zip(apparents, keys):
+            config = {'sed_type': 'phoenix', 'key': key}
+            spectrum = SEDFactory(config=config)
+            wave, flux = spectrum.get_spectrum()
+            sp = self.normalize((wave, flux), a, norm_bp)
+            obs = ps.Observation(sp, bp)
+            rates = np.append(rates, obs.countrate())
+        t = Table()
+        t['ra'] = Column(data=ras)
+        t['dec'] = Column(data=decs)
+        t['flux'] = Column(data=rates)
+        t['type'] = Column(data=np.full_like(ras,"point",dtype="S6"))
+        t['n'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['re'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['phi'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['ratio'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['id'] = Column(data=ids)
+        t['notes'] = Column(data=np.full_like(ras,"None",dtype="S6"))
+        
+        return t, cached
+    
     def readBC95Table(self, table, bp, cached=-1):
         """
         Converts a BC95 galaxy grid of sources into the internal source table standard
         """
-        self._log("info", "Converting BC95 Catalogue")
         from pandeia.engine.custom_exceptions import PysynphotError
+        self._log("info", "Converting BC95 Catalogue")
         proflist = {"expdisk":1,"devauc":4}
         ps.setref(**self.REFS)
         renorm_bp = ps.ObsBandpass('johnson,v')
@@ -701,12 +744,15 @@ class Instrument(object):
             self.updateState(base_state)
         self._log("info","Finished adding error")
 
-    def normalize(self, source_spectrum, norm_flux, bandpass):
-        norm_type = self.get_type(bandpass)
+    def normalize(self, source_spectrum_or_wave_flux, norm_flux, bandpass):
         from pandeia.engine.normalization import NormalizationFactory
+        norm_type = self.get_type(bandpass)
         
         norm = NormalizationFactory(type=norm_type, bandpass=bandpass, norm_fluxunit='abmag', norm_flux=norm_flux)
-        wave, flux = norm.from_pysynphot(source_spectrum)
+        if isinstance(source_spectrum_or_wave_flux, tuple):
+            wave, flux = source_spectrum_or_wave_flux
+        else:
+            wave, flux = norm.from_pysynphot(source_spectrum_or_wave_flux)
         norm_wave, norm_flux = norm.normalize(wave, flux)
         sp = norm.to_pysynphot(norm_wave, norm_flux)
         sp.convert('angstroms')
@@ -723,6 +769,7 @@ class Instrument(object):
 
     @property
     def bandpass(self):
+        from pandeia.engine.instrument_factory import InstrumentFactory
     
         translate = {
                         'wfi': 'wfirstimager'
@@ -739,7 +786,7 @@ class Instrument(object):
         conf = {'instrument': obsmode}
         
         self.logger.info("Creating Instrument with Configuration {}".format(obsmode))
-
+        
         i = InstrumentFactory(config=conf)
         wr = i.get_wave_range()
         wave = np.linspace(wr['wmin'], wr['wmax'], num=500)

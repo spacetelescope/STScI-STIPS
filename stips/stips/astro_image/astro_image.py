@@ -782,7 +782,18 @@ class AstroImage(object):
     def bin(self,binx,biny=None):
         """Bin xXy pixels into a single pixel. Adjust the scale and size accordingly"""
         if biny is None: biny = binx
-        self.rescale([self.scale[0]*binx,self.scale[1]*biny])
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            shape_x, shape_y = int(self.shape[1] // binx), int(self.shape[0] // biny)
+            with ImageData(self.fname, self.shape, mode='r+') as dat:
+                binned = dat.reshape(shape_y, biny, shape_x, binx).sum(axis=(1, 3))
+                mapped = np.memmap(f, dtype='float32', mode='w+', shape=binned.shape)
+                mapped[:] = binned[:]
+            if os.path.exists(self.fname):
+                os.remove(self.fname)
+            self.fname = f.name
+            self.shape = (shape_y, shape_x)
+        self.wcs = self._wcs(self.ra, self.dec, self.pa, [self.scale[0]*binx, self.scale[1]*biny])
+        self._prepHeader()
         self.oversample = 1
 
     def introducePoissonNoise(self,absVal=False):

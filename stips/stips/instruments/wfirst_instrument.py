@@ -32,3 +32,4 @@ class WfirstInstrument(Instrument):
     DBNAME = "IsochroneGrid.db"
     MODE = 'imaging'
     APERTURE = 'any'
+    PANDEIA_VERSION = '0.1.dev0'

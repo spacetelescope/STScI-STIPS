@@ -31,3 +31,4 @@ class JwstInstrument(Instrument):
     DBNAME = "IsochroneGrid.db"
     MODE = 'imaging'
     APERTURE = 'imager'
+    PANDEIA_VERSION = '1.1.1'
