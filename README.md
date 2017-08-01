@@ -1,5 +1,12 @@
 # STScI-STIPS
 
+## Table of Contents
+
+* [Overview](#overview)
+* [Why use STIPS?](#why-use-stips)
+* [STIPS Python Requirements](#stips-python-requirements)
+* [STIPS Examples](#stips-examples)
+
 ## Overview
 
 STIPS is the Space Telescope Imaging Product Simulator. It is designed to create simulations of 

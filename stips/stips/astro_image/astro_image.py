@@ -521,22 +521,8 @@ class AstroImage(object):
                 # In order to get fractional flux per pixel correct, carry the non-integer portion of the model centre through.
                 fractional_x, fractional_y = posX - np.floor(posX), posY - np.floor(posY)
                 xc, yc = model_size//2 + fractional_x, model_size//2 + fractional_y
-                # Switching back to having flux be average surface brightness
                 mod = Sersic2D(amplitude=flux, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
-#                 mod = Sersic2D(amplitude=100., r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
                 img = mod(x, y)
-#                 aperture = CircularAperture((xc, yc), pixel_radius)
-#                 flux_table = aperture_photometry(img, aperture)
-#                 central_flux = flux_table['aperture_sum'][0]
-#                 self._log("info", "Initial flux within half-light radius is {} ({} input)".format(central_flux, flux))
-#                 if central_flux != 0.:
-#                     factor = flux / central_flux
-#                     img *= factor
-#                     new_flux_table = aperture_photometry(img, aperture)
-#                     new_central_flux = new_flux_table['aperture_sum'][0]
-#                     self._log("info", "Flux within half-light radius is {} ({} input). Total flux {}, max flux {}".format(new_central_flux, flux, np.sum(img), np.max(img)))
-#                 else:
-#                     self._log("info", "Flux within half-light radius is {} ({} input). Total flux {}, max flux {}".format(central_flux, flux, np.sum(img), np.max(img)))
                 max_outer_value = max(np.max(img[0,:]), np.max(img[-1,:]), np.max(img[:,0]), np.max(img[:,-1]))
                 self._log('info', "Max outer value is {}, noise floor is {}".format(max_outer_value, self.noise_floor))
             else:
@@ -544,24 +530,10 @@ class AstroImage(object):
                 self._log("info", "Creating full-frame Sersic model at ({},{})".format(posX, posY))
                 x, y = np.meshgrid(np.arange(self.ysize), np.arange(self.xsize))
                 xc, yc = posX, posY
-                # Switching back to having flux be average surface brightness
                 mod = Sersic2D(amplitude=flux, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
-#                 mod = Sersic2D(amplitude=100., r_eff=pixel_radius, n=n, x_0=posX, y_0=posY, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
                 img = mod(x, y)
-#                 aperture = CircularAperture((posX, posY), pixel_radius)
-#                 flux_table = aperture_photometry(img, aperture)
-#                 central_flux = flux_table['aperture_sum'][0]
-#                 self._log("info", "Initial flux within half-light radius is {} ({} input)".format(central_flux, flux))
-#                 if central_flux != 0.:
-#                     factor = flux / central_flux
-#                     img *= factor
-#                     new_flux_table = aperture_photometry(img, aperture)
-#                     new_central_flux = new_flux_table['aperture_sum'][0]
-#                     self._log("info", "Flux within half-light radius is {} ({} input). Total flux {}, max flux {}".format(new_central_flux, flux, np.sum(img), np.max(img)))
-#                 else:
-#                     self._log("info", "Flux within half-light radius is {} ({} input). Total flux {}, max flux {}".format(central_flux, flux, np.sum(img), np.max(img)))
                 max_outer_value = 0.
-#        img = np.where(img >= self.noise_floor, img, 0.)
+        img = np.where(img >= self.noise_floor, img, 0.)
         aperture = CircularAperture((xc, yc), pixel_radius)
         flux_table = aperture_photometry(img, aperture)
         central_flux = flux_table['aperture_sum'][0]
