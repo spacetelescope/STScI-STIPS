@@ -11,3 +11,4 @@ from .astro_image import AstroImage
 from .instruments import Instrument
 from .observation_module import ObservationModule
 from .scene_module import SceneModule
+from .version import __version__
