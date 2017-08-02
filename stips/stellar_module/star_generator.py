@@ -240,22 +240,19 @@ class StarGenerator(object):
         return arr['m_ini'],arr['te'],arr['log_g'],arr['johnson_i_abs']
     
     def make_cluster_rates(self,masses,instrument,filter,bandpass=None,refs=None):
-        translate = {
-                        'wfi': 'wfirstimager'
-                    }
         coords = np.load(os.path.join(self.gridpath, 'input.npy'))
         m, t, g, i = self.get_star_info()
         temps = np.interp(masses,m,t)
         gravs = np.interp(masses,m,g)
         mags = np.interp(masses,m,i)
         metals = np.full_like(mags, self.metallicity)
-        if os.path.exists(os.path.join(self.gridpath, 'result_{}_{}.npy'.format(translate.get(instrument.lower(), instrument.lower()), filter.lower()))):
-            values = np.load(os.path.join(self.gridpath, 'result_{}_{}.npy'.format(translate.get(instrument.lower(), instrument.lower()), filter.lower())))
+        if os.path.exists(os.path.join(self.gridpath, 'result_{}_{}.npy'.format(instrument.lower(), filter.lower()))):
+            values = np.load(os.path.join(self.gridpath, 'result_{}_{}.npy'.format(instrument.lower(), filter.lower())))
             interpolation_function = RegularGridInterpolator(tuple([x for x in coords]), values)
             try:
                 countrates = interpolation_function(np.array((metals, gravs, temps, mags)).T)
             except ValueError as v:
-                self.log('warning', 'Exception caught when interpolating: {}'.format(v))
+                self.log('error', 'Exception caught when interpolating: {}'.format(v))
                 min_mag = coords[-1][0]
                 max_mag = coords[-1][-1]
                 interpolation_function = RegularGridInterpolator(tuple([x for x in coords]), values, bounds_error=False, fill_value=0.)
@@ -269,7 +266,7 @@ class StarGenerator(object):
                 countrates[np.where(mags < mags_min)] = countrates_min[np.where(mags < mags_min)]
                 countrates[np.where(mags > mags_max)] = countrates_max[np.where(mags > mags_max)]
         else:
-            self.log('warning', 'Could not find result file "result_{}_{}.npy"'.format(translate.get(instrument.lower(), instrument.lower()), filter.lower()))
+            self.log('warning', 'Could not find result file "result_{}_{}.npy"'.format(instrument.lower(), filter.lower()))
             import pysynphot as ps
             countrates = np.array(())
             ps.setref(**refs)

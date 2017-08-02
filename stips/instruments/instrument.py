@@ -769,23 +769,20 @@ class Instrument(object):
 
     @property
     def bandpass(self):
+        from pandeia.engine.calc_utils import build_default_calc
         from pandeia.engine.instrument_factory import InstrumentFactory
     
-        translate = {
-                        'wfi': 'wfirstimager'
-                    }
+        translate_instrument = {
+                                    'wfi': 'wfirstimager',
+                                    'nircamlong': 'nircam',
+                                    'nircamshort': 'nircam',
+                                    'miri': 'miri'
+                                }
 
-        obsmode = {
-                   'instrument': translate.get(self.INSTRUMENT.lower(), self.INSTRUMENT.lower()),
-                   'mode': self.MODE,
-                   'filter': self.filter.lower(),
-                   'aperture': self.APERTURE,
-                   'disperser': None
-                   }
-
-        conf = {'instrument': obsmode}
+        conf = build_default_calc(self.TELESCOPE.lower(), translate_instrument[self.INSTRUMENT.lower()], self.MODE)['configuration']
+        conf['instrument']['filter'] = self.filter.lower()
         
-        self.logger.info("Creating Instrument with Configuration {}".format(obsmode))
+        self.logger.info("Creating Instrument with Configuration {}".format(conf['instrument']))
         
         i = InstrumentFactory(config=conf)
         wr = i.get_wave_range()
