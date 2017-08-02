@@ -792,6 +792,13 @@ class Instrument(object):
         wave = np.linspace(wr['wmin'], wr['wmax'], num=500)
         pce = i.get_total_eff(wave)
         
+        if pce[0] != 0.:
+            wave = np.insert(wave, 0, wave[0]-(wave[1]-wave[0]))
+            pce = np.insert(pce, 0, 0.)
+        if pce[-1] != 0.:
+            wave = np.append(wave, wave[-1]+(wave[-1]-wave[-2]))
+            pce = np.append(pce, 0.)
+        
         bp = ps.ArrayBandpass(wave=wave, throughput=pce, waveunits='micron', name='bp_{}_{}'.format(self.instrument, self.filter))
         bp.convert('angstroms')
         return bp
