@@ -779,7 +779,7 @@ class Instrument(object):
                                     'miri': 'miri'
                                 }
 
-        conf = build_default_calc(self.TELESCOPE.lower(), translate_instrument[self.INSTRUMENT.lower()], self.MODE)['configuration']
+        conf = build_default_calc(self.TELESCOPE.lower(), translate_instrument.get(self.INSTRUMENT.lower(), self.INSTRUMENT.lower()), self.MODE)['configuration']
         conf['instrument']['filter'] = self.filter.lower()
         
         self.logger.info("Creating Instrument with Configuration {}".format(conf['instrument']))
