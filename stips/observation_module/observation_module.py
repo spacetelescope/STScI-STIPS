@@ -76,14 +76,17 @@ class ObservationModule(object):
             self.pa = kwargs.get('pa', 0.0)
             self.seed = kwargs.get('seed', 0)
         if 'residual' in kwargs:
-            self.flat = kwargs['residual'].get('do_err_flat', True)
-            self.dark = kwargs['residual'].get('do_err_dark', True)
-            self.cosmic = kwargs['residual'].get('do_err_cray', True)
+            self.flat = kwargs['residual'].get('flatfield', True)
+            self.dark = kwargs['residual'].get('dark', True)
+            self.cosmic = kwargs['residual'].get('cosmic', True)
+            self.poisson = kwargs['residual'].get('poisson', True)
+            self.readnoise = kwargs['residual'].get('readnoise', True)
         else:
-            self.flat = kwargs.get('do_err_flat', True)
-            self.dark = kwargs.get('do_err_dark', True)
-            self.cosmic = kwargs.get('do_err_cray', True)
-        self.poisson = True
+            self.flat = kwargs.get('flatfield', True)
+            self.dark = kwargs.get('dark', True)
+            self.cosmic = kwargs.get('cosmic', True)
+            self.poisson = kwargs.get('poisson', True)
+            self.readnoise = kwargs.get('readnoise', True)
         self.version = kwargs.get('version', '0.0')
         self.set_celery = kwargs.get('set_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
@@ -251,7 +254,7 @@ class ObservationModule(object):
         self.instrument.psf.toFits(psf_name)
         self._log("info","Adding Error")
         #readnoise is always true
-        self.instrument.addError(self.poisson, True, self.flat, self.dark, self.cosmic, self.max_convolve_size-1)
+        self.instrument.addError(self.poisson, self.readnoise, self.flat, self.dark, self.cosmic, self.max_convolve_size-1)
         self._log("info","Finished Adding Error")
         return psf_name
         
