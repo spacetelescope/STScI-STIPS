@@ -412,7 +412,7 @@ class Instrument(object):
             idx = np.where(datasets == dataset)
             if len(idx[0]) > 0:
                 stargen = StarGenerator(ages[idx][0], metallicities[idx][0], logger=self.logger)
-                rates[idx] = stargen.make_cluster_rates(masses[idx], self.INSTRUMENT, self.filter, bp, self.REFS)
+                rates[idx] = stargen.make_cluster_rates(masses[idx], self.DETECTOR, self.filter, bp, self.REFS)
                 del stargen
         rates = rates * 100 / (distances**2) #convert absolute to apparent rates
         if cached > 0:
