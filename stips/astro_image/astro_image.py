@@ -776,7 +776,7 @@ class AstroImage(object):
         factor = exptime / self.exptime
         with ImageData(self.fname, self.shape, mode='r+') as dat:
             dat *= factor
-        self.exptime = exptime.
+        self.exptime = exptime
         self.updateHeader('exptime', self.exptime)
 
     def introducePoissonNoise(self,absVal=False):
