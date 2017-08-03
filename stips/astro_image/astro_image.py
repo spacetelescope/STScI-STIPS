@@ -88,6 +88,7 @@ class AstroImage(object):
             self.exptime = self.header['exptime']
         else:
             self.exptime = kwargs.get('exptime', 1.)
+        self.updateHeader('exptime', self.exptime)
         
         #History
         self.history = kwargs.get('history', [])
@@ -767,6 +768,16 @@ class AstroImage(object):
         self.wcs = self._wcs(self.ra, self.dec, self.pa, [self.scale[0]*binx, self.scale[1]*biny])
         self._prepHeader()
         self.oversample = 1
+    
+    def setExptime(self, exptime):
+        """
+        Set the exposure time. Multiply data by new_exptime / old_exptime.
+        """
+        factor = exptime / self.exptime
+        with ImageData(self.fname, self.shape, mode='r+') as dat:
+            dat *= factor
+        self.exptime = exptime.
+        self.updateHeader('exptime', self.exptime)
 
     def introducePoissonNoise(self,absVal=False):
         """
@@ -866,7 +877,6 @@ class AstroImage(object):
             mean, std = noise_data.mean(), noise_data.std()
             dat += noise_data
             del noise_data
-        self.updateHeader('exptime', self.exptime)
         self.addHistory("Adding Cosmic Ray residual with mean %f and standard deviation %f" % (mean, std))
         self._log("info","Adding Cosmic Ray residual with mean %f and standard deviation %f" % (mean, std))
 

@@ -152,7 +152,7 @@ class Instrument(object):
             scale = [self.SCALE[0]/self.oversample,self.SCALE[1]/self.oversample]
             self._log("info","Creating Detector with (RA,DEC,PA) = (%f,%f,%f)" % (ra,dec,pa))
             self._log("info","Creating Detector with pixel offset ({},{})".format(delta_ra/scale[0], delta_dec/scale[1]))
-            detector = AstroImage(out_path=self.out_path, shape=(ysize, xsize), scale=scale, ra=ra, dec=dec, pa=pa, exptime=self.exptime,
+            detector = AstroImage(out_path=self.out_path, shape=(ysize, xsize), scale=scale, ra=ra, dec=dec, pa=pa, exptime=1.,
                                   header=hdr, history=hist, psf_shape=self.psf.shape, zeropoint=self.zeropoint, background=self.background,
                                   photflam=self.photflam, detname=name, logger=self.logger, oversample=self.oversample,
                                   distortion=distortion, prefix=self.prefix, set_celery=self.set_celery, get_celery=self.get_celery)
@@ -713,7 +713,7 @@ class Instrument(object):
             self._log("info", "Sum is {}".format(detector.sum))
             self._log("info","Inserting correct exposure time")
             self.updateState(base_state + "<br /><span class='indented'>Detector {}: Applying Exposure Time</span>".format(detector.name))
-            detector *= self.exptime
+            detector.setExptime(self.exptime)
             self._log("info","Convolving with PSF")
             self.updateState(base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name))
             detector.convolve(self.psf, max=max)
