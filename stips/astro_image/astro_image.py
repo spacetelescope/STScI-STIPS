@@ -562,9 +562,7 @@ class AstroImage(object):
                 fp_result = np.memmap(f.name, dtype='float32', mode='w+', shape=(self.shape[0]+psf.shape[0]-1, self.shape[1]+psf.shape[1]-1))
                 sub_shape = (min(max - psf.shape[0], self.shape[0] + psf.shape[0] - 1), min(max - psf.shape[1], self.shape[1] + psf.shape[1] - 1))
                 self._log('info', "PSF Shape: {}; Current Shape: {}".format(psf.shape, self.shape))
-                self._log('info', "Choosing between 4095 - {} = {} and {} + {} - 1 = {}".format(psf.shape, 4095 - psf.shape[0],
-                                                                                                psf.shape, self.shape,
-                                                                                                psf.shape[0] + self.shape[0] - 1))
+                self._log('info', "Choosing between {}-{}={} and {}+{}-1={}".format(max, psf.shape, max-psf.shape[0], psf.shape, self.shape, psf.shape[0]+self.shape[0]-1))
                 self._log('info', "Using overlapping arrays of size {}".format(sub_shape))
                 self._log('info', "Sum before Convolution = {}, maximum flux is {}".format(np.sum(dat), np.max(dat)))
                 overlapadd2(dat, psf, sub_shape, y=fp_result, verbose=True, logger=self.logger)

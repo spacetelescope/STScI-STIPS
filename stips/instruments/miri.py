@@ -63,9 +63,10 @@ class MIRI(JwstInstrument):
             ins.filter = self.filter
             max_safe_size = int(np.floor(30. * self.PHOTPLAM[self.filter] / (2. * self.SCALE[0])))
             max_ins_size = max(self.DETECTOR_SIZE) * self.oversample
-            max_conv_size = int(np.floor(4096 / self.oversample))
-            self._log("info", "PSF choosing between {}, {}, and {}".format(max_safe_size, max_ins_size, max_conv_size))
-            psf = ins.calcPSF(oversample=self.oversample,fov_pixels=min(max_safe_size, max_ins_size, max_conv_size))
+            max_conv_size = int(np.floor(self.convolve_size / (2*self.oversample)))
+            psf_size = min(max_safe_size, max_ins_size, max_conv_size)
+            self._log("info", "PSF choosing between {}, {}, and {}, chose {}".format(max_safe_size, max_ins_size, max_conv_size, psf_size))
+            psf = ins.calcPSF(oversample=self.oversample,fov_pixels=psf_size)
             psf[0].header['VERSION'] = webbpsf.__version__
             if os.path.exists(os.path.join(self.out_path, "psf_cache")):
                 dest = os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("MIRI", self.filter, self.oversample))

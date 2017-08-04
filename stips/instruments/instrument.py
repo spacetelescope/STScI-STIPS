@@ -63,6 +63,7 @@ class Instrument(object):
         self.instrument = kwargs.get('instrument', "")
         self.background_value = kwargs.get('background', 'none')
         self.CENTRAL_OFFSET = (0., 0., 0.)
+        self.convolve_size = kwargs.get('convolve_size', 4096)
         self.set_celery = kwargs.get('set_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
     
@@ -691,7 +692,7 @@ class Instrument(object):
                 my_dithers.append((x+i,y+j))
         return my_dithers
     
-    def addError(self, poisson=True, readnoise=True, flat=True, dark=True, cosmic=True, max=4095):
+    def addError(self, poisson=True, readnoise=True, flat=True, dark=True, cosmic=True):
         """Base function for adding in residual error"""
         self._log("info","Adding residual error")
         base_state = self.getState()
@@ -716,7 +717,7 @@ class Instrument(object):
             detector.setExptime(self.exptime)
             self._log("info","Convolving with PSF")
             self.updateState(base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name))
-            detector.convolve(self.psf, max=max)
+            detector.convolve(self.psf, max=self.convolve_size-1)
             if self.oversample != 1:
                 self._log("info","Binning oversampled image")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Binning oversampled image</span>".format(detector.name))

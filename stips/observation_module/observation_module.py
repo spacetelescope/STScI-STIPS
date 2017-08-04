@@ -63,7 +63,7 @@ class ObservationModule(object):
         self.in_path = os.environ.get('stips_data', datadir())
         self.cat_path = kwargs.get('cat_path', os.getcwd())
         self.out_path = kwargs.get('out_path', os.getcwd())
-        self.max_convolve_size = kwargs.get('convolve_size', 4096)
+        self.convolve_size = kwargs.get('convolve_size', 4096)
         
         if 'scene_general' in kwargs:
             self.ra = kwargs['scene_general'].get('ra', 0.0)
@@ -254,7 +254,7 @@ class ObservationModule(object):
         self.instrument.psf.toFits(psf_name)
         self._log("info","Adding Error")
         #readnoise is always true
-        self.instrument.addError(self.poisson, self.readnoise, self.flat, self.dark, self.cosmic, self.max_convolve_size-1)
+        self.instrument.addError(self.poisson, self.readnoise, self.flat, self.dark, self.cosmic)
         self._log("info","Finished Adding Error")
         return psf_name
         
