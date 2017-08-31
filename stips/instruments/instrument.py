@@ -48,6 +48,7 @@ class Instrument(object):
         self.pa = kwargs.get('pa', 0.)
         self.distortion = kwargs.get('distortion', False)
         self.exptime = kwargs.get('exptime', 1.)
+        self.small_subarray = kwargs.get('small_subarray', False)
         self.filter = None
         self.detectors = None
         if 'logger' in kwargs:
@@ -153,10 +154,10 @@ class Instrument(object):
             scale = [self.SCALE[0]/self.oversample,self.SCALE[1]/self.oversample]
             self._log("info","Creating Detector with (RA,DEC,PA) = (%f,%f,%f)" % (ra,dec,pa))
             self._log("info","Creating Detector with pixel offset ({},{})".format(delta_ra/scale[0], delta_dec/scale[1]))
-            detector = AstroImage(out_path=self.out_path, shape=(ysize, xsize), scale=scale, ra=ra, dec=dec, pa=pa, exptime=1.,
-                                  header=hdr, history=hist, psf_shape=self.psf.shape, zeropoint=self.zeropoint, background=self.background,
-                                  photflam=self.photflam, detname=name, logger=self.logger, oversample=self.oversample,
-                                  distortion=distortion, prefix=self.prefix, set_celery=self.set_celery, get_celery=self.get_celery)
+            detector = AstroImage(out_path=self.out_path, shape=(ysize, xsize), scale=scale, ra=ra, dec=dec, pa=pa, exptime=1., header=hdr, history=hist, 
+                                  psf_shape=self.psf.shape, zeropoint=self.zeropoint, background=self.background, photflam=self.photflam, detname=name, 
+                                  logger=self.logger, oversample=self.oversample, small_subarray=self.small_subarray, distortion=distortion, prefix=self.prefix, 
+                                  set_celery=self.set_celery, get_celery=self.get_celery)
             self._log("info", "Detector created")
             self.detectors.append(detector)
         

@@ -57,6 +57,7 @@ class ObservationModule(object):
         self.exptime = float(obs.get('exptime', 1.))
         self.distortion = obs.get('distortion', False)
         self.background = obs.get('background', 'none')
+        self.small_subarray = obs.get('small_subarray', False)
         
         #initialize parameters from the supplied keyword arguments
         self.prefix = kwargs.get('out_prefix', 'sim')

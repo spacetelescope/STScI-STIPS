@@ -72,7 +72,10 @@ class AstroImage(object):
         if data is not None:
             base_shape = data.shape
         else:
-            base_shape = kwargs.get('shape', (1, 1))
+            if kwargs.get('small_subarray', False): #restrict data size to PSF size
+                base_shape = psf_shape
+            else:
+                base_shape = kwargs.get('shape', (1, 1))
         self._init_dat(base_shape, psf_shape, data)
         
         #Get WCS values if present, or set up a default
