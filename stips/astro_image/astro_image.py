@@ -574,9 +574,18 @@ class AstroImage(object):
                 centre = (fp_result.shape[0]//2, fp_result.shape[1]//2)
                 half = (self.base_shape[0]//2, self.base_shape[1]//2)
                 self._log('info', "Image Centre: {}; Image Half-size: {}".format(centre, half))
-                self._log('info', "Taking [{}:{}, {}:{}]".format(centre[0]-half[0], centre[0]+half[0], centre[1]-half[1], centre[1]+half[1]))
+                ly, hy, lx, hx = centre[0]-half[0], centre[0]+half[0], centre[1]-half[1], centre[1]+half[1]
+                if hx-lx < self.base_shape[1]:
+                    hx += 1
+                elif hx-lx > self.base_shape[1]:
+                    hx -= 1
+                if hy-ly < self.base_shape[0]:
+                    hy += 1
+                elif hy-ly > self.base_shape[0]:
+                    hy -= 1
+                self._log('info', "Taking [{}:{}, {}:{}]".format(ly, hy, lx, hx))
                 fp_crop = np.memmap(g.name, dtype='float32', mode='w+', shape=self.base_shape)
-                fp_crop[:,:] = fp_result[centre[0]-half[0]:centre[0]+half[0], centre[1]-half[1]:centre[1]+half[1]]
+                fp_crop[:,:] = fp_result[ly:hy, lx:hx]
                 crpix = [half[0], half[1]]
                 if self.wcs.sip is not None:
                     sip = wcs.Sip(self.wcs.sip.a, self.wcs.sip.b, None, None, crpix)
