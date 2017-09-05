@@ -771,6 +771,33 @@ class Instrument(object):
 
     @property
     def bandpass(self):
+        i = self.instrument
+        det_params = i.get_detector_pars()
+        # 'rn_fudge': multiplied in to match IDT results.
+        # 'var_fudge': chromatic fudge factor. quantum yield squared.
+        # 'fullwell': 
+        # 'ff_electrons':
+        # 'pix_size':
+        # 
+        wr = i.get_wave_range()
+        wave = np.linspace(wr['wmin'], wr['wmax'], num=500)
+        pce = i.get_total_eff(wave)
+        
+        if pce[0] != 0.:
+            wave = np.insert(wave, 0, wave[0]-(wave[1]-wave[0]))
+            pce = np.insert(pce, 0, 0.)
+        if pce[-1] != 0.:
+            wave = np.append(wave, wave[-1]+(wave[-1]-wave[-2]))
+            pce = np.append(pce, 0.)
+        
+        bp = ps.ArrayBandpass(wave=wave, throughput=pce, waveunits='micron', name='bp_{}_{}'.format(self.instrument, self.filter))
+        bp.convert('angstroms')
+        return bp
+    
+    @property
+    def instrument(self):
+        if hasattr(self, "_instrument"):
+            return self._instrument
         from pandeia.engine.calc_utils import build_default_calc
         from pandeia.engine.instrument_factory import InstrumentFactory
     
@@ -786,21 +813,8 @@ class Instrument(object):
         
         self.logger.info("Creating Instrument with Configuration {}".format(conf['instrument']))
         
-        i = InstrumentFactory(config=conf)
-        wr = i.get_wave_range()
-        wave = np.linspace(wr['wmin'], wr['wmax'], num=500)
-        pce = i.get_total_eff(wave)
-        
-        if pce[0] != 0.:
-            wave = np.insert(wave, 0, wave[0]-(wave[1]-wave[0]))
-            pce = np.insert(pce, 0, 0.)
-        if pce[-1] != 0.:
-            wave = np.append(wave, wave[-1]+(wave[-1]-wave[-2]))
-            pce = np.append(pce, 0.)
-        
-        bp = ps.ArrayBandpass(wave=wave, throughput=pce, waveunits='micron', name='bp_{}_{}'.format(self.instrument, self.filter))
-        bp.convert('angstroms')
-        return bp
+        self._instrument = InstrumentFactory(config=conf)
+        return self._instrument        
     
     @property
     def zeropoint(self):
