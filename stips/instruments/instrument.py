@@ -771,7 +771,9 @@ class Instrument(object):
 
     @property
     def bandpass(self):
-        i = self.instrument
+        if hasattr(self, "_bp"):
+            return self._bp
+        i = self.pandeia_instrument
         det_params = i.get_detector_pars()
         # 'rn_fudge': multiplied in to match IDT results.
         # 'var_fudge': chromatic fudge factor. quantum yield squared.
@@ -790,12 +792,12 @@ class Instrument(object):
             wave = np.append(wave, wave[-1]+(wave[-1]-wave[-2]))
             pce = np.append(pce, 0.)
         
-        bp = ps.ArrayBandpass(wave=wave, throughput=pce, waveunits='micron', name='bp_{}_{}'.format(self.instrument, self.filter))
-        bp.convert('angstroms')
-        return bp
+        self._bp = ps.ArrayBandpass(wave=wave, throughput=pce, waveunits='micron', name='bp_{}_{}'.format(self.instrument, self.filter))
+        self._bp.convert('angstroms')
+        return self._bp
     
     @property
-    def instrument(self):
+    def pandeia_instrument(self):
         if hasattr(self, "_instrument"):
             return self._instrument
         from pandeia.engine.calc_utils import build_default_calc
