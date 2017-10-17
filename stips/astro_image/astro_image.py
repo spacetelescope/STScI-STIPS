@@ -2,7 +2,7 @@ from __future__ import absolute_import,division
 __filetype__ = "base"
 
 #External Modules
-import logging, os, shutil, sys, time, tempfile
+import logging, os, shutil, sys, time, uuid
 
 import numpy as np
 
@@ -63,6 +63,7 @@ class AstroImage(object):
         self.out_path = kwargs.get('out_path', os.getcwd())
         self.prefix = kwargs.get('prefix', '')
         self.name = kwargs.get('detname', "")
+        self.fname = os.path.join(self.out_path, self.prefix+"_"+uuid.uuid4().hex+"_"+self.name+".tmp")
         self.set_celery = kwargs.get('set_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
         
@@ -112,11 +113,14 @@ class AstroImage(object):
         other = AstroImage(out_path=self.out_path, detname=self.name, wcs=self.wcs, header=self.header, history=self.history,
                            xsize=self.xsize, ysize=self.ysize, zeropoint=self.zeropoint, photflam=self.photflam, 
                            logger=self.logger)
-        with tempfile.NamedTemporaryFile(delete=False) as f:
-            shutil.copy(self.fname, f.name)
+        try:
             if os.path.exists(other.fname):
                 os.remove(other.fname)
-            other.fname = f.name
+            shutil.copy(self.fname, other.fname)
+        except Exception as e:
+            if os.path.exists(other.fname):
+                remove(other.fname)
+            raise e
         return other
     
     @classmethod
@@ -324,7 +328,7 @@ class AstroImage(object):
         """Create a FITS file from the current state of the AstroImage data."""
         self._log("info","Writing AstroImage %s to FITS" % (self.name))
         hdulist = pyfits.HDUList([self.hdu])
-        hdulist.writeto(outFile, clobber=True)
+        hdulist.writeto(outFile, overwrite=True)
     
     def updateHeader(self,k,v):
         """
@@ -560,9 +564,10 @@ class AstroImage(object):
         """Convolves the AstroImage with another (provided) AstroImage, e.g. for PSF convolution."""
         self.addHistory("Convolving with file %s" % (other.name))
         self._log("info","Convolving AstroImage %s with %s" % (self.name,other.name))
-        with tempfile.NamedTemporaryFile() as f, tempfile.NamedTemporaryFile(delete=False) as g:
+        f, g = os.path.join(self.out_path, uuid.uuid4().hex+"_convolve_01.tmp"), os.path.join(self.out_path, uuid.uuid4().hex+"_convolve_02.tmp")
+        try:
             with ImageData(self.fname, self.shape, mode='r') as dat, ImageData(other.fname, other.shape, mode='r') as psf:
-                fp_result = np.memmap(f.name, dtype='float32', mode='w+', shape=(self.shape[0]+psf.shape[0]-1, self.shape[1]+psf.shape[1]-1))
+                fp_result = np.memmap(f, dtype='float32', mode='w+', shape=(self.shape[0]+psf.shape[0]-1, self.shape[1]+psf.shape[1]-1))
                 sub_shape = (min(max - psf.shape[0], self.shape[0] + psf.shape[0] - 1), min(max - psf.shape[1], self.shape[1] + psf.shape[1] - 1))
                 self._log('info', "PSF Shape: {}; Current Shape: {}".format(psf.shape, self.shape))
                 self._log('info', "Choosing between {}-{}={} and {}+{}-1={}".format(max, psf.shape, max-psf.shape[0], psf.shape, self.shape, psf.shape[0]+self.shape[0]-1))
@@ -584,7 +589,7 @@ class AstroImage(object):
                 elif hy-ly > self.base_shape[0]:
                     hy -= 1
                 self._log('info', "Taking [{}:{}, {}:{}]".format(ly, hy, lx, hx))
-                fp_crop = np.memmap(g.name, dtype='float32', mode='w+', shape=self.base_shape)
+                fp_crop = np.memmap(g, dtype='float32', mode='w+', shape=self.base_shape)
                 fp_crop[:,:] = fp_result[ly:hy, lx:hx]
                 crpix = [half[0], half[1]]
                 if self.wcs.sip is not None:
@@ -596,8 +601,18 @@ class AstroImage(object):
                 del fp_crop
             if os.path.exists(self.fname):
                 os.remove(self.fname)
-            self.fname = g.name
+            if os.path.exists(f):
+                os.remove(f)
+            self.fname = g
             self.shape = self.base_shape
+        except Exception as e:
+            if os.path.exists(f):
+                os.remove(f)
+            if os.path.exists(g):
+                os.remove(g)
+            if os.path.exists(self.fname):
+                os.remove(self.fname)
+            raise e
 
     def rotate(self,angle,reshape=False):
         """
@@ -608,14 +623,21 @@ class AstroImage(object):
         self.addHistory("Rotating by %f degrees" % (angle))
         self._log("info","Rotating AstroImage %s by %f degrees" % (self.name,angle))
         self.pa = (self.pa + angle)%360.%360.
-        with tempfile.NamedTemporaryFile(delete=False) as f:
-            fp_result = np.memmap(f.name, dtype='float32', mode='w+', shape=self.shape)
+        f = os.path.join(self.out_path, uuid.uuid4().hex+"_rotate.tmp")
+        try:
+            fp_result = np.memmap(f, dtype='float32', mode='w+', shape=self.shape)
             with ImageData(self.fname, self.shape, mode='r') as dat:
                 rotate(dat, angle, order=5, reshape=reshape, output=fp_result)
             del fp_result
             if os.path.exists(self.fname):
                 os.remove(self.fname)
-            self.fname = f.name
+            self.fname = f
+        except Exception as e:
+            if os.path.exists(f):
+                os.remove(f)
+            if os.path.exists(self.fname):
+                os.remove(self.fname)
+            raise e
 
     def addWithOffset(self,other,offset_x,offset_y):
         """
@@ -729,12 +751,13 @@ class AstroImage(object):
         """Rescales the image to the provided plate scale."""
         self.addHistory("Rescaling to (%f,%f) arcsec/pixel" % (scale[0],scale[1]))
         self._log("info","Rescaling to (%f,%f) arcsec/pixel" % (scale[0],scale[1]))
-        with tempfile.NamedTemporaryFile(delete=False) as f:
+        f = os.path.join(self.out_path, uuid.uuid4().hex+"_scale.tmp")
+        try:
             shape_x = int(round(self.shape[1] * self.scale[0] / scale[0]))
             shape_y = int(round(self.shape[0] * self.scale[1] / scale[1]))
             new_shape = (shape_y, shape_x)
             self._log("info","New shape will be {}".format(new_shape))
-            fp_result = np.memmap(f.name, dtype='float32', mode='w+', shape=new_shape)
+            fp_result = np.memmap(f, dtype='float32', mode='w+', shape=new_shape)
             with ImageData(self.fname, self.shape, mode='r+') as dat:
                 flux = dat.sum()
                 self._log("info", "Max flux is {}, sum is {}".format(np.max(dat), flux))
@@ -745,8 +768,14 @@ class AstroImage(object):
             del fp_result
             if os.path.exists(self.fname):
                 os.remove(self.fname)
-            self.fname = f.name
+            self.fname = f
             self.shape = new_shape
+        except Exception as e:
+            if os.path.exists(f):
+                os.remove(f)
+            if os.path.exists(self.fname):
+                os.remove(self.fname)
+            raise e
         self.wcs = self._wcs(self.ra, self.dec, self.pa, scale)
         self._prepHeader()
         
@@ -765,7 +794,8 @@ class AstroImage(object):
     def bin(self,binx,biny=None):
         """Bin xXy pixels into a single pixel. Adjust the scale and size accordingly"""
         if biny is None: biny = binx
-        with tempfile.NamedTemporaryFile(delete=False) as f:
+        f = os.path.join(self.out_path, uuid.uuid4().hex+"_bin.tmp")
+        try:
             shape_x, shape_y = int(self.shape[1] // binx), int(self.shape[0] // biny)
             with ImageData(self.fname, self.shape, mode='r+') as dat:
                 binned = dat.reshape(shape_y, biny, shape_x, binx).sum(axis=(1, 3))
@@ -773,8 +803,14 @@ class AstroImage(object):
                 mapped[:] = binned[:]
             if os.path.exists(self.fname):
                 os.remove(self.fname)
-            self.fname = f.name
+            self.fname = f
             self.shape = (shape_y, shape_x)
+        except Exception as e:
+            if os.path.exists(f):
+                os.remove(f)
+            if os.path.exists(self.fname):
+                os.remove(self.fname)
+            raise e
         self.wcs = self._wcs(self.ra, self.dec, self.pa, [self.scale[0]*binx, self.scale[1]*biny])
         self._prepHeader()
         self.oversample = 1
@@ -801,19 +837,32 @@ class AstroImage(object):
         absVal: bool, optional
             Take absolute value of `noiseData`.
         """
+        a, n = os.path.join(self.out_path, uuid.uuid4().hex+"_poisson_a.tmp"), os.path.join(self.out_path, uuid.uuid4().hex+"_poisson_n.tmp")
+        try:
+            with ImageData(self.fname, self.shape, mode='r+') as dat:
+                abs_data = np.memmap(a, dtype='float32', mode='w+', shape=self.shape)
+                np.absolute(dat, abs_data)
 
-        with tempfile.NamedTemporaryFile() as a, tempfile.NamedTemporaryFile() as n, ImageData(self.fname, self.shape, mode='r+') as dat:
-            abs_data = np.memmap(a.name, dtype='float32', mode='w+', shape=self.shape)
-            np.absolute(dat, abs_data)
-
-            noise_data = np.memmap(n.name, dtype='float32', mode='w+', shape=self.shape)
-            noise_data[:,:] = np.random.normal(size=self.shape) * np.sqrt(abs_data)
-            del abs_data
-            if absVal:
-                noise_data[:,:] = np.abs(noise_data)
-            mean, std = noise_data.mean(), noise_data.std()
-            dat += noise_data
-            del noise_data
+                noise_data = np.memmap(n, dtype='float32', mode='w+', shape=self.shape)
+                noise_data[:,:] = np.random.normal(size=self.shape) * np.sqrt(abs_data)
+                del abs_data
+                if absVal:
+                    noise_data[:,:] = np.abs(noise_data)
+                mean, std = noise_data.mean(), noise_data.std()
+                dat += noise_data
+                del noise_data
+            if os.path.exists(a):
+                os.remove(a)
+            if os.path.exists(n):
+                os.remove(n)
+        except Exception as e:
+            if os.path.exists(a):
+                os.remove(a)
+            if os.path.exists(n):
+                os.remove(n)
+            if os.path.exists(self.fname):
+                os.remove(self.fname)
+            raise e
         self.addHistory("Adding Poisson Noise with mean {} and standard deviation {}".format(mean, std))
         self._log("info", "Adding Poisson Noise with mean {} and standard deviation {}".format(mean, std))            
 
@@ -825,12 +874,22 @@ class AstroImage(object):
         ----------
         readnoise: constant representing average read noise per pixel.
         """
-        with tempfile.NamedTemporaryFile() as n, ImageData(self.fname, self.shape, mode='r+') as dat:
-            noise_data = np.memmap(n.name, dtype='float32', mode='w+', shape=self.shape)
-            noise_data[:,:] = readnoise * np.random.randn(self.ysize,self.xsize)            
-            mean, std = noise_data.mean(), noise_data.std()
-            dat += noise_data
-            del noise_data
+        n = os.path.join(self.out_path, uuid.uuid4().hex+"_readnoise.tmp")
+        try:
+            with ImageData(self.fname, self.shape, mode='r+') as dat:
+                noise_data = np.memmap(n, dtype='float32', mode='w+', shape=self.shape)
+                noise_data[:,:] = readnoise * np.random.randn(self.ysize,self.xsize)            
+                mean, std = noise_data.mean(), noise_data.std()
+                dat += noise_data
+                del noise_data
+            if os.path.exists(n):
+                os.remove(n)
+        except Exception as e:
+            if os.path.exists(n):
+                os.remove(n)
+            if os.path.exists(self.fname):
+                os.remove(self.fname)
+            raise e
         self.addHistory("Adding Read noise with mean %f and standard deviation %f" % (mean, std))
         self._log("info","Adding readnoise with mean %f and STDEV %f" % (mean, std))
 
@@ -878,15 +937,25 @@ class AstroImage(object):
         probs = GetCrProbs(rates, pixarea, self.exptime) # hits
         cr_size, cr_psf = GetCrTemplate()
 
-        with tempfile.NamedTemporaryFile() as n, ImageData(self.fname, self.shape, mode='r+') as dat:
-            noise_data = np.memmap(n.name, dtype='float32', mode='w+', shape=self.shape)
-            noise_data.fill(0.)
-            for i in range(len(energies)):
-                noise_data += MakeCosmicRay(self.shape[1], self.shape[0], probs[i], energies[i], cr_size, cr_psf, verbose=False)
-            noise_data *= 0.01
-            mean, std = noise_data.mean(), noise_data.std()
-            dat += noise_data
-            del noise_data
+        n = os.path.join(self.out_path, uuid.uuid4().hex+"_cosmic.tmp")
+        try:
+            with ImageData(self.fname, self.shape, mode='r+') as dat:
+                noise_data = np.memmap(n, dtype='float32', mode='w+', shape=self.shape)
+                noise_data.fill(0.)
+                for i in range(len(energies)):
+                    noise_data += MakeCosmicRay(self.shape[1], self.shape[0], probs[i], energies[i], cr_size, cr_psf, verbose=False)
+                noise_data *= 0.01
+                mean, std = noise_data.mean(), noise_data.std()
+                dat += noise_data
+                del noise_data
+            if os.path.exists(n):
+                os.remove(n)
+        except Exception as e:
+            if os.path.exists(n):
+                os.remove(n)
+            if os.path.exists(self.fname):
+                os.remove(self.fname)
+            raise e
         self.addHistory("Adding Cosmic Ray residual with mean %f and standard deviation %f" % (mean, std))
         self._log("info","Adding Cosmic Ray residual with mean %f and standard deviation %f" % (mean, std))
 
@@ -1105,19 +1174,17 @@ class AstroImage(object):
             sys.stderr.write("%s: %s\n" % (mtype,message))
     
     def _init_dat(self, base_shape, psf_shape=(0,0), data=None):
-        if hasattr(self, 'fname') and self.fname is not None and os.path.exists(self.fname):
+        if os.path.exists(self.fname):
             os.remove(self.fname)
-        with tempfile.NamedTemporaryFile(delete=False) as f:
-            self.fname = f.name
-            self.base_shape = base_shape
-            self.shape = tuple(np.array(base_shape) + np.array(psf_shape))
-            fp = np.memmap(self.fname, dtype='float32', mode='w+', shape=self.shape)
-            fp.fill(0.)
-            if data is not None:
-                centre = tuple(np.array(self.shape)//2)
-                half = tuple(np.array(base_shape)//2)
-                fp[centre[0]-half[0]:centre[0]+self.base_shape[0]-half[0],centre[1]-half[1]:centre[1]+self.base_shape[1]-half[1]] = data
-            del fp
+        self.base_shape = base_shape
+        self.shape = tuple(np.array(base_shape) + np.array(psf_shape))
+        fp = np.memmap(self.fname, dtype='float32', mode='w+', shape=self.shape)
+        fp.fill(0.)
+        if data is not None:
+            centre = tuple(np.array(self.shape)//2)
+            half = tuple(np.array(base_shape)//2)
+            fp[centre[0]-half[0]:centre[0]+self.base_shape[0]-half[0],centre[1]-half[1]:centre[1]+self.base_shape[1]-half[1]] = data
+        del fp
     
     def remap(self, xs, ys):
         # Step 1 -- compensate for PSF adjustments

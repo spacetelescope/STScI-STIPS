@@ -81,7 +81,9 @@ equivalent method prior to running any of these example scripts.
   				  'offset_ra': 0.0, 'offset_dec': 0.0}
   		galaxy_cat_file = scm.CreateGalaxies(galaxy)
   		
-  		obs = {'instrument': 'NIRCamShort', 'filter': 'F115W', 'detectors': 1,
+  		obs = {'instrument': 'NIRCamShort', 
+  		       'filters': ['F115W'], 
+  		       'detectors': 1,
   			   'distortion': False,
   			   'oversample': 5,
   			   'pupil_mask': '',
@@ -104,7 +106,9 @@ equivalent method prior to running any of these example scripts.
   
   		from stips.observation_module import ObservationModule
   	
-  		obs = {'instrument': 'WFIRST', 'filter': 'J129', 'detectors': 1,
+  		obs = {'instrument': 'WFI', 
+  		       'filters': ['J129'], 
+  		       'detectors': 1,
   			   'distortion': False,
   			   'oversample': 5,
   			   'pupil_mask': '',

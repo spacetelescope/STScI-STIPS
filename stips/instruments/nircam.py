@@ -71,7 +71,7 @@ class NIRCamBase(JwstInstrument):
             psf[0].header['VERSION'] = webbpsf.__version__
             if os.path.exists(os.path.join(self.out_path, "psf_cache")):
                 dest = os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("NIRCam", self.filter, self.oversample))
-                pyfits.writeto(dest, psf[0].data, header=psf[0].header, clobber=True)
+                pyfits.writeto(dest, psf[0].data, header=psf[0].header, overwrite=True)
             self.psf = AstroImage(data=psf[0].data,detname="NIRCam %s PSF" % (self.filter),logger=self.logger)
             self.updateState(base_state)
     

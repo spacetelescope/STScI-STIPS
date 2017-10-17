@@ -58,6 +58,8 @@ class ObservationModule(object):
         self.distortion = obs.get('distortion', False)
         self.background = obs.get('background', 'none')
         self.small_subarray = obs.get('small_subarray', False)
+        if len(self.filters) == 0 and 'filter' in obs:
+            self.filters.append(obs['filter'])
         
         #initialize parameters from the supplied keyword arguments
         self.prefix = kwargs.get('out_prefix', 'sim')

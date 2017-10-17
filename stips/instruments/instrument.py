@@ -171,7 +171,7 @@ class Instrument(object):
             self._log("info","Converting detector %s to FITS extension" % (detector.name))
             hdus.append(detector.imageHdu)
         hdulist = pyfits.HDUList(hdus)
-        hdulist.writeto(outfile, clobber=True)
+        hdulist.writeto(outfile, overwrite=True)
         self._log("info","Created FITS file %s" % (outfile))
     
     def toMosaic(self,outfile):
@@ -313,7 +313,7 @@ class Instrument(object):
         """
         (catpath,catname) = os.path.split(catalogue)
         (catbase,ext) = os.path.splitext(catname)
-        obsname = os.path.join(self.out_path,catbase+"_{:2d}_conv_{}.txt".format(obs_num, self.filter))
+        obsname = os.path.join(self.out_path,catbase+"_{:02d}_conv_{}.txt".format(obs_num, self.filter))
         t = read_metadata(catalogue, n_lines=1000)
         #Check for built-in metadata
         if 'keywords' in t.meta:
@@ -821,7 +821,7 @@ class Instrument(object):
     @property
     def zeropoint(self):
         ps.setref(**self.REFS)
-        sp = ps.FileSpectrum(os.path.join(os.environ["PYSYN_CDBS"],"standards","alpha_lyr_stis_007.fits"))
+        sp = ps.FileSpectrum(os.path.join(os.environ["stips_data"], "standards", "alpha_lyr_stis_008.fits"))
         sp.convert('angstroms')
         bp = self.bandpass
         sp = sp.renorm(0.0,"VEGAMAG",bp)
