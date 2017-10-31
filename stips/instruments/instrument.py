@@ -717,8 +717,9 @@ class Instrument(object):
             self.updateState(base_state + "<br /><span class='indented'>Detector {}: Applying Exposure Time</span>".format(detector.name))
             detector.setExptime(self.exptime)
             self._log("info","Convolving with PSF")
-            self.updateState(base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name))
-            detector.convolve(self.psf, max=self.convolve_size-1)
+            state_string = base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name)
+            self.updateState(state_string)
+            detector.convolve(self.psf, max=self.convolve_size-1, state_fn=self.updateState, state_str=state_string)
             if self.oversample != 1:
                 self._log("info","Binning oversampled image")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Binning oversampled image</span>".format(detector.name))

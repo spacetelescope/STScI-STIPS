@@ -556,7 +556,7 @@ class AstroImage(object):
         self._addArrayWithOffset(img, offset_x, offset_y)
         return central_flux
 
-    def convolve(self, other, max=4095):
+    def convolve(self, other, max=4095, state_fn=None, state_str=""):
         """Convolves the AstroImage with another (provided) AstroImage, e.g. for PSF convolution."""
         self.addHistory("Convolving with file %s" % (other.name))
         self._log("info","Convolving AstroImage %s with %s" % (self.name,other.name))
@@ -568,7 +568,7 @@ class AstroImage(object):
                 self._log('info', "Choosing between {}-{}={} and {}+{}-1={}".format(max, psf.shape, max-psf.shape[0], psf.shape, self.shape, psf.shape[0]+self.shape[0]-1))
                 self._log('info', "Using overlapping arrays of size {}".format(sub_shape))
                 self._log('info', "Sum before Convolution = {}, maximum flux is {}".format(np.sum(dat), np.max(dat)))
-                overlapadd2(dat, psf, sub_shape, y=fp_result, verbose=True, logger=self.logger)
+                overlapadd2(dat, psf, sub_shape, y=fp_result, verbose=True, logger=self.logger, state_fn=state_fn, state_str=state_str)
                 self._log('info', "Sum after Convolution = {}, maximum flux is {}".format(np.sum(dat), np.max(dat)))
                 self._log('info', "Cropping convolved image down to detector size")
                 centre = (fp_result.shape[0]//2, fp_result.shape[1]//2)
