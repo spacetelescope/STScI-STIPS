@@ -116,6 +116,7 @@ equivalent method prior to running any of these example scripts.
   			   'observations_id': 1,
   			   'exptime': 1000,
   			   'offsets': [{'offset_id': 1, 'offset_centre': False, 'offset_ra': 0.5, 'offset_dec': 0.0, 'offset_pa': 27.0}]}
+		scene_general = {'ra': 256.274799731, 'dec': 22.6899695529, 'pa': 0.0, 'seed': 1}
   		obm = ObservationModule(obs)
   		obm.nextObservation()
   		source_count_catalogues = obm.addCatalogue('input_sources.txt')

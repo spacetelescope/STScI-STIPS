@@ -95,6 +95,8 @@ class ObservationModule(object):
         self.get_celery = kwargs.get('get_celery', None)
 
         self.instrument_name = self.instrument_name.encode('ascii')
+        if self.instrument_name == 'WFIRST':
+            self.instrument_name = 'WFI'
         
         self.observations = []
         for filter in self.filters:

@@ -316,26 +316,27 @@ class Instrument(object):
         obsname = os.path.join(self.out_path,catbase+"_{:02d}_conv_{}.txt".format(obs_num, self.filter))
         t = read_metadata(catalogue, n_lines=1000)
         #Check for built-in metadata
+        table_type = ""
         if 'keywords' in t.meta:
             if 'type' in t.meta['keywords']:
                 table_type = t.meta['keywords']['type']['value']
         if table_type in ['phoenix', 'phoenix_realtime', 'bc95']:
             pass
         elif table_type == 'internal':
-            filter = t.meta['keywords']['filter']['value']
-            if filter != self.filter: 
+            filter = t.meta['keywords']['filter']['value'].lower()
+            if filter != self.filter.lower(): 
                 raise ValueError("Adding catalogue with filter {} to {} {}".format(filter, self.DETECTOR, self.filter))
             return catalogue
         elif table_type == 'mixed':
-            filter = t.meta['keywords']['filter']['value']
-            if filter != self.filter: 
+            filter = t.meta['keywords']['filter']['value'].lower()
+            if filter != self.filter.lower(): 
                 raise ValueError("Adding catalogue with filter {} to {} {}".format(filter, self.DETECTOR, self.filter))
         elif table_type == 'multifilter':
-            if self.filter not in t.columns:
+            if self.filter.lower() not in [c.lower() for c in t.columns]:
                 raise ValueError("Adding catalogue with filters {} to {} {}".format(t.columns, self.DETECTOR, self.filter))
         else: #check for necessary columns
             #We want RA, DEC, and count rate in the appropriate filter
-            if 'ra' not in t.columns or 'dec' not in t.columns or self.filter.lower() not in t.columns:
+            if 'ra' not in t.columns or 'dec' not in t.columns or self.filter.lower() not in [c.lower() for c in t.columns]:
                 raise ValueError("Can't parse catalogue without proper columns")
         return self.handleConversion(catalogue, table_type, obsname)
     
