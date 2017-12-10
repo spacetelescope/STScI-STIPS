@@ -202,13 +202,23 @@ class SceneModule(object):
                 self.logger.info("Creating %d stars",num_stars)
                 stargen = StarGenerator(age, met, imf=imf, alpha=alpha, logger=self.logger)
                 all_masses, all_rates, all_temps, all_gravs = stargen.make_cluster(num_stars)
+                all_x, all_y, all_z = self._MakeCoords(num_stars, radius, func=distribution, scale=2.8, do_z=True)
+                all_distances = np.random.uniform(low=dist_l, high=dist_h, size=num_stars)
+                if clustered:
+                    all_x, all_y, all_z = self._CenterObjByMass(all_x, all_y, all_masses, z=all_z)
                 all_binaries = np.random.binomial(1,binary_fraction,len(all_masses))
                 idx = np.where(all_binaries==1)[0]
                 mb, rb, tb, gb = stargen.make_cluster(len(idx))
+                xb, yb, zb = all_x[idx], all_y[idx], all_z[idx]
+                db = all_distances[idx]
                 all_masses = np.insert(all_masses, idx, mb)
                 all_rates = np.insert(all_rates, idx, rb)
                 all_temps = np.insert(all_temps, idx, tb)
                 all_gravs = np.insert(all_gravs, idx, gb)
+                all_x = np.insert(all_x, idx, xb)
+                all_y = np.insert(all_y, idx, yb)
+                all_z = np.insert(all_z, idx, zb)
+                all_distances = np.insert(all_distances, idx, db)
                 all_binaries = np.insert(all_binaries, idx+1, 0)
                 num_stars += len(idx)
                 cached_ra = 0.
@@ -223,16 +233,13 @@ class SceneModule(object):
                     rates = all_rates[xl:xh]
                     temps = all_temps[xl:xh]
                     gravs = all_gravs[xl:xh]
+                    x, y, z = all_x[xl:xh], all_y[xl:xh], all_z[xl:xh]
+                    distances = all_distances[xl:xh]
                     binaries = all_binaries[xl:xh]
                     ids = np.arange(total + xl, total + xh) + 1
-                    distances = np.random.uniform(low=dist_l,high=dist_h,size=star_set)
-                    x,y,z = self._MakeCoords(star_set,radius,func=distribution,scale=2.8,do_z=True)
-                    x = RadiiUnknown2Arcsec(x,rad_units,distances)
-                    y = RadiiUnknown2Arcsec(y,rad_units,distances)
-                    z = RadiiUnknown2Arcsec(z,rad_units,distances)
-                    if clustered:
-                        x,y,z = self._CenterObjByMass(x,y,masses,z=z)
-                    z = RadiiUnknown2Parsec(z,"arcsec",distances)
+                    x = RadiiUnknown2Arcsec(x, rad_units, distances)
+                    y = RadiiUnknown2Arcsec(y ,rad_units, distances)
+                    z = RadiiUnknown2Parsec(z, rad_units, distances)
                     distances += z
                     ras = x/3600. #decimal degrees
                     decs = y/3600. #decimal degrees
@@ -245,16 +252,6 @@ class SceneModule(object):
                     decs[idxl] = -180. - decs[idxl]
                     ras[idxl] = 180. + ras[idxl]
                     ras = (ras + base_ra)%360
-                    if cached:
-                        ras[0], decs[0], distances[0], cached = cached_ra, cached_dec, cached_distance, False
-                    idx = np.where(binaries==1)[0]
-                    iidx = (idx+1)
-                    if len(iidx) > 0 and iidx[-1] >= len(ras):
-                        cached_ra, cached_dec, cached_distance, cached = ras[-1], decs[-1], distances[-1], True
-                        idx, iidx = idx[:-1], iidx[:-1]
-                    ras[idx] = ras[iidx]
-                    decs[idx] = decs[iidx]
-                    distances[idx] = distances[iidx]
                     apparent_rates = rates + (5.0 * np.log10(distances) - 5.0)
 
                     t = Table()
@@ -322,7 +319,7 @@ class SceneModule(object):
                     Minimum and maximum redshifts (converted to distances?).
                 rad_low,rad_high: float
                     Minimum and maximum galactic half-light radii (in arcseconds)
-                vmag_low, vmag_high: float
+                sb_v_low, sb_v_high: float
                     Minimum and maximum V-band average surface brightness within rad
                 distribution: string
                     Stellar distribution in the sky (e.g. power law, inverse power law, uniform, etc.)
@@ -355,8 +352,8 @@ class SceneModule(object):
         z_h = float(gals['z_high'])
         r_l = float(gals['rad_low'])
         r_h = float(gals['rad_high'])
-        m_l = float(gals['vmag_low'])
-        m_h = float(gals['vmag_high'])
+        m_l = float(gals['sb_v_low'])
+        m_h = float(gals['sb_v_high'])
         distribution = gals['distribution']
         clustered = gals['clustered']
         radius = float(gals['radius'])
@@ -470,8 +467,8 @@ class SceneModule(object):
         f.write('\\z_h=%g\n'%(z_h))
         f.write('\\radius_l=%f\n'%(r_l))
         f.write('\\radius_h=%f\n'%(r_h))
-        f.write('\\vmag_l=%f\n'%(m_l))
-        f.write('\\vmag_h=%f\n'%(m_h))
+        f.write('\\sb_v_l=%f\n'%(m_l))
+        f.write('\\sb_v_h=%f\n'%(m_h))
         f.write('\\distribution="%s"\n'%(distribution))
         f.write('\\clustered="%s"\n'%(str(clustered)))
         f.write('\\radius=%f\n'%(radius))

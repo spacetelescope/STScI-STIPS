@@ -99,7 +99,7 @@ class AstroImage(object):
         
         #Special values for Sersic profile generation
         self.profile_multiplier = kwargs.get('profile_multiplier', 100.)
-        self.noise_floor = max(kwargs.get('background', 0.), 1./self.exptime)
+        self.noise_floor = max(kwargs.get('background', 0.), kwargs.get('noise_floor', 1.))
         
         #Zero Point. Necessary for output catalogues.
         self.zeropoint = kwargs.get('zeropoint', 0.)
@@ -493,11 +493,7 @@ class AstroImage(object):
         xs = np.floor(xs).astype(int)
         ys = np.floor(ys).astype(int)
         with ImageData(self.fname, self.shape) as dat:
-            self._log("info", "Maximum rate is {}, maximum current value is {}".format(np.max(rates), np.max(dat)))
-            self._log("info", "Rate sum is {}, Current sum is {}".format(np.sum(rates), np.sum(dat)))
             dat[ys, xs] += rates
-            self._log("info", "Maximum current value is {}".format(np.max(dat)))
-            self._log("info", "Current sum is {}".format(np.sum(dat)))
     
     def addSersicProfile(self, posX, posY, flux, n, re, phi, axialRatio):
         """
@@ -572,9 +568,7 @@ class AstroImage(object):
                 self._log('info', "PSF Shape: {}; Current Shape: {}".format(psf.shape, self.shape))
                 self._log('info', "Choosing between {}-{}={} and {}+{}-1={}".format(max, psf.shape, max-psf.shape[0], psf.shape, self.shape, psf.shape[0]+self.shape[0]-1))
                 self._log('info', "Using overlapping arrays of size {}".format(sub_shape))
-                self._log('info', "Sum before Convolution = {}, maximum flux is {}".format(np.sum(dat), np.max(dat)))
                 overlapadd2(dat, psf, sub_shape, y=fp_result, verbose=True, logger=self.logger)
-                self._log('info', "Sum after Convolution = {}, maximum flux is {}".format(np.sum(dat), np.max(dat)))
                 self._log('info', "Cropping convolved image down to detector size")
                 centre = (fp_result.shape[0]//2, fp_result.shape[1]//2)
                 half = (self.base_shape[0]//2, self.base_shape[1]//2)
@@ -704,7 +698,6 @@ class AstroImage(object):
                 d = dat[low_y:high_y, low_x:high_x]
                 d = other[ly:hy, lx:hx]
                 dat[low_y:high_y, low_x:high_x] += other[ly:hy, lx:hx]
-                self._log("info", "Added image. Max now {}, sum now {}".format(np.max(dat), np.sum(dat)))
         else:
             self.addHistory("Added image is disjoint")
             self._log("warning","%s: Image is disjoint" % (self.name))

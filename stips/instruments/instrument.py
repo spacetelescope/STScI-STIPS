@@ -124,7 +124,7 @@ class Instrument(object):
         if filter != self.filter:
             self.filter = filter
             self.resetPSF()
-            self.background = self.BACKGROUND[self.background_value][self.filter]/(self.oversample*self.oversample)
+            self.background = self.pixel_background/(self.oversample*self.oversample)
             self.photfnu = self.PHOTFNU[self.filter]
             self.photplam = self.PHOTPLAM[self.filter]
         self.resetDetectors()
@@ -155,7 +155,7 @@ class Instrument(object):
             self._log("info","Creating Detector with (RA,DEC,PA) = (%f,%f,%f)" % (ra,dec,pa))
             self._log("info","Creating Detector with pixel offset ({},{})".format(delta_ra/scale[0], delta_dec/scale[1]))
             detector = AstroImage(out_path=self.out_path, shape=(ysize, xsize), scale=scale, ra=ra, dec=dec, pa=pa, exptime=1., header=hdr, history=hist, 
-                                  psf_shape=self.psf.shape, zeropoint=self.zeropoint, background=self.background, photflam=self.photflam, detname=name, 
+                                  psf_shape=self.psf.shape, zeropoint=self.zeropoint, background=self.background, noise_floor=1./self.exptime, photflam=self.photflam, detname=name, 
                                   logger=self.logger, oversample=self.oversample, small_subarray=self.small_subarray, distortion=distortion, prefix=self.prefix, 
                                   set_celery=self.set_celery, get_celery=self.get_celery)
             self._log("info", "Detector created")
@@ -709,10 +709,9 @@ class Instrument(object):
             self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Background</span>".format(detector.name))
             self._log("info","Adding error to detector %s" % (detector.name))
             self._log("info","Adding background")
-            bkg = float(self.background)
-            self._log("info","Background is {}".format(bkg))
+            self._log("info","Background is {} counts/s/pixel (or {} counts/s/oversampled pixel)".format(self.pixel_background, self.background))
             self._log("info", "Sum is {}".format(detector.sum))
-            detector += bkg
+            detector += self.background
             self._log("info", "Sum is {}".format(detector.sum))
             self._log("info","Inserting correct exposure time")
             self.updateState(base_state + "<br /><span class='indented'>Detector {}: Applying Exposure Time</span>".format(detector.name))
@@ -838,6 +837,40 @@ class Instrument(object):
         bp = self.bandpass
         obs = ps.Observation(sp, bp)
         return obs.effstim('flam') / obs.countrate()
+    
+    @property
+    def pixel_background(self):
+        if self.background_value == 'none':
+            return 0.
+        
+        from jwst_backgrounds import jbt
+        bg = jbt.background(self.ra, self.dec, self.PHOTPLAM[self.filter])
+        wave_array = bg.bkg_data['wave_array']
+        combined_bg_array = bg.bkg_data['total_bg']
+        
+        if self.background_value == 'avg':
+            flux_array = np.mean(combined_bg_array, axis=0)
+        elif self.background_value == 'med':
+            flux_array = np.median(combined_bg_array, axis=0)
+        elif self.background_value == 'max':
+            flux_array = np.max(combined_bg_array, axis=0)
+        elif self.background_value == 'min':
+            flux_array = np.min(combined_bg_array, axis=0)
+        else:
+            flux_array = combined_bg_array[0]
+        
+        # Convert background flux from MJy/sr to mJy/pixel.
+        #   Conversion: * 1e9 for MJy -> mJy
+        #   Conversion: * 2.3504e-11 for sr^-2 -> arcsec^-2
+        #   Conversion: * self.SCALE[0] * self.SCALE[1] for arcsec^-2 -> pixel^-2
+        flux_array_pixels = 1e9 * flux_array * 2.3504e-11 * self.SCALE[0] * self.SCALE[1]
+        
+        ps.setref(**self.REFS)
+        sp = ps.ArraySpectrum(wave_array, flux_array_pixels, waveunits='Micron', fluxunits='mJy')
+        sp.convert('angstroms')
+        sp.convert('photlam')
+        obs = ps.Observation(sp, self.bandpass)
+        return obs.countrate()
 
     def _log(self,mtype,message):
         """

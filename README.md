@@ -75,7 +75,7 @@ equivalent method prior to running any of these example scripts.
   		galaxy = {'n_gals': 1000,
   				  'z_low': 0.0, 'z_high': 1.0,
   				  'rad_low': 0.01, 'rad_high': 2.0,
-  				  'vmag_low': 30.0, 'vmag_high': 25.0,
+  				  'sb_v_low': 30.0, 'sb_v_high': 25.0,
   				  'distribution': 'uniform', 'clustered': False,
   				  'radius': 200.0, 'radius_units': 'arcsec',
   				  'offset_ra': 0.0, 'offset_dec': 0.0}

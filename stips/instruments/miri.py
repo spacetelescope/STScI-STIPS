@@ -157,9 +157,9 @@ class MIRI(JwstInstrument):
                                 'F1280W': 6.272E+01, 'F1500W': 1.645E+02, 'F1800W': 1.796E+02, 'F2100W': 5.656E+02, 
                                 'F2550W': 1.286E+03}
                  }
-    BACKGROUNDS_V = ['none', 'avgt']
-    BACKGROUNDS = ['None', 'Average zodiacal and thermal background']
-    BGTEXT = {'none': 'None', 'avgt': 'Average zodiacal and thermal background'}
+    BACKGROUNDS_V = ['none', 'avg', 'med', 'max', 'min']
+    BACKGROUNDS = ['None', 'Average zodiacal and thermal background', 'Median zodiacal and thermal background', 'Maximum zodiacal and thermal background', 'Minimum zodiacal and thermal background']
+    BGTEXT = {'none': 'None', 'avg': 'Average zodiacal and thermal background', 'med': 'Median zodiacal and thermal background', 'max': 'Maximum zodiacal and thermal background', 'min': 'Minimum zodiacal and thermal background'}
     #PHOTFNU has units of Jy
     PHOTFNU = { 'F560W':1.872E-07,  'F770W':8.608E-08, 'F1000W':1.406E-07, 'F1130W':3.707E-07, 
                 'F1280W':1.648E-07, 'F1500W':1.083E-07, 'F1800W':1.996E-07, 'F2100W':1.761E-07, 

@@ -37,6 +37,9 @@ class NIRCamBase(JwstInstrument):
         #Initialize superclass
         super(NIRCamBase,self).__init__(**kwargs)
 
+        #Set oversampling
+        self.oversample = kwargs.get('oversample', 1)
+
         #Adjust # of detectors based on keyword:
         n_detectors = int(kwargs.get('detectors', len(self.DETECTOR_OFFSETS)))
         self.DETECTOR_OFFSETS = self.DETECTOR_OFFSETS[:n_detectors]
@@ -159,9 +162,9 @@ class NIRCamBase(JwstInstrument):
                                 'F405N': 1.909E-02, 'F410M': 2.692E-01, 'F430M': 1.627E-01, 'F444W': 1.309E+00, 'F460M': 4.544E-01, 
                                 'F466N': 3.750E-02, 'F470N': 3.934E-02, 'F480M': 4.955E-01}
                  }
-    BACKGROUNDS = ['None', 'Average zodiacal background']
-    BACKGROUNDS_V = ['none', 'avg']
-    BGTEXT = {'none': 'None', 'avg': 'Average Zodiacal Background'}
+    BACKGROUNDS_V = ['none', 'avg', 'med', 'max', 'min']
+    BACKGROUNDS = ['None', 'Average zodiacal background', 'Median zodiacal background', 'Maximum zodiacal background', 'Minimum zodiacal background']
+    BGTEXT = {'none': 'None', 'avg': 'Average zodiacal background', 'med': 'Median zodiacal background', 'max': 'Maximum zodiacal background', 'min': 'Minimum zodiacal background'}
     #PHOTFNU has units of Jy
     PHOTFNU = { 'F070W':5.085E-08, 'F090W':3.722E-08, 'F115W':3.171E-08, 'F140M':8.313E-08, 
                 'F150W':2.678E-08, 'F162M':8.396E-08, 'F164N':8.724E-07, 'F182M':7.073E-08, 
