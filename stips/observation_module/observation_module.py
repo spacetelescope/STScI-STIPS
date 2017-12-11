@@ -4,7 +4,7 @@ from __future__ import absolute_import
 import logging, os, sys
 
 # Local modules
-from ..utilities import datadir, InstrumentList, OffsetPosition
+from ..utilities import GetStipsData, InstrumentList, OffsetPosition
 from ..astro_image import AstroImage
 
 #-----------
@@ -63,7 +63,6 @@ class ObservationModule(object):
         
         #initialize parameters from the supplied keyword arguments
         self.prefix = kwargs.get('out_prefix', 'sim')
-        self.in_path = os.environ.get('stips_data', datadir())
         self.cat_path = kwargs.get('cat_path', os.getcwd())
         self.out_path = kwargs.get('out_path', os.getcwd())
         self.convolve_size = kwargs.get('convolve_size', 4096)

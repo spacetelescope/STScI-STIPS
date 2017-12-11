@@ -12,7 +12,7 @@ from cStringIO import StringIO
 
 # Local modules
 from ..stellar_module import StarGenerator
-from ..utilities import datadir, OffsetPosition
+from ..utilities import GetStipsData, OffsetPosition
 from .convert_units import (DivideInterval, RadiiUnknown2Arcsec, RadiiUnknown2Parsec, RescaleArray)
 
 #-----------
@@ -48,7 +48,6 @@ class SceneModule(object):
             Additional arguments needed to make the scene
 
         """
-        self.in_path = os.environ.get('stips_data', datadir())
         self.out_path = kwargs.get('out_path', os.getcwd())
         self.prefix = kwargs.get('out_prefix', 'sim')
         if 'logger' in kwargs:

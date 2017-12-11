@@ -15,7 +15,7 @@ from functools import wraps
 #Local Modules
 from ..stellar_module import StarGenerator
 from ..astro_image import AstroImage
-from ..utilities import datadir, OffsetPosition, read_metadata, read_table
+from ..utilities import GetStipsData, OffsetPosition, read_metadata, read_table
 
 import __builtin__
 
@@ -37,11 +37,11 @@ class Instrument(object):
         self.COMPFILES =  sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmc.fits")))
         self.GRAPHFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmg.fits")))
         self.THERMFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmt.fits")))
-        self.in_path = os.environ.get("stips_data", datadir())
+        
         self.out_path = kwargs.get('out_path', os.getcwd())
         self.prefix = kwargs.get('prefix', '')
-        self.flatfile = os.path.join(self.in_path, "residual_files", self.FLATFILE)
-        self.darkfile = os.path.join(self.in_path, "residual_files", self.DARKFILE)
+        self.flatfile = GetStipsData(os.path.join("residual_files", self.FLATFILE))
+        self.darkfile = GetStipsData(os.path.join("residual_files", self.DARKFILE))
         self.oversample = 1
         self.ra = kwargs.get('ra', 0.)
         self.dec = kwargs.get('dec', 0.)
@@ -821,7 +821,8 @@ class Instrument(object):
     @property
     def zeropoint(self):
         ps.setref(**self.REFS)
-        sp = ps.FileSpectrum(os.path.join(os.environ["stips_data"], "standards", "alpha_lyr_stis_008.fits"))
+        standard_star_file = GetStipsData(os.path.join("standards", "alpha_lyr_stis_008.fits"))
+        sp = ps.FileSpectrum(standard_star_file)
         sp.convert('angstroms')
         bp = self.bandpass
         sp = sp.renorm(0.0,"VEGAMAG",bp)

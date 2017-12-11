@@ -5,20 +5,34 @@ General CGI form functions.
 
 :Organization: Space Telescope Science Institute
 
-:History:
-    * 2010/10/27 PLL created this module.
-    * 2011/07/12 PLL applied v0.4 updates.
 """
 
 # External modules
-import importlib, inspect, os
+import importlib, inspect, os, sys
 import numpy as np
 from numpy.fft import fft2, ifft2
 from astropy.io import ascii
 from astropy.table import Table
 
-def datadir():
-    return os.path.join(os.path.split(__file__)[0], "..", "data")
+#-----------
+def GetStipsData(to_retrieve):
+    """
+    Retrieve a file from the stips_data directory. Will also print out a warning if the directory
+    can't be found.
+    """
+    if "stips_data" not in os.environ:
+        sys.stderr.write("ERROR: stips_data environment variable not found. STIPS requires the stips_data directory to function correctly.\n")
+        sys.stderr.write("ERROR: Please make sure that the stips_data environment variable exists and points to the location of stips_data.\n")
+    stips_data_base = os.environ.get("stips_data", os.getcwd())
+    if not os.path.exists(stips_data_base):
+        sys.stderr.write("ERROR: stips_data directory at {} not found. STIPS requires the stips_data directory to function correctly.\n".format(stips_data_base))
+        sys.stderr.write("ERROR: Please make sure that the stips_data environment variable exists and points to the location of stips_data.\n")
+    retrieval_file = os.path.join(stips_data_base, to_retrieve)
+    if not os.path.exists(retrieval_file):
+        sys.stderr.write("ERROR: STIPS data file {} not found. STIPS requires the stips_data directory to function correctly.\n".format(retrieval_file))
+        sys.stderr.write("ERROR: Please make sure that the stips_data environment variable exists and points to the location of stips_data.\n")
+        sys.stderr.write("ERROR: Please try downloading the stips_data directory again.\n")
+    return retrieval_file
 
 #-----------
 def OffsetPosition(in_ra,in_dec,delta_ra,delta_dec):

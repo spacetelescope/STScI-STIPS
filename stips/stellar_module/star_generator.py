@@ -37,7 +37,7 @@ from scipy.interpolate import RegularGridInterpolator
 
 from esutil import sqlite_util
 
-from ..utilities import datadir
+from ..utilities import GetStipsData
 
 class StarGenerator(object):
     def __init__(self, age, metallicity, **kwargs):
@@ -89,9 +89,8 @@ class StarGenerator(object):
                         }
         self.metallicity = metallicity
         self.age = age
-        self.base_path = os.environ.get("stips_data", datadir())
-        self.dbname = os.path.join(self.base_path, kwargs.get('dbname', 'IsochroneGrid.db'))
-        self.gridpath = os.path.join(self.base_path, kwargs.get('gridpath', 'grid'))
+        self.dbname = GetStipsData(kwargs.get('dbname', 'IsochroneGrid.db'))
+        self.gridpath = GetStipsData(kwargs.get('gridpath', 'grid'))
         self.imf = massfunctions[kwargs.get('imf', 'powerlaw').lower().replace(" ","_")]
         self.alpha = kwargs.get('alpha', -2.35)
         self.logger = kwargs.get('logger', None)

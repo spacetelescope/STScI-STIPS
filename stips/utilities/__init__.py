@@ -5,4 +5,4 @@ import automodinit
 automodinit.automodinit(__name__, __file__, globals())
 del automodinit
 # Local Definitions
-from .utilities import datadir, InstrumentList, OffsetPosition, overlapadd2, read_metadata, read_table
+from .utilities import GetStipsData, InstrumentList, OffsetPosition, overlapadd2, read_metadata, read_table
