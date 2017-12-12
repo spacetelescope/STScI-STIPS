@@ -351,7 +351,7 @@ class NIRCamShort(NIRCamBase):
     N_DETECTORS = [1, 4, 8]
     N_OFFSET = {1: (123.24, -33.69, 1.21), 4: (88.17, -1.35, 0.775), 8: (0., 0., 0.)}
     INSTRUMENT_OFFSET = (-0.57,-488.61,0.) #RA,DEC,PA
-    SCALE = [0.0317,0.0317]
+    SCALE = [0.0311, 0.0311]
     FILTERS = ('F070W','F090W','F115W','F140M','F150W','F162M','F164N','F182M','F187N','F200W','F210M','F212N')
     DEFAULT_FILTER = 'F115W'
     FLATFILE = 'err_flat_nircam.fits'
@@ -388,7 +388,7 @@ class NIRCamLong(NIRCamBase):
     N_DETECTORS = [1, 2]
     N_OFFSET = {1: (88.17, 1.35, 1.21), 2: (0., 0., 0.)}
     OFFSET_NAMES = ("A5","B5")
-    SCALE = [0.0648,0.0648] #arcsec/pixel
+    SCALE = [0.063, 0.063] #arcsec/pixel
     FILTERS = ('F250M','F277W','F300M','F323N','F335M','F356W','F360M','F405N','F410M','F430M',
                'F444W','F460M','F466N','F470N','F480M')
     DEFAULT_FILTER = 'F277W'
