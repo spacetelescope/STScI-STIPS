@@ -368,7 +368,7 @@ class AstroImage(object):
             xs, ys = self.wcs.all_world2pix(t['ra'], t['dec'],1, quiet=True, adaptive=True, detect_divergence=True)
         else:
             xs, ys = self.wcs.wcs_world2pix(t['ra'], t['dec'],1)
-        to_keep = np.where((xs > 0) & (xs <= self.xsize) & (ys > 0) & (ys <= self.ysize))
+        to_keep = np.where((xs >= 0) & (xs <= self.xsize) & (ys >= 0) & (ys <= self.ysize))
         self._log("info", "Keeping {} items".format(len(xs[to_keep])))
         ot = None
         base_state = self.getState()
@@ -376,7 +376,7 @@ class AstroImage(object):
         if len(xs[to_keep]) > 0:
             xs = xs[to_keep]
             ys = ys[to_keep]
-            xfs, yfs = self.remap(xs, ys)
+            xfs, yfs = self._remap(xs, ys)
             fluxes = t['flux'][to_keep]
             fluxes_observed = np.empty_like(fluxes)
             types = t['type'][to_keep]
@@ -1206,7 +1206,7 @@ class AstroImage(object):
             fp[centre[0]-half[0]:centre[0]+self.base_shape[0]-half[0],centre[1]-half[1]:centre[1]+self.base_shape[1]-half[1]] = data
         del fp
     
-    def remap(self, xs, ys):
+    def _remap(self, xs, ys):
         # Step 1 -- compensate for PSF adjustments
         adj_x = (self.shape[1] - self.base_shape[1]) // 2
         adj_y = (self.shape[0] - self.base_shape[0]) // 2

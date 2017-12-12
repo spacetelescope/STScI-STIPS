@@ -865,7 +865,7 @@ class Instrument(object):
         flux_array_pixels = 1e9 * flux_array * 2.3504e-11 * self.SCALE[0] * self.SCALE[1]
         
         ps.setref(**self.REFS)
-        sp = ps.ArraySpectrum(wave_array, flux_array_pixels, waveunits='Micron', fluxunits='mJy')
+        sp = ps.ArraySpectrum(wave_array, flux_array_pixels, waveunits='micron', fluxunits='mjy')
         sp.convert('angstroms')
         sp.convert('photlam')
         obs = ps.Observation(sp, self.bandpass)
