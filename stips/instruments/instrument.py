@@ -710,9 +710,7 @@ class Instrument(object):
             self._log("info","Adding error to detector %s" % (detector.name))
             self._log("info","Adding background")
             self._log("info","Background is {} counts/s/pixel (or {} counts/s/oversampled pixel)".format(self.pixel_background, self.background))
-            self._log("info", "Sum is {}".format(detector.sum))
-            detector += self.background
-            self._log("info", "Sum is {}".format(detector.sum))
+            detector.addBackground(self.pixel_background)
             self._log("info","Inserting correct exposure time")
             self.updateState(base_state + "<br /><span class='indented'>Detector {}: Applying Exposure Time</span>".format(detector.name))
             detector.setExptime(self.exptime)

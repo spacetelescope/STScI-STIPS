@@ -817,6 +817,15 @@ class AstroImage(object):
             dat *= factor
         self.exptime = exptime
         self.updateHeader('exptime', self.exptime)
+    
+    def addBackground(self, background):
+        """
+        Add a constant value per-pixel. Automatically scale that value based on oversampling.
+        """
+        per_pixel_background = background / (self.oversample*self.oversample)
+        self.addHistory("Added background of {} counts/s/detector pixel ({} counts/s/oversampled pixel)".format(background, per_pixel_background))
+        with ImageData(self.fname, self.shape) as dat:
+            dat += per_pixel_background
 
     def introducePoissonNoise(self,absVal=False):
         """
