@@ -113,7 +113,7 @@ class Instrument(object):
         self._log("info","Finished initialization")
         return ins
     
-    def reset(self, ra, dec, pa, filter, celery=None):
+    def reset(self, ra, dec, pa, filter, obs_count, celery=None):
         """
         Reset instrument parameters.
         """
@@ -121,6 +121,7 @@ class Instrument(object):
         self.ra = ra
         self.dec = dec
         self.pa = pa
+        self.obs_count = obs_count
         if filter != self.filter:
             self.filter = filter
             self.resetPSF()
@@ -694,7 +695,7 @@ class Instrument(object):
                 my_dithers.append((x+i,y+j))
         return my_dithers
     
-    def addError(self, poisson=True, readnoise=True, flat=True, dark=True, cosmic=True):
+    def addError(self, convolve=True, poisson=True, readnoise=True, flat=True, dark=True, cosmic=True, snapshots={}):
         """Base function for adding in residual error"""
         self._log("info","Adding residual error")
         base_state = self.getState()
@@ -706,41 +707,62 @@ class Instrument(object):
         if readnoise:
             rn = self.generateReadnoise()
         for detector in self.detectors:
+            if 'initial' in snapshots:
+                detector.toFits(self.imgbase+"_{}_{}_snapshot_initial.fits".format(self.obs_count, detector.name))
             self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Background</span>".format(detector.name))
             self._log("info","Adding error to detector %s" % (detector.name))
             self._log("info","Adding background")
             self._log("info","Background is {} counts/s/pixel (or {} counts/s/oversampled pixel)".format(self.pixel_background, self.background))
             detector.addBackground(self.pixel_background)
+            if 'background' in snapshots:
+                detector.toFits(self.imgbase+"_{}_{}_snapshot_background.fits".format(self.obs_count, detector.name))
             self._log("info","Inserting correct exposure time")
             self.updateState(base_state + "<br /><span class='indented'>Detector {}: Applying Exposure Time</span>".format(detector.name))
             detector.setExptime(self.exptime)
+            if 'exptime' in snapshots:
+                detector.toFits(self.imgbase+"_{}_{}_snapshot_exptime.fits".format(self.obs_count, detector.name))
             self._log("info","Convolving with PSF")
-            self.updateState(base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name))
-            detector.convolve(self.psf, max=self.convolve_size-1)
+            if convolve:
+                self.updateState(base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name))
+                detector.convolve(self.psf, max=self.convolve_size-1)
+                if 'convolve' in snapshots:
+                    detector.toFits(self.imgbase+"_{}_{}_snapshot_convolve.fits".format(self.obs_count, detector.name))
             if self.oversample != 1:
                 self._log("info","Binning oversampled image")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Binning oversampled image</span>".format(detector.name))
                 detector.bin(self.oversample)
+                if 'bin' in snapshots:
+                    detector.toFits(self.imgbase+"_{}_{}_snapshot_bin.fits".format(self.obs_count, detector.name))
             if poisson: 
                 self._log("info","Adding poisson noise")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Poisson Noise</span>".format(detector.name))
                 detector.introducePoissonNoise()
+                if 'poisson' in snapshots:
+                    detector.toFits(self.imgbase+"_{}_{}_snapshot_poisson.fits".format(self.obs_count, detector.name))
             if readnoise:
                 self._log("info","Adding readnoise")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Readnoise</span>".format(detector.name))
                 detector.introduceReadnoise(rn)
+                if 'readnoise' in snapshots:
+                    detector.toFits(self.imgbase+"_{}_{}_snapshot_readnoise.fits".format(self.obs_count, detector.name))
             if flat:
                 self._log("info","Adding flatfield residual")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Flatfield Residual</span>".format(detector.name))
                 detector.introduceFlatfieldResidual(flat)
+                if 'flat' in snapshots:
+                    detector.toFits(self.imgbase+"_{}_{}_snapshot_flat.fits".format(self.obs_count, detector.name))
             if dark:
                 self._log("info","Adding dark residual")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Dark Residual</span>".format(detector.name))
                 detector.introduceDarkResidual(dark)
+                if 'dark' in snapshots:
+                    detector.toFits(self.imgbase+"_{}_{}_snapshot_dark.fits".format(self.obs_count, detector.name))
             if cosmic:
                 self._log("info","Adding cosmic ray residual")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Cosmic Ray Residual</span>".format(detector.name))
                 detector.introduceCosmicRayResidual(self.PIXEL_SIZE)
+                if 'cr' in snapshots:
+                    detector.toFits(self.imgbase+"_{}_{}_snapshot_cr.fits".format(self.obs_count, detector.name))
             self.updateState(base_state)
         self._log("info","Finished adding error")
 

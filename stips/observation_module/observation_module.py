@@ -108,7 +108,7 @@ class ObservationModule(object):
         
         self.imgbase = os.path.join(self.out_path,"%s_%d" % (self.prefix,self.id))
         
-        self.instruments = InstrumentList(excludes=self.excludes)        
+        self.instruments = InstrumentList(excludes=self.excludes)
         self.instrument = self.instruments[self.instrument_name](**self.__dict__)
     
     #-----------
@@ -172,7 +172,7 @@ class ObservationModule(object):
                 ra,dec = OffsetPosition(ra,dec,offset_ra,offset_dec)
                 pa = (pa + offset_pa)%360.
             self._log("info","Observation (RA,DEC) = (%f,%f) with PA=%f" % (ra,dec,pa))
-            self.instrument.reset(ra, dec, pa, filter)
+            self.instrument.reset(ra, dec, pa, filter, self.obs_count)
             self._log("info","Reset Instrument")
             self.initParams()
             return self.obs_count
