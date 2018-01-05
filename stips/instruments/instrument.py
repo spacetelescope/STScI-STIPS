@@ -536,7 +536,6 @@ class Instrument(object):
         self._log("info", "Converting BC95 Catalogue")
         proflist = {"expdisk":1,"devauc":4}
         ps.setref(**self.REFS)
-        renorm_bp = ps.ObsBandpass('johnson,v')
         distance_type = "redshift"
         ids = table['id']
         ras = table['ra']
@@ -779,7 +778,7 @@ class Instrument(object):
         sp = norm.to_pysynphot(norm_wave, norm_flux)
         sp.convert('angstroms')
         return sp
-     
+    
     def get_type(self, bandpass_str):
         if 'miri' in bandpass_str or 'nircam' in bandpass_str:
             return 'jwst'
