@@ -145,7 +145,7 @@ def read_table(filename, n_chunk=100000, format="ipac"):
         else:
             yield ascii.read(lines, format=format, guess=False)
 
-def overlapadd2(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None):
+def overlapadd2(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state=""):
     """
     Fast two-dimensional linear convolution via the overlap-add method.
     The overlap-add method is well-suited to convolving a very large array,
@@ -230,13 +230,16 @@ def overlapadd2(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=Non
         adjust = np.real                           # then ensure real
     start = [0, 0]
     endd = [0, 0]
+    total_boxes = (Na[XDIM] // L[XDIM] + 1) * (Na[YDIM] // L[YDIM] + 1)
+    current_box = 0
     while start[XDIM] <= Na[XDIM]:
         endd[XDIM] = min(start[XDIM] + L[XDIM], Na[XDIM])
         start[YDIM] = 0
         while start[YDIM] <= Na[YDIM]:
             if verbose and logger is not None:
                 logger.info("Starting box {}".format(start))
-
+            if verbose and state_setter is not None:
+                state_setter(base_state + " {:.2f}% done".format((current_box/total_boxes)*100.))
             endd[YDIM] = min(start[YDIM] + L[YDIM], Na[YDIM])
             yt = adjust(ifft2(Hf * fft2(Amat[start[YDIM] : endd[YDIM],
                         start[XDIM] : endd[XDIM]], Nfft)))
@@ -246,6 +249,7 @@ def overlapadd2(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=Non
                 yt[:(thisend[YDIM] - start[YDIM]),
                     :(thisend[XDIM] - start[XDIM])])
             start[YDIM] += L[YDIM]
+            current_box += 1
         start[XDIM] += L[XDIM]
     return y
 

@@ -8,7 +8,7 @@ import os
 from ..astro_image import AstroImage
 from .instrument import Instrument
 from .hst_instrument import HstInstrument
-from ..utilities import OffsetPosition
+from ..utilities import OffsetPosition, GetStipsData
 
 class WFC3IR(HstInstrument):
     __classtype__ = "detector"
@@ -34,8 +34,8 @@ class WFC3IR(HstInstrument):
     def resetPSF(self):
         if self.filter not in self.FILTERS:
             raise ValueError("Filter %s is not a valid WFC3IR filter" % (self.filter))
-        self.psf = AstroImage.initDataFromFits(os.path.join(self.in_path,'psf_data','PSF_WFC3IR_%s.fits' % (self.filter)),detname="WFC3IRPSF",
-                                               logger=self.logger)
+        psf_path = GetStipsData(os.path.join('psf_data', 'PSF_WFC3IR_%s.fits'.format(self.filter)))
+        self.psf = AstroImage.initDataFromFits(psf_path, detname="WFC3IRPSF", logger=self.logger)
 
     @property
     def bandpass(self):
