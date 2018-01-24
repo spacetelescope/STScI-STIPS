@@ -151,9 +151,9 @@ class Sum(object): #again, this class is from ParallelPython's example code (I m
         self.lock = thread.allocate_lock()
         self.count = 0
 
-    def add(self, vin):
-            value, pos = vin
+    def add(self, pos, v):
             (p0, i, p2, j, p1, p3) = pos
+            value = v[0]
             self.count += 1
             self.lock.acquire() #lock so sum is correct if two processes return at same time
             self.value[p0:p1, p2:p3] += value[:(p1-p0), :(p3-p2)] #the actual summation
@@ -161,8 +161,7 @@ class Sum(object): #again, this class is from ParallelPython's example code (I m
 
 
 def computation(input, fft_kernel, pos, n):
-    array1 = np.real(ifft2(fft_kernel * fft2(input[pos[0]:pos[1], pos[2]:pos[3]], n)))
-    return (array1, pos)
+    return np.real(ifft2(fft_kernel * fft2(input[pos[0]:pos[1], pos[2]:pos[3]], n)))
 
 
 def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state=""):
@@ -264,7 +263,8 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
                 state_setter(base_state + " {:.2f}% done".format((current_box/total_boxes)*100.))
             endd[YDIM] = min(start[YDIM] + L[YDIM], Na[YDIM])
             thisend = np.minimum(Na + M - 1, start + Nfft)
-            job_server.submit(computation, (Amat, Hf, (start[YDIM], endd[YDIM], start[XDIM], endd[XDIM], thisend[YDIM], thisend[XDIM]), Nfft), callback=v.add)
+            pos = (start[YDIM], endd[YDIM], start[XDIM], endd[XDIM], thisend[YDIM], thisend[XDIM])
+            job_server.submit(computation, args=(Amat, Hf, pos, Nfft), callback=v.add, callbackargs=pos, globals=globals())
             start[YDIM] += L[YDIM]
             current_box += 1
         start[XDIM] += L[XDIM]
