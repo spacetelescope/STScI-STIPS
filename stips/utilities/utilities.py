@@ -145,7 +145,7 @@ def read_table(filename, n_chunk=100000, format="ipac"):
         else:
             yield ascii.read(lines, format=format, guess=False)
 
-class Sum: #again, this class is from ParallelPython's example code (I modified for an array and added comments)
+class Sum(object): #again, this class is from ParallelPython's example code (I modified for an array and added comments)
     def __init__(self, value):
         self.value = value
         self.lock = thread.allocate_lock()
@@ -244,7 +244,7 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
 
     Hf = fft2(Hmat, Nfft)
 
-    job_server = pp.Server(ppservers=("localhost",))
+    job_server = pp.Server(ppservers=())
     logger.info("Starting job server with {} workers".format(job_server.get_ncpus()))
     (XDIM, YDIM) = (1, 0)
     adjust = lambda x: x                           # no adjuster
