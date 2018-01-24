@@ -39,9 +39,9 @@ class ObservationModule(object):
             self.logger = kwargs['logger']
         else:
             stream_handler = logging.StreamHandler(sys.stderr)
-            stream_handler.setLevel(logging.DEBUG)
             stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
             self.logger = logging.getLogger()
+            self.logger.setLevel(logging.INFO)
             self.logger.addHandler(stream_handler)
         
         #initialize parameters from the supplied observation
@@ -51,7 +51,7 @@ class ObservationModule(object):
         self._log('info', "Got offsets as {}".format(self.offsets))
         self.oversample = int(obs.get('oversample', 1))
         self.psf_commands = obs.get('pupil_mask', "")
-        self.id = int(obs.get('observations_id', 0))
+        self.id = obs.get('observations_id', '0')
         self.detectors = int(obs.get('detectors', 1))
         self.excludes = obs.get('excludes', [])
         self.exptime = float(obs.get('exptime', 1.))
@@ -78,7 +78,7 @@ class ObservationModule(object):
             self.pa = kwargs.get('pa', 0.0)
             self.seed = kwargs.get('seed', 0)
         if 'residual' in kwargs:
-            self.flat = kwargs['residual'].get('flatfield', True)
+            self.flat = kwargs['residual'].get('flat', True)
             self.dark = kwargs['residual'].get('dark', True)
             self.cosmic = kwargs['residual'].get('cosmic', True)
             self.poisson = kwargs['residual'].get('poisson', True)
@@ -106,7 +106,7 @@ class ObservationModule(object):
         self.obs_count = -1 #initially. Will advance to 0 when nextObservation() is first called.
         self.images = {}
         
-        self.imgbase = os.path.join(self.out_path,"%s_%d" % (self.prefix,self.id))
+        self.imgbase = os.path.join(self.out_path, "{}_{}".format(self.prefix, self.id))
         
         self.instruments = InstrumentList(excludes=self.excludes)
         self.instrument = self.instruments[self.instrument_name](**self.__dict__)
@@ -180,7 +180,7 @@ class ObservationModule(object):
             return None
     
     #-----------
-    def addCatalogue(self, catalogue):
+    def addCatalogue(self, catalogue, *args, **kwargs):
         """
         Add a catalogue to the internal image.
         
@@ -194,12 +194,12 @@ class ObservationModule(object):
             Name of catalogue file
         """
         self._log("info","Running catalogue %s" % (catalogue))
-        cats = self.instrument.addCatalogue(catalogue, self.id)
+        cats = self.instrument.addCatalogue(catalogue, self.id, *args, **kwargs)
         self._log("info",'Finished catalogue %s' % (catalogue))
         return cats
 
     #-----------
-    def addTable(self, table, table_type):
+    def addTable(self, table, table_type, *args, **kwargs):
         """
         Add an in-memory data table to the internal image
         
@@ -216,12 +216,12 @@ class ObservationModule(object):
             what type of table it is
         """
         self._log("info","Running {} table".format(table_type))
-        tables = self.instrument.addTable(table, table_type)
+        tables = self.instrument.addTable(table, table_type, *args, **kwargs)
         self._log("info", "Finished {} table".format(table_type))
         return tables
 
     #-----------
-    def addImage(self, img, units):
+    def addImage(self, img, units, *args, **kwargs):
         """
         Create an internal image from a user-provided file
         
@@ -240,11 +240,11 @@ class ObservationModule(object):
         self._log("info",'Adding image %s to observation' % (file))
 #        if True:
         if self.images[img].header["ASTROIMAGEVALID"]:
-            self.instrument.addImage(self.images[img],units)
+            self.instrument.addImage(self.images[img], units, *args, **kwargs)
         self._log("info",'Image Added')
 
     #-----------
-    def addError(self):
+    def addError(self, *args, **kwargs):
         """
         Add internal sources of error to the image
         
@@ -254,16 +254,16 @@ class ObservationModule(object):
         self: obj
             Class instance.
         """
-        psf_name = "%s_%d_psf.fits" % (self.imgbase,self.obs_count)
+        psf_name = "%s_%d_psf.fits" % (self.imgbase, self.obs_count)
         self.instrument.psf.toFits(psf_name)
         self._log("info","Adding Error")
         #readnoise is always true
-        self.instrument.addError(self.poisson, self.readnoise, self.flat, self.dark, self.cosmic)
+        self.instrument.addError(poisson=self.poisson, readnoise=self.readnoise, flat=self.flat, dark=self.dark, cosmic=self.cosmic, *args, **kwargs)
         self._log("info","Finished Adding Error")
         return psf_name
         
     #-----------
-    def finalize(self, mosaic=True):
+    def finalize(self, mosaic=True, *args, **kwargs):
         """
         Finalize FITS file
         
@@ -273,11 +273,11 @@ class ObservationModule(object):
         self: obj
             Class instance.
         """
-        self.instrument.toFits("%s_%d.fits" % (self.imgbase,self.obs_count))
+        self.instrument.toFits("%s_%d.fits" % (self.imgbase, self.obs_count), *args, **kwargs)
         mosaics = None
         if mosaic:
-            mosaics = self.instrument.toMosaic("%s_%d_mosaic.fits"%(self.imgbase,self.obs_count))
-        return "%s_%d.fits"%(self.imgbase,self.obs_count),mosaics,self.params
+            mosaics = self.instrument.toMosaic("%s_%d_mosaic.fits"%(self.imgbase, self.obs_count), *args, **kwargs)
+        return "%s_%d.fits"%(self.imgbase, self.obs_count), mosaics, self.params
     
     #-----------
     def totalObservations(self):

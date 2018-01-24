@@ -37,6 +37,15 @@ class Instrument(object):
         self.COMPFILES =  sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmc.fits")))
         self.GRAPHFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmg.fits")))
         self.THERMFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmt.fits")))
+
+        if 'logger' in kwargs:
+            self.logger = kwargs['logger']
+        else:
+            stream_handler = logging.StreamHandler(sys.stderr)
+            stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+            self.logger = logging.getLogger()
+            self.logger.setLevel(logging.INFO)
+            self.logger.addHandler(stream_handler)
         
         self.out_path = kwargs.get('out_path', os.getcwd())
         self.prefix = kwargs.get('prefix', '')
@@ -51,15 +60,6 @@ class Instrument(object):
         self.small_subarray = kwargs.get('small_subarray', False)
         self.filter = None
         self.detectors = None
-        if 'logger' in kwargs:
-            self.logger = kwargs['logger']
-        else:
-            stream_handler = logging.StreamHandler(sys.stderr)
-            stream_handler.setLevel(logging.DEBUG)
-            stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
-            self.logger = logging.getLogger()
-            if len(self.logger.handlers) == 0:
-                self.logger.addHandler(stream_handler)
         self.psf_commands = kwargs.get('psf_commands', None)
         self.instrument = kwargs.get('instrument', "")
         self.background_value = kwargs.get('background', 'none')
@@ -217,7 +217,7 @@ class Instrument(object):
             detector.addWithAlignment(img)
         self._log("info","Finished adding image")
     
-    def addCatalogue(self, catalogue, obs_num):
+    def addCatalogue(self, catalogue, obs_num, *args, **kwargs):
         """
             Takes an input catalogue, and observes that catalogue with all detectors.
             
@@ -247,7 +247,7 @@ class Instrument(object):
         return cats
         self._log("info","Finished Adding Catalogue")
     
-    def addTable(self, table, table_type):
+    def addTable(self, table, table_type, *args, **kwargs):
         """
             Takes an input table (still in memory), and observes that table with all detectors.
             
@@ -314,7 +314,7 @@ class Instrument(object):
         """
         (catpath,catname) = os.path.split(catalogue)
         (catbase,ext) = os.path.splitext(catname)
-        obsname = os.path.join(self.out_path,catbase+"_{:02d}_conv_{}.txt".format(obs_num, self.filter))
+        obsname = os.path.join(self.out_path, catbase+"_{:02d}_conv_{}.txt".format(obs_num, self.filter))
         t = read_metadata(catalogue, n_lines=1000)
         #Check for built-in metadata
         table_type = ""
@@ -694,7 +694,7 @@ class Instrument(object):
                 my_dithers.append((x+i,y+j))
         return my_dithers
     
-    def addError(self, convolve=True, poisson=True, readnoise=True, flat=True, dark=True, cosmic=True, snapshots={}):
+    def addError(self, convolve=True, poisson=True, readnoise=True, flat=True, dark=True, cosmic=True, parallel=False, snapshots={}):
         """Base function for adding in residual error"""
         self._log("info","Adding residual error")
         base_state = self.getState()
@@ -721,11 +721,11 @@ class Instrument(object):
             if 'exptime' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_exptime.fits".format(self.obs_count, detector.name))
             self._log("info","Convolving with PSF")
-            if convolve:
-                self.updateState(base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name))
-                detector.convolve(self.psf, max=self.convolve_size-1)
-                if 'convolve' in snapshots:
-                    detector.toFits(self.imgbase+"_{}_{}_snapshot_convolve.fits".format(self.obs_count, detector.name))
+            convolve_state = base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name)
+            self.updateState(convolve_state)
+            detector.convolve(self.psf, max=self.convolve_size-1, do_convolution=convolve, parallel=parallel, state_setter=self.updateState, base_state=convolve_state)
+            if 'convolve' in snapshots:
+                detector.toFits(self.imgbase+"_{}_{}_snapshot_convolve.fits".format(self.obs_count, detector.name))
             if self.oversample != 1:
                 self._log("info","Binning oversampled image")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Binning oversampled image</span>".format(detector.name))

@@ -54,9 +54,9 @@ class SceneModule(object):
             self.logger = kwargs['logger']
         else:
             stream_handler = logging.StreamHandler(sys.stderr)
-            stream_handler.setLevel(logging.DEBUG)
             stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
             self.logger = logging.getLogger()
+            self.logger.setLevel(logging.INFO)
             self.logger.addHandler(stream_handler)
         if 'scene_general' in kwargs:
             self.ra = kwargs['scene_general'].get('ra', 0.0)

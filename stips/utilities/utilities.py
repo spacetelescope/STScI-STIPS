@@ -8,7 +8,7 @@ General CGI form functions.
 """
 
 # External modules
-import importlib, inspect, os, sys
+import importlib, inspect, multiprocessing, os, sys, thread
 import numpy as np
 from numpy.fft import fft2, ifft2
 from astropy.io import ascii
@@ -145,6 +145,136 @@ def read_table(filename, n_chunk=100000, format="ipac"):
         else:
             yield ascii.read(lines, format=format, guess=False)
 
+class Sum: #again, this class is from ParallelPython's example code (I modified for an array and added comments)
+    def __init__(self, value):
+        self.value = value
+        self.lock = thread.allocate_lock()
+        self.count = 0
+
+    def add(self, vin):
+            value, pos = vin
+            (p0, i, p2, j, p1, p3) = pos
+            self.count += 1
+            self.lock.acquire() #lock so sum is correct if two processes return at same time
+            self.value[p0:p1, p2, p3] += value[:(p1-p0), :(p3-p2)] #the actual summation
+            self.lock.release()
+
+
+def computation(input, fft_kernel, pos, n):
+    array1 = np.real(ifft2(fft_kernel * fft2(input[pos[0]:pos[1], pos[2]:pos[3]], n)))
+    return (array1, pos)
+
+
+def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state=""):
+    """
+    Fast two-dimensional linear convolution via the overlap-add method.
+    The overlap-add method is well-suited to convolving a very large array,
+    `Amat`, with a much smaller filter array, `Hmat` by breaking the large
+    convolution into many smaller `L`-sized sub-convolutions, and evaluating
+    these using the FFT. The computational savings over the straightforward
+    two-dimensional convolution via, say, scipy.signal.convolve2d, can be
+    substantial for large Amat and/or Hmat.
+    Parameters
+    ----------
+    Amat, Hmat : array_like
+        Two-dimensional input arrays to be convolved. For computational
+        purposes, Amat should be larger.
+    L : sequence of two ints, optional
+        Length of sub-convolution to use. This should ideally be as large as
+        possible to obtain maximum speedup: that is, if you have the memory to
+        compute the linear convolution using FFT2, i.e., replacing spatial
+        convolution with frequency-domain multiplication, then let `L =
+        np.array(Amat.shape) + np.array(Hmat.shape) - 1`. Usually, though, you
+        are considering overlap-add because you can't afford a batch transform
+        on your arrays, so make `L` as big as you can.
+    Nfft : sequence of two ints, optional
+        Size of the two-dimensional FFT to use for each `L`-sized
+        sub-convolution. If omitted, defaults to the next power-of-two, that
+        is, the next power-of-two on or after `L + np.array(Hmat.shape) - 1`.
+        If you choose this default, try to avoid `L` such that this minimum, `L
+        + np.array(Hmat.shape) - 1`, is just a bit greater than a power-of-two,
+        since you'll be paying for a 4x larger FFT than you need.
+    y : array_like, optional
+        Storage for the output. Useful if using a memory-mapped file, e.g.
+    verbose : boolean, optional
+        If True, prints a message for each `L`-sized subconvolution.
+    Returns
+    -------
+    y : same as passed in, or ndarray if no `y` passed in
+        The `np.array(Amat.shape) + np.array(Hmat.shape) - 1`-sized
+        two-dimensional array containing the linear convolution. Should be
+        within machine precision of, e.g., `scipy.signal.convolve2d(Amat,
+        Hmat, 'full')`.
+    Raises
+    ------
+    ValueError if `L` and `Nfft` aren't two-element, and too small: both
+    elements of `L` must be greater than zero, and `Nfft`'s must be greater
+    than `L + np.array(Hmat.shape) - 1`. Also if `Amat` or `Hmat` aren't
+    two-dimensional arrays, or if `y` doesn't have the correct size to store
+    the output of the linear convolution.
+    References
+    ----------
+    Wikipedia is only semi-unhelpful on this topic: see "Overlap-add method".
+    """
+    M = np.array(Hmat.shape)
+    Na = np.array(Amat.shape)
+
+    if y is None:
+        y = np.zeros(M + Na - 1, dtype=Amat.dtype)
+    elif y.shape != tuple(M + Na - 1):
+        raise ValueError('y given has incorrect dimensions', M + Na - 1)
+    v = Sum(y)
+
+    if L is None:
+        L = M * 100
+    else:
+        L = np.array(L)
+
+    if Nfft is None:
+        Nfft = 2 ** np.ceil(np.log2(L + M - 1)).astype(int)
+    else:
+        Nfft = np.array(Nfft, dtype=int)
+
+    if not (np.all(L > 0) and L.size == 2):
+        raise ValueError('L must have two positive elements')
+    if not (np.all(Nfft >= L + M - 1) and Nfft.size == 2):
+        raise ValueError('Nfft must have two elements >= L + M - 1 where M = Hmat.shape')
+    if not (Amat.ndim <= 2 and Hmat.ndim <= 2):
+        raise ValueError('Amat and Hmat must be 2D arrays')
+
+    Hf = fft2(Hmat, Nfft)
+
+    pool = multiprocessing.Pool()
+    (XDIM, YDIM) = (1, 0)
+    adjust = lambda x: x                           # no adjuster
+    if np.isrealobj(Amat) and np.isrealobj(Hmat):  # unless inputs are real
+        adjust = np.real                           # then ensure real
+    start = [0, 0]
+    endd = [0, 0]
+    total_boxes = (Na[XDIM] // L[XDIM] + 1) * (Na[YDIM] // L[YDIM] + 1)
+    current_box = 0
+    while start[XDIM] <= Na[XDIM]:
+        endd[XDIM] = min(start[XDIM] + L[XDIM], Na[XDIM])
+        start[YDIM] = 0
+        while start[YDIM] <= Na[YDIM]:
+            if verbose and logger is not None:
+                logger.info("Starting box {}".format(start))
+            if verbose and state_setter is not None:
+                state_setter(base_state + " {:.2f}% done".format((current_box/total_boxes)*100.))
+            endd[YDIM] = min(start[YDIM] + L[YDIM], Na[YDIM])
+            thisend = np.minimum(Na + M - 1, start + Nfft)
+            singlepoolresult = pool.apply_async(computation, (Amat, Hf, (start[YDIM], endd[YDIM], start[XDIM], endd[XDIM], thisend[YDIM], thisend[XDIM]), Nfft), callback=v.add)
+            start[YDIM] += L[YDIM]
+            current_box += 1
+        start[XDIM] += L[XDIM]
+    
+    
+    pool.close()
+    pool.join()
+
+    return y
+
+
 def overlapadd2(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state=""):
     """
     Fast two-dimensional linear convolution via the overlap-add method.
@@ -217,8 +347,7 @@ def overlapadd2(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=Non
     if not (np.all(L > 0) and L.size == 2):
         raise ValueError('L must have two positive elements')
     if not (np.all(Nfft >= L + M - 1) and Nfft.size == 2):
-        raise ValueError('Nfft must have two elements >= L + M - 1 where '
-                         'M = Hmat.shape')
+        raise ValueError('Nfft must have two elements >= L + M - 1 where M = Hmat.shape')
     if not (Amat.ndim <= 2 and Hmat.ndim <= 2):
         raise ValueError('Amat and Hmat must be 2D arrays')
 
@@ -241,13 +370,9 @@ def overlapadd2(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=Non
             if verbose and state_setter is not None:
                 state_setter(base_state + " {:.2f}% done".format((current_box/total_boxes)*100.))
             endd[YDIM] = min(start[YDIM] + L[YDIM], Na[YDIM])
-            yt = adjust(ifft2(Hf * fft2(Amat[start[YDIM] : endd[YDIM],
-                        start[XDIM] : endd[XDIM]], Nfft)))
-
             thisend = np.minimum(Na + M - 1, start + Nfft)
-            y[start[YDIM] : thisend[YDIM], start[XDIM] : thisend[XDIM]] += (
-                yt[:(thisend[YDIM] - start[YDIM]),
-                    :(thisend[XDIM] - start[XDIM])])
+            yt = adjust(ifft2(Hf * fft2(Amat[start[YDIM] : endd[YDIM], start[XDIM] : endd[XDIM]], Nfft)))
+            y[start[YDIM] : thisend[YDIM], start[XDIM] : thisend[XDIM]] += (yt[:(thisend[YDIM] - start[YDIM]), :(thisend[XDIM] - start[XDIM])])
             start[YDIM] += L[YDIM]
             current_box += 1
         start[XDIM] += L[XDIM]

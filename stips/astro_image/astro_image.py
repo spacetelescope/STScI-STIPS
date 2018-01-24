@@ -16,7 +16,7 @@ from cStringIO import StringIO
 from scipy.ndimage.interpolation import zoom, rotate
 
 #Local Modules
-from ..utilities import OffsetPosition, overlapadd2, read_table
+from ..utilities import OffsetPosition, overlapadd2, overlapaddparallel, read_table
 from ..errors import GetCrProbs, GetCrTemplate, MakeCosmicRay
 
 class ImageData(object):
@@ -53,11 +53,10 @@ class AstroImage(object):
             self.logger = kwargs['logger']
         else:
             stream_handler = logging.StreamHandler(sys.stderr)
-            stream_handler.setLevel(logging.DEBUG)
             stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
             self.logger = logging.getLogger()
-            if len(self.logger.handlers) == 0:
-                self.logger.addHandler(stream_handler)
+            self.logger.setLevel(logging.INFO)
+            self.logger.addHandler(stream_handler)
     
         #Set unique ID and figure out where the numpy memmap will be stored
         self.out_path = kwargs.get('out_path', os.getcwd())
@@ -561,7 +560,7 @@ class AstroImage(object):
         self._addArrayWithOffset(img, offset_x, offset_y)
         return central_flux
 
-    def convolve(self, other, max=4095):
+    def convolve(self, other, max=4095, do_convolution=True, parallel=False, state_setter=None, base_state=""):
         """Convolves the AstroImage with another (provided) AstroImage, e.g. for PSF convolution."""
         self.addHistory("Convolving with file %s" % (other.name))
         self._log("info","Convolving AstroImage %s with %s" % (self.name,other.name))
@@ -569,13 +568,31 @@ class AstroImage(object):
         try:
             with ImageData(self.fname, self.shape, mode='r') as dat, ImageData(other.fname, other.shape, mode='r') as psf:
                 fp_result = np.memmap(f, dtype='float32', mode='w+', shape=(self.shape[0]+psf.shape[0]-1, self.shape[1]+psf.shape[1]-1))
-                sub_shape = (min(max - psf.shape[0], self.shape[0] + psf.shape[0] - 1), min(max - psf.shape[1], self.shape[1] + psf.shape[1] - 1))
-                self._log('info', "PSF Shape: {}; Current Shape: {}".format(psf.shape, self.shape))
-                self._log('info', "Choosing between {}-{}={} and {}+{}-1={}".format(max, psf.shape, max-psf.shape[0], psf.shape, self.shape, psf.shape[0]+self.shape[0]-1))
-                self._log('info', "Using overlapping arrays of size {}".format(sub_shape))
-                overlapadd2(dat, psf, sub_shape, y=fp_result, verbose=True, logger=self.logger)
-                self._log('info', "Cropping convolved image down to detector size")
                 centre = (fp_result.shape[0]//2, fp_result.shape[1]//2)
+                if do_convolution:
+                    sub_shape = (min(max - psf.shape[0], self.shape[0] + psf.shape[0] - 1), min(max - psf.shape[1], self.shape[1] + psf.shape[1] - 1))
+                    self._log('info', "PSF Shape: {}; Current Shape: {}".format(psf.shape, self.shape))
+                    self._log('info', "Choosing between {}-{}={} and {}+{}-1={}".format(max, psf.shape, max-psf.shape[0], psf.shape, self.shape, psf.shape[0]+self.shape[0]-1))
+                    self._log('info', "Using overlapping arrays of size {}".format(sub_shape))
+                    self._log('info', "Starting Convolution at {}".format(time.ctime()))
+                    if parallel:
+                        overlapaddparallel(dat, psf, sub_shape, y=fp_result, verbose=True, logger=self.logger, base_state=base_state, state_setter=state_setter)
+                    else:
+                        overlapadd2(dat, psf, sub_shape, y=fp_result, verbose=True, logger=self.logger, base_state=base_state, state_setter=state_setter)
+                    self._log('info', "Finished Convolution at {}".format(time.ctime()))
+                else:
+                    bordered_half = self.shape[0]//2, self.shape[1]//2
+                    ly, hy, lx, hx = centre[0]-bordered_half[0], centre[0]+bordered_half[0], centre[1]-bordered_half[1], centre[1]+bordered_half[1]
+                    if hx-lx < self.shape[1]:
+                        hx += 1
+                    elif hx-lx > self.shape[1]:
+                        hx -= 1
+                    if hy-ly < self.shape[0]:
+                        hy += 1
+                    elif hy-ly > self.shape[0]:
+                        hy -= 1
+                    fp_result[ly:hy, lx:hx] += dat[:,:]
+                self._log('info', "Cropping convolved image down to detector size")
                 half = (self.base_shape[0]//2, self.base_shape[1]//2)
                 self._log('info', "Image Centre: {}; Image Half-size: {}".format(centre, half))
                 ly, hy, lx, hx = centre[0]-half[0], centre[0]+half[0], centre[1]-half[1], centre[1]+half[1]
