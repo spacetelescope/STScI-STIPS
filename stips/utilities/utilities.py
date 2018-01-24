@@ -8,7 +8,7 @@ General CGI form functions.
 """
 
 # External modules
-import importlib, inspect, pp, os, sys, thread
+import importlib, inspect, pp, os, shutil, sys, thread, uuid
 import numpy as np
 from numpy.fft import fft2, ifft2
 from astropy.io import ascii
@@ -164,13 +164,18 @@ class Sum(object): #again, this class is from ParallelPython's example code (I m
         print("Finished {}".format(pos))
 
 
-def computation(input, fft_kernel, pos, n):
+def computation(input, fft_kernel, pos, n, output):
     import numpy as np
     from numpy.fft import fft2, ifft2
+    p0, p1, p2, p3, p4, p5 = pos
     print("Starting Work")
-    arr = np.real(ifft2(fft_kernel * fft2(input[pos[0]:pos[1], pos[2]:pos[3]], n)))
+    arr = np.real(ifft2(fft_kernel * fft2(input[p0:p1, p2:p3], n)))
     print("Finished Work")
-    return arr
+    print("Opening Output Array")
+    tmp_arr = np.memmap(output, dtype='float32', mode='r+', shape=(input.shape[0]+fft_kernel.shape[0]-1, input.shape[1]+fft_kernel.shape[1]-1))
+    tmp_arr[p0:p4, p2:p5] += arr[:(p4-p0), :(p5-p2)]
+    del tmp_arr
+    print("Closed Output Array")
 
 
 def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state=""):
@@ -226,12 +231,15 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
     """
     M = np.array(Hmat.shape)
     Na = np.array(Amat.shape)
-
+    
     if y is None:
-        y = np.zeros(M + Na - 1, dtype=Amat.dtype)
-    elif y.shape != tuple(M + Na - 1):
-        raise ValueError('y given has incorrect dimensions', M + Na - 1)
-    v = Sum(y)
+        path = os.getcwd()
+    else:
+        path, fname = os.path.split(y)
+    tmp = os.path.join(path, uuid.uuid4().hex+"_convolve_overlap.tmp")
+    
+    tmp_arr = np.memmap(y, dtype='float32', mode='w+', shape=(Amat.shape[0]+Hmat.shape[0]-1, Amat.shape[1]+Hmat.shape[1]-1))
+    del tmp_arr
 
     if L is None:
         L = M * 100
@@ -273,7 +281,7 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
             endd[YDIM] = min(start[YDIM] + L[YDIM], Na[YDIM])
             thisend = np.minimum(Na + M - 1, start + Nfft)
             pos = (start[YDIM], endd[YDIM], start[XDIM], endd[XDIM], thisend[YDIM], thisend[XDIM])
-            job_server.submit(computation, args=(Amat, Hf, pos, Nfft), callback=v.add, callbackargs=pos, globals=globals())
+            job_server.submit(computation, args=(Amat, Hf, pos, Nfft, tmp), globals=globals())
             start[YDIM] += L[YDIM]
             current_box += 1
         start[XDIM] += L[XDIM]
@@ -281,7 +289,12 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
     job_server.wait()
     logger.info(job_server.print_stats())
 
-    return y
+    if y is not None:
+        shutil.rename(tmp, y)
+        result = np.memmap(y, dtype='float32', mode='w+', shape=(Amat.shape[0]+Hmat.shape[0]-1, Amat.shape[1]+Hmat.shape[1]-1))
+    else:
+        result = tmp_arr
+    return result
 
 
 def overlapadd2(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state=""):
