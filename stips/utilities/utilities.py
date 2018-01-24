@@ -152,18 +152,25 @@ class Sum(object): #again, this class is from ParallelPython's example code (I m
         self.count = 0
 
     def add(self, pos, v):
-            (p0, i, p2, j, p1, p3) = pos
-            value = v[0]
-            self.count += 1
-            self.lock.acquire() #lock so sum is correct if two processes return at same time
-            self.value[p0:p1, p2:p3] += value[:(p1-p0), :(p3-p2)] #the actual summation
-            self.lock.release()
+        print("Starting Add with position {}".format(pos))
+        (p0, i, p2, j, p1, p3) = pos
+        value = v[0]
+        self.count += 1
+        print("Locking for {}".format(pos))
+        self.lock.acquire() #lock so sum is correct if two processes return at same time
+        self.value[p0:p1, p2:p3] += value[:(p1-p0), :(p3-p2)] #the actual summation
+        print("Unlocking for {}".format(pos))
+        self.lock.release()
+        print("Finished {}".format(pos))
 
 
 def computation(input, fft_kernel, pos, n):
     import numpy as np
     from numpy.fft import fft2, ifft2
-    return np.real(ifft2(fft_kernel * fft2(input[pos[0]:pos[1], pos[2]:pos[3]], n)))
+    print("Starting Work")
+    arr = np.real(ifft2(fft_kernel * fft2(input[pos[0]:pos[1], pos[2]:pos[3]], n)))
+    print("Finished Work")
+    return arr
 
 
 def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state=""):
