@@ -161,6 +161,8 @@ class Sum(object): #again, this class is from ParallelPython's example code (I m
 
 
 def computation(input, fft_kernel, pos, n):
+    import numpy as np
+    from numpy.fft import fft2, ifft2
     return np.real(ifft2(fft_kernel * fft2(input[pos[0]:pos[1], pos[2]:pos[3]], n)))
 
 
