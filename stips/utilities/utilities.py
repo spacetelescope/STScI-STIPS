@@ -8,7 +8,7 @@ General CGI form functions.
 """
 
 # External modules
-import importlib, inspect, multiprocessing, os, sys, thread
+import importlib, inspect, pp, os, sys, thread
 import numpy as np
 from numpy.fft import fft2, ifft2
 from astropy.io import ascii
@@ -156,7 +156,7 @@ class Sum: #again, this class is from ParallelPython's example code (I modified 
             (p0, i, p2, j, p1, p3) = pos
             self.count += 1
             self.lock.acquire() #lock so sum is correct if two processes return at same time
-            self.value[p0:p1, p2, p3] += value[:(p1-p0), :(p3-p2)] #the actual summation
+            self.value[p0:p1, p2:p3] += value[:(p1-p0), :(p3-p2)] #the actual summation
             self.lock.release()
 
 
@@ -244,7 +244,8 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
 
     Hf = fft2(Hmat, Nfft)
 
-    pool = multiprocessing.Pool()
+    job_server = pp.Server(ppservers=("localhost",))
+    logger.info("Starting job server with {} workers".format(job_server.get_ncpus()))
     (XDIM, YDIM) = (1, 0)
     adjust = lambda x: x                           # no adjuster
     if np.isrealobj(Amat) and np.isrealobj(Hmat):  # unless inputs are real
@@ -263,14 +264,13 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
                 state_setter(base_state + " {:.2f}% done".format((current_box/total_boxes)*100.))
             endd[YDIM] = min(start[YDIM] + L[YDIM], Na[YDIM])
             thisend = np.minimum(Na + M - 1, start + Nfft)
-            singlepoolresult = pool.apply_async(computation, (Amat, Hf, (start[YDIM], endd[YDIM], start[XDIM], endd[XDIM], thisend[YDIM], thisend[XDIM]), Nfft), callback=v.add)
+            job_server.submit(computation, (Amat, Hf, (start[YDIM], endd[YDIM], start[XDIM], endd[XDIM], thisend[YDIM], thisend[XDIM]), Nfft), callback=v.add)
             start[YDIM] += L[YDIM]
             current_box += 1
         start[XDIM] += L[XDIM]
     
-    
-    pool.close()
-    pool.join()
+    job_server.wait()
+    logger.info(job_server.print_stats())
 
     return y
 
