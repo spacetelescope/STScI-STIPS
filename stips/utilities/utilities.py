@@ -34,10 +34,11 @@ def GetStipsData(to_retrieve):
     Retrieve a file from the stips_data directory. Will also print out a warning if the directory
     can't be found.
     """
+    local_data_dir = os.path.abspath(os.path.join(os.realpath(__file__), "..", "data"))
     if "stips_data" not in os.environ:
-        sys.stderr.write("ERROR: stips_data environment variable not found. STIPS requires the stips_data directory to function correctly.\n")
-        sys.stderr.write("ERROR: Please make sure that the stips_data environment variable exists and points to the location of stips_data.\n")
-    stips_data_base = os.environ.get("stips_data", os.getcwd())
+        sys.stderr.write("WARNING: stips_data environment variable not found. Falling back on local STIPS data.\n")
+        sys.stderr.write("WARNING: STIPS local data may be older than data available via the stips_data environment variable.\n")
+    stips_data_base = os.environ.get("stips_data", local_data_dir)
     if not os.path.exists(stips_data_base):
         sys.stderr.write("ERROR: stips_data directory at {} not found. STIPS requires the stips_data directory to function correctly.\n".format(stips_data_base))
         sys.stderr.write("ERROR: Please make sure that the stips_data environment variable exists and points to the location of stips_data.\n")
