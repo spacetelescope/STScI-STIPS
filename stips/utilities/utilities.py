@@ -159,55 +159,14 @@ def read_table(filename, n_chunk=100000, format="ipac"):
         else:
             yield ascii.read(lines, format=format, guess=False)
 
-#class for callbacks
-class Sum(object):
-    def __init__(self, fname, shape):
-        self.fname = fname
-        self.shape = shape
-        path, fn = os.path.split(fname)
-        self.path = path
-        self.lock = thread.allocate_lock()
-
-    #the callback function
-    def add(self, pos, value):
-        start_y, end_y, start_x, end_x, thisend_y, thisend_x = pos
-        self.log_path = os.path.join(self.path, "log_{}.txt".format(pos))
-        with open(self.log_path, 'a') as log_file:
-            log_file.write("{}: Started Addition\n".format(datetime.now()))
-            log_file.write("{}: Locking Thread\n".format(datetime.now()))
-            self.lock.acquire()
-            log_file.write("{}: Lock Acquired\n".format(datetime.now()))
-            log_file.write("{}: Opening Output\n".format(datetime.now()))
-            out_arr = np.memmap(self.fname, dtype='float32', mode='r+', shape=self.shape)
-            log_file.write("{}: Opened output file\n".format(datetime.now()))
-            out_arr[start_y:thisend_y, start_x:thisend_x] += (value[:(thisend_y-start_y), :(thisend_x-start_x)])
-            log_file.write("{}: Updated output file\n".format(datetime.now()))
-            del out_arr
-            log_file.write("{}: Closed output file\n".format(datetime.now()))
-            self.lock.release()
-            log_file.write("{}: Released Lock\n".format(datetime.now()))
 
 def computation(arr, Hf, pos, Nfft, y, ys, adjust, lock, path):
-    log_path = os.path.join(path, "log_{}.txt".format(pos))
-    
-    with open(log_path, 'w') as log_file:
-        start_y, end_y, start_x, end_x, thisend_y, thisend_x = pos
-
-        log_file.write("{}: Starting Convolution\n".format(datetime.now()))
-        log_file.write("{}: Input Sum:{}\n".format(datetime.now(), np.sum(arr)))
-        conv = adjust(ifft2(Hf * fft2(arr, Nfft)))
-        log_file.write("{}: Output Sum:{}\n".format(datetime.now(), np.sum(conv)))
-        log_file.write("{}: Finished Work\n".format(datetime.now()))
-        
-        log_file.write("{}: Acquiring Lock\n".format(datetime.now()))
-        lock.acquire()
-        log_file.write("{}: Opening Output Array\n".format(datetime.now()))
-        with ImageData(y, ys) as dat:
-            log_file.write("{}: Output pre-addition sum:{}\n".format(datetime.now(), np.sum(dat)))
-            dat[start_y:thisend_y, start_x:thisend_x] += (conv[:(thisend_y-start_y), :(thisend_x-start_x)])
-            log_file.write("{}: Output post-addition sum:{}\n".format(datetime.now(), np.sum(dat)))
-        lock.release()
-        log_file.write("{}: Released Lock\n".format(datetime.now()))
+    start_y, end_y, start_x, end_x, thisend_y, thisend_x = pos
+    conv = adjust(ifft2(Hf * fft2(arr, Nfft)))        
+    lock.acquire()
+    with ImageData(y, ys) as dat:
+        dat[start_y:thisend_y, start_x:thisend_x] += (conv[:(thisend_y-start_y), :(thisend_x-start_x)])
+    lock.release()
 
 
 def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state="", path=None):
@@ -321,9 +280,9 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
         start[XDIM] += L[XDIM]
     pool.close()
     pool.join()
-    for result in results:
-        logger.info("Result: {}".format(result.get()))
-        logger.info("Success: {}".format(result.successful()))
+#     for result in results:
+#         logger.info("Result: {}".format(result.get()))
+#         logger.info("Success: {}".format(result.successful()))
 
 
 def overlapadd2(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state=""):
