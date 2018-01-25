@@ -66,6 +66,7 @@ class ObservationModule(object):
         self.cat_path = kwargs.get('cat_path', os.getcwd())
         self.out_path = kwargs.get('out_path', os.getcwd())
         self.convolve_size = kwargs.get('convolve_size', 4096)
+        self.parallel = kwargs.get('parallel', False)
         
         if 'scene_general' in kwargs:
             self.ra = kwargs['scene_general'].get('ra', 0.0)
@@ -194,6 +195,8 @@ class ObservationModule(object):
             Name of catalogue file
         """
         self._log("info","Running catalogue %s" % (catalogue))
+        if 'parallel' not in kwargs:
+            kwargs['parallel'] = self.parallel
         cats = self.instrument.addCatalogue(catalogue, self.id, *args, **kwargs)
         self._log("info",'Finished catalogue %s' % (catalogue))
         return cats
@@ -216,6 +219,8 @@ class ObservationModule(object):
             what type of table it is
         """
         self._log("info","Running {} table".format(table_type))
+        if 'parallel' not in kwargs:
+            kwargs['parallel'] = self.parallel
         tables = self.instrument.addTable(table, table_type, *args, **kwargs)
         self._log("info", "Finished {} table".format(table_type))
         return tables
@@ -257,7 +262,8 @@ class ObservationModule(object):
         psf_name = "%s_%d_psf.fits" % (self.imgbase, self.obs_count)
         self.instrument.psf.toFits(psf_name)
         self._log("info","Adding Error")
-        #readnoise is always true
+        if 'parallel' not in kwargs:
+            kwargs['parallel'] = self.parallel
         self.instrument.addError(poisson=self.poisson, readnoise=self.readnoise, flat=self.flat, dark=self.dark, cosmic=self.cosmic, *args, **kwargs)
         self._log("info","Finished Adding Error")
         return psf_name

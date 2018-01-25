@@ -8,9 +8,10 @@ General CGI form functions.
 """
 
 # External modules
-import importlib, inspect, multiprocessing, os, shutil, sys, uuid
+import importlib, inspect, os, shutil, sys, uuid
 import numpy as np
 import astropy.io.fits as pyfits
+import multiprocessing.dummy as multiprocessing
 from numpy.fft import fft2, ifft2
 from astropy.io import ascii
 from astropy.table import Table
@@ -191,6 +192,7 @@ def computation(arr, Hf, pos, Nfft, y, ys, adjust, lock, path):
     with ImageData(y, ys) as dat:
         dat[start_y:thisend_y, start_x:thisend_x] += (conv[:(thisend_y-start_y), :(thisend_x-start_x)])
     lock.release()
+    return "[{}, {}]".format(start_y, start_x)
 
 
 def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state="", path=None):
@@ -244,6 +246,7 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
     ----------
     Wikipedia is only semi-unhelpful on this topic: see "Overlap-add method".
     """
+    
     M = np.array(Hmat.shape)
     Na = np.array(Amat.shape)
     
@@ -274,8 +277,16 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
     pool = multiprocessing.Pool()
     m = multiprocessing.Manager()
     lock = m.Lock()
+    print_lock = m.Lock()
     results = []
     logger.info("Starting job server with {} workers".format(pool._processes))
+    
+    def closing_log(pos):
+        if verbose and logger is not None:
+            print_lock.acquire()
+            logger.info("Finishing box {}".format(pos))
+            print_lock.release()
+    
     (XDIM, YDIM) = (1, 0)
     adjust = lambda x: x                           # no adjuster
     if np.isrealobj(Amat) and np.isrealobj(Hmat):  # unless inputs are real
@@ -297,7 +308,7 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
             pos = (start[YDIM], endd[YDIM], start[XDIM], endd[XDIM], thisend[YDIM], thisend[XDIM])
             sub_arr = np.empty_like(Amat[start[YDIM]:endd[YDIM], start[XDIM]:endd[XDIM]])
             sub_arr[:,:] = Amat[start[YDIM]:endd[YDIM], start[XDIM]:endd[XDIM]]
-            res = pool.apply_async(computation, args=(sub_arr, Hf, pos, Nfft, y, ys, adjust, lock, path))
+            res = pool.apply_async(computation, args=(sub_arr, Hf, pos, Nfft, y, ys, adjust, lock, path), callback=closing_log)
             results.append(res)
             start[YDIM] += L[YDIM]
             current_box += 1
