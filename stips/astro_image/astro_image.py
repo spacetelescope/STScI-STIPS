@@ -16,18 +16,8 @@ from cStringIO import StringIO
 from scipy.ndimage.interpolation import zoom, rotate
 
 #Local Modules
-from ..utilities import OffsetPosition, overlapadd2, overlapaddparallel, read_table
+from ..utilities import OffsetPosition, overlapadd2, overlapaddparallel, read_table, ImageData
 from ..errors import GetCrProbs, GetCrTemplate, MakeCosmicRay
-
-class ImageData(object):
-    def __init__(self, fname, shape, mode='r+'):
-        self.fp = np.memmap(fname, dtype='float32', mode=mode, shape=shape)
-    
-    def __enter__(self):
-        return self.fp
-    
-    def __exit__(self, exc_type, exc_value, traceback):
-        del self.fp
 
 
 class AstroImage(object):
@@ -566,6 +556,7 @@ class AstroImage(object):
         self._log("info","Convolving AstroImage %s with %s" % (self.name,other.name))
         f, g = os.path.join(self.out_path, uuid.uuid4().hex+"_convolve_01.tmp"), os.path.join(self.out_path, uuid.uuid4().hex+"_convolve_02.tmp")
         try:
+            sub_shape = (min(max - other.shape[0], self.shape[0] + other.shape[0] - 1), min(max - other.shape[1], self.shape[1] + other.shape[1] - 1))
             with ImageData(self.fname, self.shape, mode='r') as dat, ImageData(other.fname, other.shape, mode='r') as psf:
                 fp_result = np.memmap(f, dtype='float32', mode='w+', shape=(self.shape[0]+psf.shape[0]-1, self.shape[1]+psf.shape[1]-1))
                 centre = (fp_result.shape[0]//2, fp_result.shape[1]//2)
@@ -576,7 +567,9 @@ class AstroImage(object):
                     self._log('info', "Using overlapping arrays of size {}".format(sub_shape))
                     self._log('info', "Starting Convolution at {}".format(time.ctime()))
                     if parallel:
-                        overlapaddparallel(dat, psf, sub_shape, y=fp_result, verbose=True, logger=self.logger, base_state=base_state, state_setter=state_setter)
+                        del fp_result
+                        overlapaddparallel(dat, psf, sub_shape, y=f, verbose=True, logger=self.logger, base_state=base_state, state_setter=state_setter, path=self.out_path)
+                        fp_result = np.memmap(f, dtype='float32', mode='r+', shape=(self.shape[0]+psf.shape[0]-1, self.shape[1]+psf.shape[1]-1))
                     else:
                         overlapadd2(dat, psf, sub_shape, y=fp_result, verbose=True, logger=self.logger, base_state=base_state, state_setter=state_setter)
                     self._log('info', "Finished Convolution at {}".format(time.ctime()))
@@ -592,29 +585,29 @@ class AstroImage(object):
                     elif hy-ly > self.shape[0]:
                         hy -= 1
                     fp_result[ly:hy, lx:hx] += dat[:,:]
-                self._log('info', "Cropping convolved image down to detector size")
-                half = (self.base_shape[0]//2, self.base_shape[1]//2)
-                self._log('info', "Image Centre: {}; Image Half-size: {}".format(centre, half))
-                ly, hy, lx, hx = centre[0]-half[0], centre[0]+half[0], centre[1]-half[1], centre[1]+half[1]
-                if hx-lx < self.base_shape[1]:
-                    hx += 1
-                elif hx-lx > self.base_shape[1]:
-                    hx -= 1
-                if hy-ly < self.base_shape[0]:
-                    hy += 1
-                elif hy-ly > self.base_shape[0]:
-                    hy -= 1
-                self._log('info', "Taking [{}:{}, {}:{}]".format(ly, hy, lx, hx))
-                fp_crop = np.memmap(g, dtype='float32', mode='w+', shape=self.base_shape)
-                fp_crop[:,:] = fp_result[ly:hy, lx:hx]
-                crpix = [half[0], half[1]]
-                if self.wcs.sip is not None:
-                    sip = wcs.Sip(self.wcs.sip.a, self.wcs.sip.b, None, None, crpix)
-                else:
-                    sip = None
-                self.wcs = self._wcs(self.ra, self.dec, self.pa, self.scale, crpix=crpix, sip=sip)
-                del fp_result
-                del fp_crop
+            self._log('info', "Cropping convolved image down to detector size")
+            half = (self.base_shape[0]//2, self.base_shape[1]//2)
+            self._log('info', "Image Centre: {}; Image Half-size: {}".format(centre, half))
+            ly, hy, lx, hx = centre[0]-half[0], centre[0]+half[0], centre[1]-half[1], centre[1]+half[1]
+            if hx-lx < self.base_shape[1]:
+                hx += 1
+            elif hx-lx > self.base_shape[1]:
+                hx -= 1
+            if hy-ly < self.base_shape[0]:
+                hy += 1
+            elif hy-ly > self.base_shape[0]:
+                hy -= 1
+            self._log('info', "Taking [{}:{}, {}:{}]".format(ly, hy, lx, hx))
+            fp_crop = np.memmap(g, dtype='float32', mode='w+', shape=self.base_shape)
+            fp_crop[:,:] = fp_result[ly:hy, lx:hx]
+            crpix = [half[0], half[1]]
+            if self.wcs.sip is not None:
+                sip = wcs.Sip(self.wcs.sip.a, self.wcs.sip.b, None, None, crpix)
+            else:
+                sip = None
+            self.wcs = self._wcs(self.ra, self.dec, self.pa, self.scale, crpix=crpix, sip=sip)
+            del fp_result
+            del fp_crop
             if os.path.exists(self.fname):
                 os.remove(self.fname)
             if os.path.exists(f):

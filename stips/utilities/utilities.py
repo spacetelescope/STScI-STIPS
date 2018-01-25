@@ -8,11 +8,25 @@ General CGI form functions.
 """
 
 # External modules
-import importlib, inspect, pp, os, shutil, sys, thread, uuid
+import importlib, inspect, multiprocessing, os, shutil, sys, uuid
 import numpy as np
+import astropy.io.fits as pyfits
 from numpy.fft import fft2, ifft2
 from astropy.io import ascii
 from astropy.table import Table
+from datetime import datetime
+
+
+#-----------
+class ImageData(object):
+    def __init__(self, fname, shape, mode='r+'):
+        self.fp = np.memmap(fname, dtype='float32', mode=mode, shape=shape)
+    
+    def __enter__(self):
+        return self.fp
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        del self.fp
 
 #-----------
 def GetStipsData(to_retrieve):
@@ -145,40 +159,58 @@ def read_table(filename, n_chunk=100000, format="ipac"):
         else:
             yield ascii.read(lines, format=format, guess=False)
 
-class Sum(object): #again, this class is from ParallelPython's example code (I modified for an array and added comments)
-    def __init__(self, value):
-        self.value = value
+#class for callbacks
+class Sum(object):
+    def __init__(self, fname, shape):
+        self.fname = fname
+        self.shape = shape
+        path, fn = os.path.split(fname)
+        self.path = path
         self.lock = thread.allocate_lock()
-        self.count = 0
 
-    def add(self, pos, v):
-        print("Starting Add with position {}".format(pos))
-        (p0, i, p2, j, p1, p3) = pos
-        value = v[0]
-        self.count += 1
-        print("Locking for {}".format(pos))
-        self.lock.acquire() #lock so sum is correct if two processes return at same time
-        self.value[p0:p1, p2:p3] += value[:(p1-p0), :(p3-p2)] #the actual summation
-        print("Unlocking for {}".format(pos))
-        self.lock.release()
-        print("Finished {}".format(pos))
+    #the callback function
+    def add(self, pos, value):
+        start_y, end_y, start_x, end_x, thisend_y, thisend_x = pos
+        self.log_path = os.path.join(self.path, "log_{}.txt".format(pos))
+        with open(self.log_path, 'a') as log_file:
+            log_file.write("{}: Started Addition\n".format(datetime.now()))
+            log_file.write("{}: Locking Thread\n".format(datetime.now()))
+            self.lock.acquire()
+            log_file.write("{}: Lock Acquired\n".format(datetime.now()))
+            log_file.write("{}: Opening Output\n".format(datetime.now()))
+            out_arr = np.memmap(self.fname, dtype='float32', mode='r+', shape=self.shape)
+            log_file.write("{}: Opened output file\n".format(datetime.now()))
+            out_arr[start_y:thisend_y, start_x:thisend_x] += (value[:(thisend_y-start_y), :(thisend_x-start_x)])
+            log_file.write("{}: Updated output file\n".format(datetime.now()))
+            del out_arr
+            log_file.write("{}: Closed output file\n".format(datetime.now()))
+            self.lock.release()
+            log_file.write("{}: Released Lock\n".format(datetime.now()))
+
+def computation(arr, Hf, pos, Nfft, y, ys, adjust, lock, path):
+    log_path = os.path.join(path, "log_{}.txt".format(pos))
+    
+    with open(log_path, 'w') as log_file:
+        start_y, end_y, start_x, end_x, thisend_y, thisend_x = pos
+
+        log_file.write("{}: Starting Convolution\n".format(datetime.now()))
+        log_file.write("{}: Input Sum:{}\n".format(datetime.now(), np.sum(arr)))
+        conv = adjust(ifft2(Hf * fft2(arr, Nfft)))
+        log_file.write("{}: Output Sum:{}\n".format(datetime.now(), np.sum(conv)))
+        log_file.write("{}: Finished Work\n".format(datetime.now()))
+        
+        log_file.write("{}: Acquiring Lock\n".format(datetime.now()))
+        lock.acquire()
+        log_file.write("{}: Opening Output Array\n".format(datetime.now()))
+        with ImageData(y, ys) as dat:
+            log_file.write("{}: Output pre-addition sum:{}\n".format(datetime.now(), np.sum(dat)))
+            dat[start_y:thisend_y, start_x:thisend_x] += (conv[:(thisend_y-start_y), :(thisend_x-start_x)])
+            log_file.write("{}: Output post-addition sum:{}\n".format(datetime.now(), np.sum(dat)))
+        lock.release()
+        log_file.write("{}: Released Lock\n".format(datetime.now()))
 
 
-def computation(input, fft_kernel, pos, n, output):
-    import numpy as np
-    from numpy.fft import fft2, ifft2
-    p0, p1, p2, p3, p4, p5 = pos
-    print("Starting Work")
-    arr = np.real(ifft2(fft_kernel * fft2(input[p0:p1, p2:p3], n)))
-    print("Finished Work")
-    print("Opening Output Array")
-    tmp_arr = np.memmap(output, dtype='float32', mode='r+', shape=(input.shape[0]+fft_kernel.shape[0]-1, input.shape[1]+fft_kernel.shape[1]-1))
-    tmp_arr[p0:p4, p2:p5] += arr[:(p4-p0), :(p5-p2)]
-    del tmp_arr
-    print("Closed Output Array")
-
-
-def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state=""):
+def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state="", path=None):
     """
     Fast two-dimensional linear convolution via the overlap-add method.
     The overlap-add method is well-suited to convolving a very large array,
@@ -232,15 +264,11 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
     M = np.array(Hmat.shape)
     Na = np.array(Amat.shape)
     
-    if y is None:
-        path = os.getcwd()
-    else:
-        path, fname = os.path.split(y)
-    tmp = os.path.join(path, uuid.uuid4().hex+"_convolve_overlap.tmp")
+    ys = (Amat.shape[0]+Hmat.shape[0]-1, Amat.shape[1]+Hmat.shape[1]-1)
     
-    tmp_arr = np.memmap(y, dtype='float32', mode='w+', shape=(Amat.shape[0]+Hmat.shape[0]-1, Amat.shape[1]+Hmat.shape[1]-1))
-    del tmp_arr
-
+    if path is None:
+        path = os.getcwd()
+    
     if L is None:
         L = M * 100
     else:
@@ -259,9 +287,12 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
         raise ValueError('Amat and Hmat must be 2D arrays')
 
     Hf = fft2(Hmat, Nfft)
-
-    job_server = pp.Server(ppservers=())
-    logger.info("Starting job server with {} workers".format(job_server.get_ncpus()))
+    
+    pool = multiprocessing.Pool()
+    m = multiprocessing.Manager()
+    lock = m.Lock()
+    results = []
+    logger.info("Starting job server with {} workers".format(pool._processes))
     (XDIM, YDIM) = (1, 0)
     adjust = lambda x: x                           # no adjuster
     if np.isrealobj(Amat) and np.isrealobj(Hmat):  # unless inputs are real
@@ -281,20 +312,18 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
             endd[YDIM] = min(start[YDIM] + L[YDIM], Na[YDIM])
             thisend = np.minimum(Na + M - 1, start + Nfft)
             pos = (start[YDIM], endd[YDIM], start[XDIM], endd[XDIM], thisend[YDIM], thisend[XDIM])
-            job_server.submit(computation, args=(Amat, Hf, pos, Nfft, tmp), globals=globals())
+            sub_arr = np.empty_like(Amat[start[YDIM]:endd[YDIM], start[XDIM]:endd[XDIM]])
+            sub_arr[:,:] = Amat[start[YDIM]:endd[YDIM], start[XDIM]:endd[XDIM]]
+            res = pool.apply_async(computation, args=(sub_arr, Hf, pos, Nfft, y, ys, adjust, lock, path))
+            results.append(res)
             start[YDIM] += L[YDIM]
             current_box += 1
         start[XDIM] += L[XDIM]
-    
-    job_server.wait()
-    logger.info(job_server.print_stats())
-
-    if y is not None:
-        shutil.rename(tmp, y)
-        result = np.memmap(y, dtype='float32', mode='w+', shape=(Amat.shape[0]+Hmat.shape[0]-1, Amat.shape[1]+Hmat.shape[1]-1))
-    else:
-        result = tmp_arr
-    return result
+    pool.close()
+    pool.join()
+    for result in results:
+        logger.info("Result: {}".format(result.get()))
+        logger.info("Success: {}".format(result.successful()))
 
 
 def overlapadd2(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state=""):
