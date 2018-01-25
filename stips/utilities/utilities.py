@@ -18,6 +18,29 @@ from datetime import datetime
 
 
 #-----------
+class classproperty(object):
+    def __init__(self, f):
+        self.f = classmethod(f)
+    def __get__(self, *a):
+        return self.f.__get__(*a)()
+#-----------
+class __grid__(object):
+    @classproperty
+    def __pandeia__version__(self):
+        with open(GetStipsData(os.path.join("grid", "VERSION.txt")), "r") as inf:
+            line = inf.readline()
+            items = line.strip().split()
+            return items[1]
+    
+    @classproperty
+    def __stips__version__(self):
+        with open(GetStipsData(os.path.join("grid", "VERSION.txt")), "r") as inf:
+            line = inf.readline()
+            line = inf.readline()
+            items = line.strip().split()
+            return items[1]
+
+#-----------
 class ImageData(object):
     def __init__(self, fname, shape, mode='r+'):
         self.fp = np.memmap(fname, dtype='float32', mode=mode, shape=shape)
@@ -34,7 +57,7 @@ def GetStipsData(to_retrieve):
     Retrieve a file from the stips_data directory. Will also print out a warning if the directory
     can't be found.
     """
-    local_data_dir = os.path.abspath(os.path.join(os.realpath(__file__), "..", "data"))
+    local_data_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "data"))
     if "stips_data" not in os.environ:
         sys.stderr.write("WARNING: stips_data environment variable not found. Falling back on local STIPS data.\n")
         sys.stderr.write("WARNING: STIPS local data may be older than data available via the stips_data environment variable.\n")
