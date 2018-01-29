@@ -6,6 +6,7 @@ General CGI form functions.
 :Organization: Space Telescope Science Institute
 
 """
+from __future__ import division
 
 # External modules
 import importlib, inspect, os, shutil, sys, uuid
@@ -15,7 +16,6 @@ import multiprocessing.dummy as multiprocessing
 from numpy.fft import fft2, ifft2
 from astropy.io import ascii
 from astropy.table import Table
-from datetime import datetime
 
 
 #-----------
@@ -185,6 +185,18 @@ def read_table(filename, n_chunk=100000, format="ipac"):
             yield ascii.read(lines, format=format, guess=False)
 
 
+class Percenter(object):
+    def __init__(self, total):
+        self.total = total
+        self.current = 0
+    @property
+    def percent(self):
+        return "{:.2f}%".format(100.*self.current/self.total)
+    def incr(self):
+        self.current += 1
+
+
+
 def computation(arr, Hf, pos, Nfft, y, ys, adjust, lock, path):
     start_y, end_y, start_x, end_x, thisend_y, thisend_x = pos
     conv = adjust(ifft2(Hf * fft2(arr, Nfft)))        
@@ -280,29 +292,31 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
     print_lock = m.Lock()
     results = []
     logger.info("Starting job server with {} workers".format(pool._processes))
-    
-    def closing_log(pos):
-        if verbose and logger is not None:
-            print_lock.acquire()
-            logger.info("Finishing box {}".format(pos))
-            print_lock.release()
-    
+        
     (XDIM, YDIM) = (1, 0)
     adjust = lambda x: x                           # no adjuster
     if np.isrealobj(Amat) and np.isrealobj(Hmat):  # unless inputs are real
         adjust = np.real                           # then ensure real
     start = [0, 0]
     endd = [0, 0]
+
     total_boxes = (Na[XDIM] // L[XDIM] + 1) * (Na[YDIM] // L[YDIM] + 1)
-    current_box = 0
+    percent_done = Percenter(total_boxes)
+    def closing_log(pos):
+        print_lock.acquire()
+        if verbose and logger is not None:
+            logger.info("Finishing box {}".format(pos))
+        if verbose and state_setter is not None:
+            percent_done.incr()
+            state_setter(base_state + " {} done".format(percent_done.percent))
+        print_lock.release()
+
     while start[XDIM] <= Na[XDIM]:
         endd[XDIM] = min(start[XDIM] + L[XDIM], Na[XDIM])
         start[YDIM] = 0
         while start[YDIM] <= Na[YDIM]:
             if verbose and logger is not None:
                 logger.info("Starting box {}".format(start))
-            if verbose and state_setter is not None:
-                state_setter(base_state + " {:.2f}% done".format((current_box/total_boxes)*100.))
             endd[YDIM] = min(start[YDIM] + L[YDIM], Na[YDIM])
             thisend = np.minimum(Na + M - 1, start + Nfft)
             pos = (start[YDIM], endd[YDIM], start[XDIM], endd[XDIM], thisend[YDIM], thisend[XDIM])
@@ -311,7 +325,6 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
             res = pool.apply_async(computation, args=(sub_arr, Hf, pos, Nfft, y, ys, adjust, lock, path), callback=closing_log)
             results.append(res)
             start[YDIM] += L[YDIM]
-            current_box += 1
         start[XDIM] += L[XDIM]
     pool.close()
     pool.join()

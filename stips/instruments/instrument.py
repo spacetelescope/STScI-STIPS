@@ -242,7 +242,7 @@ class Instrument(object):
         for detector in self.detectors:
             self.updateState(base_state + "<br /><span class='indented'>Detector {}</span>".format(detector.name))
             self._log("info","Adding catalogue to detector %s" % (detector.name))
-            cats.append(detector.addCatalogue(cat, dist=self.distortion))
+            cats.append(detector.addCatalogue(cat, dist=self.distortion, *args, **kwargs))
             self.updateState(base_state)
         return cats
         self._log("info","Finished Adding Catalogue")
@@ -355,6 +355,21 @@ class Instrument(object):
         elif table_type == 'multifilter':
             return self.readMultiTable
         return self.readGenericTable
+    
+    def getTableFormat(self, table_type):
+        if table_type == 'phoenix':
+            return {'ra': ' %10g', 'dec': ' %10g', 'flux': ' %12g', 'type': '%6s', 'n': '%4s', 're': '%4s', 'phi': '%4s', 'ratio': '%6s', 'id': '%8d', 'notes': '%-25s'}
+        elif table_type == 'phoenix_realtime':
+            return {'ra': ' %10g', 'dec': ' %10g', 'flux': ' %12g', 'type': '%6s', 'n': '%4s', 're': '%4s', 'phi': '%4s', 'ratio': '%6s', 'id': '%8d', 'notes': '%-25s'}
+        elif table_type == 'pandeia':
+            return {'ra': ' %10g', 'dec': ' %10g', 'flux': ' %12g', 'type': '%6s', 'n': '%4s', 're': '%4s', 'phi': '%4s', 'ratio': '%6s', 'id': '%8d', 'notes': '%-25s'}
+        elif table_type == 'bc95':
+            return {'ra': ' %10g', 'dec': ' %10g', 'flux': ' %12g', 'type': '%6s', 'n': '%6.3g', 're': '%10g', 'phi': ' %10g', 'ratio': '%10g', 'id': '%8d', 'notes': '%-25s'}
+        elif table_type == 'mixed':
+            return {}
+        elif table_type == 'multifilter':
+            return {}
+        return {}
     
     def handleConversion(self, catalogue, table_type, obsname):
         """
@@ -475,7 +490,7 @@ class Instrument(object):
             t, g, Z, a = temps[index], gravs[index], metallicities[index], apparents[index]
             sp = ps.Icat('phoenix', t, Z, g)
             sp = self.normalize(sp, a, norm_bp)
-            obs = ps.Observation(sp, bp)
+            obs = ps.Observation(sp, bp, binset=sp.wave)
             rates[index] = obs.countrate()
         t = Table()
         t['ra'] = Column(data=ras)
@@ -512,7 +527,7 @@ class Instrument(object):
             spectrum = SEDFactory(config=config)
             wave, flux = spectrum.get_spectrum()
             sp = self.normalize((wave, flux), a, norm_bp)
-            obs = ps.Observation(sp, bp)
+            obs = ps.Observation(sp, bp, binset=sp.wave)
             rates = np.append(rates, obs.countrate())
         t = Table()
         t['ra'] = Column(data=ras)
@@ -532,6 +547,13 @@ class Instrument(object):
         """
         Converts a BC95 galaxy grid of sources into the internal source table standard
         """
+        # This function is needed because I can't get python not to read '50E8' as a number, or to output it as a correctly formatted string
+        def stringify(num):
+            num = float(num)
+            exponent = int(np.floor(np.log10(num)))
+            value = int(10*(num/(10**np.floor(np.log10(num)))))
+            return "{}E{}".format(value, exponent-1)
+        
         from pandeia.engine.custom_exceptions import PysynphotError
         self._log("info", "Converting BC95 Catalogue")
         proflist = {"expdisk":1,"devauc":4}
@@ -553,40 +575,44 @@ class Instrument(object):
         pas = (table['pa'] + (self.pa*180./np.pi) )%360.
         vmags = table['apparent_surface_brightness']
         norm_bp = '{}'.format(vmags.unit)
-        if norm_bp == '':
+        self._log("info", "Normalization Bandpass is {} ({})".format(norm_bp, type(norm_bp)))
+        if norm_bp == '' or norm_bp is None or norm_bp == 'None':
             norm_bp = 'johnson,v'
+        self._log("info", "Normalization Bandpass is {}".format(norm_bp))
         rates = np.array(())
         indices = np.array(())
         notes = np.array((),dtype='object')
-        for (z,model,age,profile,radius,ratio,pa,mag) in zip(zs,models,ages,profiles,radii,ratios,pas,vmags):
-            fname = "bc95_%s_%s.fits" % (model,age)
+        total = len(models)
+        for i, (z,model,age,profile,radius,ratio,pa,mag) in enumerate(zip(zs,models,ages,profiles,radii,ratios,pas,vmags)):
+#             self._log("info", "{} of {}: {} {} {} {} {} {} {} {}".format(i, total, z, model, age, profile, radius, ratio, pa, mag))
+            fname = "bc95_{}_{}.fits".format(model, stringify(age))
             try:
                 sp = ps.FileSpectrum(os.path.join(os.environ['PYSYN_CDBS'],"grid","bc95","templates",fname))
                 if distance_type == "redshift":
                     sp = sp.redshift(z)
                 sp = self.normalize(sp, mag, norm_bp)
-                obs = ps.Observation(sp,self.bandpass,force='taper')
+                obs = ps.Observation(sp, self.bandpass, force='taper', binset=sp.wave)
                 rate = obs.countrate()
             except PysynphotError as e:
-                self._log('warning', 'Pysynphot Error {} encountered'.format(e.message))
+                self._log('warning', 'Source {} of {}: Pysynphot Error {} encountered'.format(i, total, e.message))
                 rate = 0.
             rates = np.append(rates,rate)
             indices = np.append(indices,proflist[profile])
-            notes = np.append(notes,"BC95 %s %s %f" % (model,age,mag))
+            notes = np.append(notes,"BC95_%s_%s_%f" % (model, stringify(age), mag))
         t = Table()
-        t['ra'] = Column(data=ras)
-        t['dec'] = Column(data=decs)
-        t['flux'] = Column(data=rates)
-        t['type'] = Column(data=np.full_like(ras,'sersic',dtype='S6'))
-        t['n'] = Column(data=indices)
-        t['re'] = Column(data=radii)
-        t['phi'] = Column(data=pas)
-        t['ratio'] = Column(data=ratios)
-        t['id'] = Column(data=ids)
-        t['notes'] = Column(data=notes)
+        t['ra'] = Column(data=ras, format='%8.4f')
+        t['dec'] = Column(data=decs, format='% 9.4f')
+        t['flux'] = Column(data=rates, format='%8g')
+        t['type'] = Column(data=np.full_like(ras,'sersic',dtype='S7'), format='%-7s')
+        t['n'] = Column(data=indices, format='%8g')
+        t['re'] = Column(data=radii, format='%9.5f')
+        t['phi'] = Column(data=pas, format='%9.5f')
+        t['ratio'] = Column(data=ratios, format='%9.5f')
+        t['id'] = Column(data=ids, format='%8d')
+        t['notes'] = Column(data=notes, format='%-25s')
         
         return t, cached
-        
+
     def readMixedTable(self, table, bp, cached=-1):
         """
         Converts a mixed internal list of sources into the internal source table standard
@@ -845,7 +871,7 @@ class Instrument(object):
         sp.convert('angstroms')
         bp = self.bandpass
         sp = sp.renorm(0.0,"VEGAMAG",bp)
-        obs = ps.Observation(sp,bp)
+        obs = ps.Observation(sp, bp, binset=sp.wave)
         zeropoint = obs.effstim("OBMAG")
         return zeropoint
     
@@ -855,7 +881,7 @@ class Instrument(object):
         sp = ps.FlatSpectrum(0, fluxunits='stmag')
         sp.convert('angstroms')
         bp = self.bandpass
-        obs = ps.Observation(sp, bp)
+        obs = ps.Observation(sp, bp, binset=sp.wave)
         return obs.effstim('flam') / obs.countrate()
     
     @property
@@ -889,7 +915,7 @@ class Instrument(object):
         sp = ps.ArraySpectrum(wave_array, flux_array_pixels, waveunits='micron', fluxunits='mjy')
         sp.convert('angstroms')
         sp.convert('photlam')
-        obs = ps.Observation(sp, self.bandpass)
+        obs = ps.Observation(sp, self.bandpass, binset=sp.wave)
         return obs.countrate()
 
     def _log(self,mtype,message):

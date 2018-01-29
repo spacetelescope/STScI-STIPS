@@ -330,7 +330,7 @@ class AstroImage(object):
         """Adds an entry to the header history list."""
         self.history.append(v)
     
-    def addTable(self, t, dist=False):
+    def addTable(self, t, dist=False, *args, **kwargs):
         """
         Add a catalogue table to the Image. The Table must have the following columns:
             RA: RA of source
@@ -386,7 +386,7 @@ class AstroImage(object):
             if len(xs[stars_idx]) > 0:
                 self.updateState(base_state + "<br /><span class='indented'>Adding {} stars</span>".format(len(xs[stars_idx])))
                 self._log("info", "Writing {} stars".format(len(xs[stars_idx])))
-                self.addPoints(xs[stars_idx], ys[stars_idx], fluxes[stars_idx])
+                self.addPoints(xs[stars_idx], ys[stars_idx], fluxes[stars_idx], *args, **kwargs)
                 fluxes_observed[stars_idx] = fluxes[stars_idx]
             gals_idx = np.where(types == 'sersic')
             if len(xs[gals_idx]) > 0:
@@ -404,15 +404,17 @@ class AstroImage(object):
                 total = len(gxs)
                 gfluxes_observed = np.array(())
                 gnotes = np.array((), dtype='S150')
+                self._log('info', 'Starting Sersic Profiles at {}'.format(time.ctime()))
                 for (x, y, flux, n, re, phi, ratio, id) in zip(gxs, gys, gfluxes, gns, gres, gphis, gratios, gids):
                     item_index = np.where(ids==id)[0][0]
                     self._log("info", "Index is {}".format(item_index))
                     self.updateState(base_state + "<br /><span class='indented'>Adding galaxy {} of {}</span>".format(counter, len(xs[gals_idx])))
-                    central_flux = self.addSersicProfile(x, y, flux, n, re, phi, ratio)
+                    central_flux = self.addSersicProfile(x, y, flux, n, re, phi, ratio, *args, **kwargs)
                     gfluxes_observed = np.append(gfluxes_observed, central_flux)
                     gnotes = np.append(gnotes, "{}: surface brightness {:.3f} yielded flux {:.3f}".format(notes[item_index], flux, central_flux))
                     self._log("info", "Finished Galaxy {} of {}".format(counter, total))
                     counter += 1
+                self._log('info', 'Finishing Sersic Profiles at {}'.format(time.ctime()))
                 notes[gals_idx] = gnotes[:]
                 fluxes_observed[gals_idx] = gfluxes_observed
             ot = Table()
@@ -426,7 +428,7 @@ class AstroImage(object):
             ot['notes'] = Column(data=notes)
         return ot
     
-    def addCatalogue(self, cat, dist=False):
+    def addCatalogue(self, cat, dist=False, *args, **kwargs):
         """
         Add a catalogue to the Image. The Catalogue must have the following columns:
             RA: RA of source
@@ -457,7 +459,7 @@ class AstroImage(object):
             for i, t in enumerate(read_table(cat)):
                 table_length = len(t['id'])
                 self.updateState(base_state + "<br /><span class='indented'>Adding sources {} to {}</span>".format(counter, counter+table_length))
-                ot = self.addTable(t, dist)
+                ot = self.addTable(t, dist, *args, **kwargs)
                 if ot is not None:
                     data = StringIO()
                     ot.write(data, format='ascii.ipac')
@@ -475,7 +477,7 @@ class AstroImage(object):
         self._log("info","Added catalogue %s to AstroImage %s" % (catname, self.name))
         return obsname            
     
-    def addPoints(self, xs, ys, rates):
+    def addPoints(self, xs, ys, rates, *args, **kwargs):
         """Adds a set of point sources to the image given their co-ordinates and count rates."""
         self.addHistory("Adding %d point sources" % (len(xs)))
         self._log("info","Adding %d point sources to AstroImage %s" % (len(xs),self.name))
@@ -484,7 +486,7 @@ class AstroImage(object):
         with ImageData(self.fname, self.shape) as dat:
             dat[ys, xs] += rates
     
-    def addSersicProfile(self, posX, posY, flux, n, re, phi, axialRatio):
+    def addSersicProfile(self, posX, posY, flux, n, re, phi, axialRatio, new=True, *args, **kwargs):
         """
         Adds a single sersic profile to the image given its co-ordinates, count rate, and source 
         type.
@@ -496,8 +498,10 @@ class AstroImage(object):
         phi is the angle of the major axis (degrees east of north).
         axialRatio is the ratio of major axis to minor axis.
         """
+        if flux == 0.:
+            return 0.
         self.addHistory("Adding Sersic profile at (%f,%f) with flux %f, index %f, Re %f, Phi %f, and axial ratio %f" % (posX,posY,flux,n,re,phi,axialRatio))
-        self._log("info","Adding sersic profile with re={}, n={}, flux={}, phi={}, ratio={} to AstroImage {}".format(re, n, flux, phi, axialRatio, self.name))
+        self._log("info","Adding Sersic: re={}, n={}, flux={}, phi={:.1f}, ratio={}".format(re, n, flux, phi, axialRatio))
         
         # Determine necessary parameters for the Sersic model -- the input radius and surface brightness are both in *detector* pixels.
         pixel_radius = re * self.oversample
@@ -513,40 +517,56 @@ class AstroImage(object):
         # So we want to go from 512,512 to 39,27, so offset is -473,-485
         # Offset is posX-image_centre, posY-image_centre
         offset_x, offset_y = np.floor(posX) - self.xsize//2, np.floor(posY) - self.ysize//2
+        fractional_x, fractional_y = posX - np.floor(posX), posY - np.floor(posY)
 
         from astropy.modeling.models import Sersic2D
         # Figure out an appropriate radius. Start at 5X pixel radius, and continue until the highest value on the outer edge is below the noise floor.
         max_outer_value = 2*self.noise_floor
+        filled = False
         radius_multiplier = 2.5
         full_frame = False
-        while max_outer_value > self.noise_floor:
-            radius_multiplier *= 2
-            model_size = int(np.ceil(pixel_radius*radius_multiplier))
-            if not self._filled(offset_x, offset_y, model_size, model_size):
-                self._log("info", "Creating a {}x{} array for the Sersic model at ({},{})".format(model_size, model_size, posX, posY))
-                x, y, = np.meshgrid(np.arange(model_size), np.arange(model_size))
-                # In order to get fractional flux per pixel correct, carry the non-integer portion of the model centre through.
-                fractional_x, fractional_y = posX - np.floor(posX), posY - np.floor(posY)
+        model_size = int(np.ceil(pixel_radius*radius_multiplier))
+        if not new:
+            while max_outer_value > self.noise_floor:
+                radius_multiplier *= 2
+                model_size = int(np.ceil(pixel_radius*radius_multiplier))
+                if not self._filled(offset_x, offset_y, model_size, model_size):
+#                     self._log("info", "Creating a {}x{} array for the Sersic model at ({},{})".format(model_size, model_size, posX, posY))
+                    x, y, = np.meshgrid(np.arange(model_size), np.arange(model_size))
+                    # In order to get fractional flux per pixel correct, carry the non-integer portion of the model centre through.
+                    xc, yc = model_size//2 + fractional_x, model_size//2 + fractional_y
+                    mod = Sersic2D(amplitude=pixel_brightness, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
+                    img = mod(x, y)
+                    max_outer_value = max(np.max(img[0,:]), np.max(img[-1,:]), np.max(img[:,0]), np.max(img[:,-1]))
+#                     self._log('info', "Max outer value is {}, noise floor is {}".format(max_outer_value, self.noise_floor))
+                else:
+                    full_frame = True
+#                     self._log("info", "Creating full-frame Sersic model at ({},{})".format(posX, posY))
+                    x, y = np.meshgrid(np.arange(self.ysize), np.arange(self.xsize))
+                    xc, yc = posX, posY
+                    mod = Sersic2D(amplitude=pixel_brightness, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
+                    img = mod(x, y)
+                    max_outer_value = 0.
+        else:
+            while (max_outer_value > self.noise_floor) and (not filled):
+                radius_multiplier *= 2
+                model_size = int(np.ceil(pixel_radius*radius_multiplier))
+#                 self._log("info", "Creating a {}x{} array for the Sersic model at ({},{})".format(model_size, model_size, posX, posY))
+                a1 = np.arange(model_size, dtype='int')
+                a2 = np.zeros_like(a1)
+                a3 = np.full_like(a1, model_size-1)
                 xc, yc = model_size//2 + fractional_x, model_size//2 + fractional_y
                 mod = Sersic2D(amplitude=pixel_brightness, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
-                img = mod(x, y)
-                max_outer_value = max(np.max(img[0,:]), np.max(img[-1,:]), np.max(img[:,0]), np.max(img[:,-1]))
-                self._log('info', "Max outer value is {}, noise floor is {}".format(max_outer_value, self.noise_floor))
-            else:
-                full_frame = True
-                self._log("info", "Creating full-frame Sersic model at ({},{})".format(posX, posY))
-                x, y = np.meshgrid(np.arange(self.ysize), np.arange(self.xsize))
-                xc, yc = posX, posY
-                mod = Sersic2D(amplitude=pixel_brightness, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
-                img = mod(x, y)
-                max_outer_value = 0.
+                max_outer_value = np.max(np.array((mod(a1, a2), mod(a2, a1), mod(a1, a3), mod(a3, a1))))
+#                 self._log('info', "Max outer value is {}, noise floor is {}".format(max_outer_value, self.noise_floor))
+                filled = self._filled(offset_x, offset_y, model_size, model_size)
+            x, y, = np.meshgrid(np.arange(model_size), np.arange(model_size))
+            img = mod(x, y)
         img = np.where(img >= self.noise_floor, img, 0.)
         aperture = CircularAperture((xc, yc), pixel_radius)
         flux_table = aperture_photometry(img, aperture)
         central_flux = flux_table['aperture_sum'][0]
         self._log("info", "Sersic profile has final size {}x{}, maximum value {}, sum {}".format(model_size, model_size, np.max(img), np.sum(img)))
-        if full_frame:
-            offset_x, offset_y = 0, 0
         self._addArrayWithOffset(img, offset_x, offset_y)
         return central_flux
 

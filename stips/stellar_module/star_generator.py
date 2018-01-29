@@ -273,7 +273,7 @@ class StarGenerator(object):
             for te, log_g, z, j_i in zip(temps, gravs, metals, mags):
                 spectrum = ps.Icat('phoenix', te, z, log_g)
                 spectrum = spectrum.renorm(j_i, 'vegamag', johnson_i)
-                obs = ps.Observation(spectrum, bandpass)
+                obs = ps.Observation(spectrum, bandpass, binset=spectrum.wave)
                 countrates = np.append(countrates, obs.countrate())
         return countrates
 
