@@ -17,7 +17,7 @@ from cStringIO import StringIO
 from scipy.ndimage.interpolation import zoom, rotate
 
 #Local Modules
-from ..utilities import OffsetPosition, overlapadd2, overlapaddparallel, read_table, ImageData
+from ..utilities import OffsetPosition, overlapadd2, overlapaddparallel, read_table, ImageData, Percenter
 from ..errors import GetCrProbs, GetCrTemplate, MakeCosmicRay
 
 
@@ -408,6 +408,8 @@ class AstroImage(object):
                 gnotes = np.empty_like(gxs, dtype='S150')
                 self._log('info', 'Starting Sersic Profiles at {}'.format(time.ctime()))
                 if parallel:
+                    p = Percenter(len(xs[gals_idx]))
+                    p.incr()
                     pool = multiprocessing.Pool()
                     m = multiprocessing.Manager()
                     lock = m.Lock()
@@ -417,11 +419,11 @@ class AstroImage(object):
                     def parallel_callback(items):
                         index, flux = items
                         print_lock.acquire()
-                        counter += 1
-                        self.updateState(base_state + "<br /><span class='indented'>Adding galaxy {} of {}</span>".format(counter, len(xs[gals_idx])))
+                        p.incr()
+                        self.updateState(base_state + "<br /><span class='indented'>Adding galaxy {} of {}</span>".format(p.current, p.total))
                         fluxes_observed[index] = flux
                         notes[index] = "{}: surface brightness {:.3f} yielded flux {:.3f}".format(notes[index], fluxes[index], flux)
-                        self._log("info", "Finished Galaxy {} of {}".format(counter, total))
+                        self._log("info", "Finished Galaxy {} of {} (index {})".format(p.current, p.total, index))
                         print_lock.release()
                 for (x, y, flux, n, re, phi, ratio, id) in zip(gxs, gys, gfluxes, gns, gres, gphis, gratios, gids):
                     item_index = np.where(ids==id)[0][0]
