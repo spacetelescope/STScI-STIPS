@@ -413,7 +413,7 @@ class AstroImage(object):
                     lock = m.Lock()
                     print_lock = m.Lock()
                     results = []
-                    logger.info("Starting job server with {} workers".format(pool._processes))
+                    self._log("info", "Starting job server with {} workers".format(pool._processes))
                     def parallel_callback(items):
                         index, flux = items
                         print_lock.acquire()
