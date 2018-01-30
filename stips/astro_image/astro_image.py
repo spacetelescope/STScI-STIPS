@@ -441,8 +441,8 @@ class AstroImage(object):
                     pool.close()
                     pool.join()
                 self._log('info', 'Finishing Sersic Profiles at {}'.format(time.ctime()))
-                notes[gals_idx] = gnotes[:]
-                fluxes_observed[gals_idx] = gfluxes_observed
+#                 notes[gals_idx] = gnotes[:]
+#                 fluxes_observed[gals_idx] = gfluxes_observed
             ot = Table()
             ot['x'] = Column(data=xfs, unit='pixels')
             ot['y'] = Column(data=yfs, unit='pixels')
