@@ -427,7 +427,7 @@ class AstroImage(object):
                     item_index = np.where(ids==id)[0][0]
                     self._log("info", "Index is {}".format(item_index))
                     if parallel:
-                        res = pool.apply_async(computation, args=(sub_arr, Hf, pos, Nfft, y, ys, adjust, lock, path), callback=closing_log)
+                        res = pool.apply_async(self.addSersicProfileParallel, args=(item_index, x, y, flux, n, re, phi, ratio, lock, *args, **kwargs), callback=parallel_callback)
                         results.append(res)
                     else:
                         self.updateState(base_state + "<br /><span class='indented'>Adding galaxy {} of {}</span>".format(counter, len(xs[gals_idx])))
