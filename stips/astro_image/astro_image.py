@@ -5,6 +5,7 @@ __filetype__ = "base"
 import logging, os, shutil, sys, time, uuid
 
 import numpy as np
+import multiprocessing.dummy as multiprocessing
 
 from astropy import wcs
 from astropy.io import fits as pyfits
