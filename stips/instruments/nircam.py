@@ -37,6 +37,9 @@ class NIRCamBase(JwstInstrument):
         #Initialize superclass
         super(NIRCamBase,self).__init__(**kwargs)
 
+        #Set oversampling
+        self.oversample = kwargs.get('oversample', 1)
+
         #Adjust # of detectors based on keyword:
         n_detectors = int(kwargs.get('detectors', len(self.DETECTOR_OFFSETS)))
         self.DETECTOR_OFFSETS = self.DETECTOR_OFFSETS[:n_detectors]
@@ -71,7 +74,7 @@ class NIRCamBase(JwstInstrument):
             psf[0].header['VERSION'] = webbpsf.__version__
             if os.path.exists(os.path.join(self.out_path, "psf_cache")):
                 dest = os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("NIRCam", self.filter, self.oversample))
-                pyfits.writeto(dest, psf[0].data, header=psf[0].header, clobber=True)
+                pyfits.writeto(dest, psf[0].data, header=psf[0].header, overwrite=True)
             self.psf = AstroImage(data=psf[0].data,detname="NIRCam %s PSF" % (self.filter),logger=self.logger)
             self.updateState(base_state)
     
@@ -159,9 +162,9 @@ class NIRCamBase(JwstInstrument):
                                 'F405N': 1.909E-02, 'F410M': 2.692E-01, 'F430M': 1.627E-01, 'F444W': 1.309E+00, 'F460M': 4.544E-01, 
                                 'F466N': 3.750E-02, 'F470N': 3.934E-02, 'F480M': 4.955E-01}
                  }
-    BACKGROUNDS = ['None', 'Average zodiacal background']
-    BACKGROUNDS_V = ['none', 'avg']
-    BGTEXT = {'none': 'None', 'avg': 'Average Zodiacal Background'}
+    BACKGROUNDS_V = ['none', 'avg', 'med', 'max', 'min']
+    BACKGROUNDS = ['None', 'Average zodiacal background', 'Median zodiacal background', 'Maximum zodiacal background', 'Minimum zodiacal background']
+    BGTEXT = {'none': 'None', 'avg': 'Average zodiacal background', 'med': 'Median zodiacal background', 'max': 'Maximum zodiacal background', 'min': 'Minimum zodiacal background'}
     #PHOTFNU has units of Jy
     PHOTFNU = { 'F070W':5.085E-08, 'F090W':3.722E-08, 'F115W':3.171E-08, 'F140M':8.313E-08, 
                 'F150W':2.678E-08, 'F162M':8.396E-08, 'F164N':8.724E-07, 'F182M':7.073E-08, 
@@ -348,7 +351,7 @@ class NIRCamShort(NIRCamBase):
     N_DETECTORS = [1, 4, 8]
     N_OFFSET = {1: (123.24, -33.69, 1.21), 4: (88.17, -1.35, 0.775), 8: (0., 0., 0.)}
     INSTRUMENT_OFFSET = (-0.57,-488.61,0.) #RA,DEC,PA
-    SCALE = [0.0317,0.0317]
+    SCALE = [0.0311, 0.0311]
     FILTERS = ('F070W','F090W','F115W','F140M','F150W','F162M','F164N','F182M','F187N','F200W','F210M','F212N')
     DEFAULT_FILTER = 'F115W'
     FLATFILE = 'err_flat_nircam.fits'
@@ -385,7 +388,7 @@ class NIRCamLong(NIRCamBase):
     N_DETECTORS = [1, 2]
     N_OFFSET = {1: (88.17, 1.35, 1.21), 2: (0., 0., 0.)}
     OFFSET_NAMES = ("A5","B5")
-    SCALE = [0.0648,0.0648] #arcsec/pixel
+    SCALE = [0.063, 0.063] #arcsec/pixel
     FILTERS = ('F250M','F277W','F300M','F323N','F335M','F356W','F360M','F405N','F410M','F430M',
                'F444W','F460M','F466N','F470N','F480M')
     DEFAULT_FILTER = 'F277W'

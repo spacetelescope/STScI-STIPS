@@ -31,7 +31,17 @@ run reasonably quickly, and to make scene generation and observation as easy as 
 
 ## STIPS Python Requirements
 
-STIPS uses the following python packages:
+STIPS currently runs under python 2.7 (and has been developed with versions 2.7.3 through 2.7.12).
+Eventually, STIPS will be made compatible with python 3.
+
+STIPS requires the following STScI-supported python packages be installed and running correctly 
+(along with any data files that the packages themselves require, as can be found in their
+documentation):
+
+* Pandeia (tested with versions 1.0 and 1.1.1)
+* Webbpsf (tested with versions between 0.4.0 and 0.6.0)
+
+STIPS also uses the following (more general) python packages:
 
 * astropy (version 1.3.2): STIPS uses astropy in order to
 	* read and write FITS files
@@ -44,8 +54,13 @@ STIPS uses the following python packages:
 * photutils (version 0.3.2): STIPS uses photutils to determine the flux inside the half-light radius
   in generated Sersic profiles
 * pysynphot (version 0.9.8.5): STIPS uses pysynphot to generate bandpasses, count rates, and
-  zero points.
+  zero points. Note that pysynphot's data files (also known as the CDBS data tree) must also be
+  installed and available as indicated in pysynphot's documentation.
 * scipy (version 0.18.1): STIPS uses scipy to manipulate its internal images (zoom and rotate)
+
+Finally, STIPS requires a set of data files whose location is marked by setting the environment
+variable `stips_data`. Currently these files are available as part of the STSCI-STIPS-UI github
+project, but they should eventually be made available as a (versioned) direct download.
 
 ## STIPS Examples
 
@@ -75,13 +90,15 @@ equivalent method prior to running any of these example scripts.
   		galaxy = {'n_gals': 1000,
   				  'z_low': 0.0, 'z_high': 1.0,
   				  'rad_low': 0.01, 'rad_high': 2.0,
-  				  'vmag_low': 30.0, 'vmag_high': 25.0,
+  				  'sb_v_low': 30.0, 'sb_v_high': 25.0,
   				  'distribution': 'uniform', 'clustered': False,
   				  'radius': 200.0, 'radius_units': 'arcsec',
   				  'offset_ra': 0.0, 'offset_dec': 0.0}
   		galaxy_cat_file = scm.CreateGalaxies(galaxy)
   		
-  		obs = {'instrument': 'NIRCamShort', 'filter': 'F115W', 'detectors': 1,
+  		obs = {'instrument': 'NIRCamShort', 
+  		       'filters': ['F115W'], 
+  		       'detectors': 1,
   			   'distortion': False,
   			   'oversample': 5,
   			   'pupil_mask': '',
@@ -104,7 +121,9 @@ equivalent method prior to running any of these example scripts.
   
   		from stips.observation_module import ObservationModule
   	
-  		obs = {'instrument': 'WFIRST', 'filter': 'J129', 'detectors': 1,
+  		obs = {'instrument': 'WFI', 
+  		       'filters': ['J129'], 
+  		       'detectors': 1,
   			   'distortion': False,
   			   'oversample': 5,
   			   'pupil_mask': '',
@@ -112,7 +131,8 @@ equivalent method prior to running any of these example scripts.
   			   'observations_id': 1,
   			   'exptime': 1000,
   			   'offsets': [{'offset_id': 1, 'offset_centre': False, 'offset_ra': 0.5, 'offset_dec': 0.0, 'offset_pa': 27.0}]}
-  		obm = ObservationModule(obs)
+		scene_general = {'ra': 256.274799731, 'dec': 22.6899695529, 'pa': 0.0, 'seed': 1}
+  		obm = ObservationModule(obs, scene_general=scene_general)
   		obm.nextObservation()
   		source_count_catalogues = obm.addCatalogue('input_sources.txt')
   		psf_file = obm.addError()

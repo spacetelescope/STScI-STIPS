@@ -20,9 +20,9 @@ class HstInstrument(Instrument):
         Still only a base class. Init is super init.
         """
         super(HstInstrument,self).__init__(**kwargs)
-        self.REFS = {   'comptable': self.COMPFILES[-2],
-                        'graphtable': self.GRAPHFILES[-2],
-                        'thermtable': self.THERMFILES[-2],
+        self.REFS = {   'comptable': self.COMPFILES[-1],
+                        'graphtable': self.GRAPHFILES[-1],
+                        'thermtable': self.THERMFILES[-1],
                         'area': 45238.93416,
                         'waveset': (500,26000,10000.,'log')
                     }

@@ -15,7 +15,7 @@ from functools import wraps
 #Local Modules
 from ..stellar_module import StarGenerator
 from ..astro_image import AstroImage
-from ..utilities import datadir, OffsetPosition, read_metadata, read_table
+from ..utilities import GetStipsData, OffsetPosition, read_metadata, read_table
 
 import __builtin__
 
@@ -37,11 +37,20 @@ class Instrument(object):
         self.COMPFILES =  sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmc.fits")))
         self.GRAPHFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmg.fits")))
         self.THERMFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmt.fits")))
-        self.in_path = os.environ.get("stips_data", datadir())
+
+        if 'logger' in kwargs:
+            self.logger = kwargs['logger']
+        else:
+            stream_handler = logging.StreamHandler(sys.stderr)
+            stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+            self.logger = logging.getLogger()
+            self.logger.setLevel(logging.INFO)
+            self.logger.addHandler(stream_handler)
+        
         self.out_path = kwargs.get('out_path', os.getcwd())
         self.prefix = kwargs.get('prefix', '')
-        self.flatfile = os.path.join(self.in_path, "residual_files", self.FLATFILE)
-        self.darkfile = os.path.join(self.in_path, "residual_files", self.DARKFILE)
+        self.flatfile = GetStipsData(os.path.join("residual_files", self.FLATFILE))
+        self.darkfile = GetStipsData(os.path.join("residual_files", self.DARKFILE))
         self.oversample = 1
         self.ra = kwargs.get('ra', 0.)
         self.dec = kwargs.get('dec', 0.)
@@ -51,15 +60,6 @@ class Instrument(object):
         self.small_subarray = kwargs.get('small_subarray', False)
         self.filter = None
         self.detectors = None
-        if 'logger' in kwargs:
-            self.logger = kwargs['logger']
-        else:
-            stream_handler = logging.StreamHandler(sys.stderr)
-            stream_handler.setLevel(logging.DEBUG)
-            stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
-            self.logger = logging.getLogger()
-            if len(self.logger.handlers) == 0:
-                self.logger.addHandler(stream_handler)
         self.psf_commands = kwargs.get('psf_commands', None)
         self.instrument = kwargs.get('instrument', "")
         self.background_value = kwargs.get('background', 'none')
@@ -113,7 +113,7 @@ class Instrument(object):
         self._log("info","Finished initialization")
         return ins
     
-    def reset(self, ra, dec, pa, filter, celery=None):
+    def reset(self, ra, dec, pa, filter, obs_count, celery=None):
         """
         Reset instrument parameters.
         """
@@ -121,10 +121,11 @@ class Instrument(object):
         self.ra = ra
         self.dec = dec
         self.pa = pa
+        self.obs_count = obs_count
         if filter != self.filter:
             self.filter = filter
             self.resetPSF()
-            self.background = self.BACKGROUND[self.background_value][self.filter]/(self.oversample*self.oversample)
+            self.background = self.pixel_background/(self.oversample*self.oversample)
             self.photfnu = self.PHOTFNU[self.filter]
             self.photplam = self.PHOTPLAM[self.filter]
         self.resetDetectors()
@@ -155,7 +156,7 @@ class Instrument(object):
             self._log("info","Creating Detector with (RA,DEC,PA) = (%f,%f,%f)" % (ra,dec,pa))
             self._log("info","Creating Detector with pixel offset ({},{})".format(delta_ra/scale[0], delta_dec/scale[1]))
             detector = AstroImage(out_path=self.out_path, shape=(ysize, xsize), scale=scale, ra=ra, dec=dec, pa=pa, exptime=1., header=hdr, history=hist, 
-                                  psf_shape=self.psf.shape, zeropoint=self.zeropoint, background=self.background, photflam=self.photflam, detname=name, 
+                                  psf_shape=self.psf.shape, zeropoint=self.zeropoint, background=self.background, noise_floor=1./self.exptime, photflam=self.photflam, detname=name, 
                                   logger=self.logger, oversample=self.oversample, small_subarray=self.small_subarray, distortion=distortion, prefix=self.prefix, 
                                   set_celery=self.set_celery, get_celery=self.get_celery)
             self._log("info", "Detector created")
@@ -171,7 +172,7 @@ class Instrument(object):
             self._log("info","Converting detector %s to FITS extension" % (detector.name))
             hdus.append(detector.imageHdu)
         hdulist = pyfits.HDUList(hdus)
-        hdulist.writeto(outfile, clobber=True)
+        hdulist.writeto(outfile, overwrite=True)
         self._log("info","Created FITS file %s" % (outfile))
     
     def toMosaic(self,outfile):
@@ -216,7 +217,7 @@ class Instrument(object):
             detector.addWithAlignment(img)
         self._log("info","Finished adding image")
     
-    def addCatalogue(self, catalogue, obs_num):
+    def addCatalogue(self, catalogue, obs_num, *args, **kwargs):
         """
             Takes an input catalogue, and observes that catalogue with all detectors.
             
@@ -241,12 +242,12 @@ class Instrument(object):
         for detector in self.detectors:
             self.updateState(base_state + "<br /><span class='indented'>Detector {}</span>".format(detector.name))
             self._log("info","Adding catalogue to detector %s" % (detector.name))
-            cats.append(detector.addCatalogue(cat, dist=self.distortion))
+            cats.append(detector.addCatalogue(cat, dist=self.distortion, *args, **kwargs))
             self.updateState(base_state)
         return cats
         self._log("info","Finished Adding Catalogue")
     
-    def addTable(self, table, table_type):
+    def addTable(self, table, table_type, *args, **kwargs):
         """
             Takes an input table (still in memory), and observes that table with all detectors.
             
@@ -313,29 +314,30 @@ class Instrument(object):
         """
         (catpath,catname) = os.path.split(catalogue)
         (catbase,ext) = os.path.splitext(catname)
-        obsname = os.path.join(self.out_path,catbase+"_{:2d}_conv_{}.txt".format(obs_num, self.filter))
+        obsname = os.path.join(self.out_path, catbase+"_{:02d}_conv_{}.txt".format(obs_num, self.filter))
         t = read_metadata(catalogue, n_lines=1000)
         #Check for built-in metadata
+        table_type = ""
         if 'keywords' in t.meta:
             if 'type' in t.meta['keywords']:
                 table_type = t.meta['keywords']['type']['value']
         if table_type in ['phoenix', 'phoenix_realtime', 'bc95']:
             pass
         elif table_type == 'internal':
-            filter = t.meta['keywords']['filter']['value']
-            if filter != self.filter: 
+            filter = t.meta['keywords']['filter']['value'].lower()
+            if filter != self.filter.lower(): 
                 raise ValueError("Adding catalogue with filter {} to {} {}".format(filter, self.DETECTOR, self.filter))
             return catalogue
         elif table_type == 'mixed':
-            filter = t.meta['keywords']['filter']['value']
-            if filter != self.filter: 
+            filter = t.meta['keywords']['filter']['value'].lower()
+            if filter != self.filter.lower(): 
                 raise ValueError("Adding catalogue with filter {} to {} {}".format(filter, self.DETECTOR, self.filter))
         elif table_type == 'multifilter':
-            if self.filter not in t.columns:
+            if self.filter.lower() not in [c.lower() for c in t.columns]:
                 raise ValueError("Adding catalogue with filters {} to {} {}".format(t.columns, self.DETECTOR, self.filter))
         else: #check for necessary columns
             #We want RA, DEC, and count rate in the appropriate filter
-            if 'ra' not in t.columns or 'dec' not in t.columns or self.filter.lower() not in t.columns:
+            if 'ra' not in t.columns or 'dec' not in t.columns or self.filter.lower() not in [c.lower() for c in t.columns]:
                 raise ValueError("Can't parse catalogue without proper columns")
         return self.handleConversion(catalogue, table_type, obsname)
     
@@ -353,6 +355,21 @@ class Instrument(object):
         elif table_type == 'multifilter':
             return self.readMultiTable
         return self.readGenericTable
+    
+    def getTableFormat(self, table_type):
+        if table_type == 'phoenix':
+            return {'ra': ' %10g', 'dec': ' %10g', 'flux': ' %12g', 'type': '%6s', 'n': '%4s', 're': '%4s', 'phi': '%4s', 'ratio': '%6s', 'id': '%8d', 'notes': '%-25s'}
+        elif table_type == 'phoenix_realtime':
+            return {'ra': ' %10g', 'dec': ' %10g', 'flux': ' %12g', 'type': '%6s', 'n': '%4s', 're': '%4s', 'phi': '%4s', 'ratio': '%6s', 'id': '%8d', 'notes': '%-25s'}
+        elif table_type == 'pandeia':
+            return {'ra': ' %10g', 'dec': ' %10g', 'flux': ' %12g', 'type': '%6s', 'n': '%4s', 're': '%4s', 'phi': '%4s', 'ratio': '%6s', 'id': '%8d', 'notes': '%-25s'}
+        elif table_type == 'bc95':
+            return {'ra': ' %10g', 'dec': ' %10g', 'flux': ' %12g', 'type': '%6s', 'n': '%6.3g', 're': '%10g', 'phi': ' %10g', 'ratio': '%10g', 'id': '%8d', 'notes': '%-25s'}
+        elif table_type == 'mixed':
+            return {}
+        elif table_type == 'multifilter':
+            return {}
+        return {}
     
     def handleConversion(self, catalogue, table_type, obsname):
         """
@@ -473,7 +490,7 @@ class Instrument(object):
             t, g, Z, a = temps[index], gravs[index], metallicities[index], apparents[index]
             sp = ps.Icat('phoenix', t, Z, g)
             sp = self.normalize(sp, a, norm_bp)
-            obs = ps.Observation(sp, bp)
+            obs = ps.Observation(sp, bp, binset=sp.wave)
             rates[index] = obs.countrate()
         t = Table()
         t['ra'] = Column(data=ras)
@@ -510,7 +527,7 @@ class Instrument(object):
             spectrum = SEDFactory(config=config)
             wave, flux = spectrum.get_spectrum()
             sp = self.normalize((wave, flux), a, norm_bp)
-            obs = ps.Observation(sp, bp)
+            obs = ps.Observation(sp, bp, binset=sp.wave)
             rates = np.append(rates, obs.countrate())
         t = Table()
         t['ra'] = Column(data=ras)
@@ -530,11 +547,17 @@ class Instrument(object):
         """
         Converts a BC95 galaxy grid of sources into the internal source table standard
         """
+        # This function is needed because I can't get python not to read '50E8' as a number, or to output it as a correctly formatted string
+        def stringify(num):
+            num = float(num)
+            exponent = int(np.floor(np.log10(num)))
+            value = int(10*(num/(10**np.floor(np.log10(num)))))
+            return "{}E{}".format(value, exponent-1)
+        
         from pandeia.engine.custom_exceptions import PysynphotError
         self._log("info", "Converting BC95 Catalogue")
         proflist = {"expdisk":1,"devauc":4}
         ps.setref(**self.REFS)
-        renorm_bp = ps.ObsBandpass('johnson,v')
         distance_type = "redshift"
         ids = table['id']
         ras = table['ra']
@@ -552,40 +575,44 @@ class Instrument(object):
         pas = (table['pa'] + (self.pa*180./np.pi) )%360.
         vmags = table['apparent_surface_brightness']
         norm_bp = '{}'.format(vmags.unit)
-        if norm_bp == '':
+        self._log("info", "Normalization Bandpass is {} ({})".format(norm_bp, type(norm_bp)))
+        if norm_bp == '' or norm_bp is None or norm_bp == 'None':
             norm_bp = 'johnson,v'
+        self._log("info", "Normalization Bandpass is {}".format(norm_bp))
         rates = np.array(())
         indices = np.array(())
         notes = np.array((),dtype='object')
-        for (z,model,age,profile,radius,ratio,pa,mag) in zip(zs,models,ages,profiles,radii,ratios,pas,vmags):
-            fname = "bc95_%s_%s.fits" % (model,age)
+        total = len(models)
+        for i, (z,model,age,profile,radius,ratio,pa,mag) in enumerate(zip(zs,models,ages,profiles,radii,ratios,pas,vmags)):
+#             self._log("info", "{} of {}: {} {} {} {} {} {} {} {}".format(i, total, z, model, age, profile, radius, ratio, pa, mag))
+            fname = "bc95_{}_{}.fits".format(model, stringify(age))
             try:
                 sp = ps.FileSpectrum(os.path.join(os.environ['PYSYN_CDBS'],"grid","bc95","templates",fname))
                 if distance_type == "redshift":
                     sp = sp.redshift(z)
                 sp = self.normalize(sp, mag, norm_bp)
-                obs = ps.Observation(sp,self.bandpass,force='taper')
+                obs = ps.Observation(sp, self.bandpass, force='taper', binset=sp.wave)
                 rate = obs.countrate()
             except PysynphotError as e:
-                self._log('warning', 'Pysynphot Error {} encountered'.format(e.message))
+                self._log('warning', 'Source {} of {}: Pysynphot Error {} encountered'.format(i, total, e.message))
                 rate = 0.
             rates = np.append(rates,rate)
             indices = np.append(indices,proflist[profile])
-            notes = np.append(notes,"BC95 %s %s %f" % (model,age,mag))
+            notes = np.append(notes,"BC95_%s_%s_%f" % (model, stringify(age), mag))
         t = Table()
-        t['ra'] = Column(data=ras)
-        t['dec'] = Column(data=decs)
-        t['flux'] = Column(data=rates)
-        t['type'] = Column(data=np.full_like(ras,'sersic',dtype='S6'))
-        t['n'] = Column(data=indices)
-        t['re'] = Column(data=radii)
-        t['phi'] = Column(data=pas)
-        t['ratio'] = Column(data=ratios)
-        t['id'] = Column(data=ids)
-        t['notes'] = Column(data=notes)
+        t['ra'] = Column(data=ras, format='%8.4f')
+        t['dec'] = Column(data=decs, format='% 9.4f')
+        t['flux'] = Column(data=rates, format='%8g')
+        t['type'] = Column(data=np.full_like(ras,'sersic',dtype='S7'), format='%-7s')
+        t['n'] = Column(data=indices, format='%8g')
+        t['re'] = Column(data=radii, format='%9.5f')
+        t['phi'] = Column(data=pas, format='%9.5f')
+        t['ratio'] = Column(data=ratios, format='%9.5f')
+        t['id'] = Column(data=ids, format='%8d')
+        t['notes'] = Column(data=notes, format='%-25s')
         
         return t, cached
-        
+
     def readMixedTable(self, table, bp, cached=-1):
         """
         Converts a mixed internal list of sources into the internal source table standard
@@ -693,7 +720,7 @@ class Instrument(object):
                 my_dithers.append((x+i,y+j))
         return my_dithers
     
-    def addError(self, poisson=True, readnoise=True, flat=True, dark=True, cosmic=True):
+    def addError(self, convolve=True, poisson=True, readnoise=True, flat=True, dark=True, cosmic=True, parallel=False, snapshots={}, *args, **kwargs):
         """Base function for adding in residual error"""
         self._log("info","Adding residual error")
         base_state = self.getState()
@@ -705,45 +732,62 @@ class Instrument(object):
         if readnoise:
             rn = self.generateReadnoise()
         for detector in self.detectors:
+            if 'initial' in snapshots:
+                detector.toFits(self.imgbase+"_{}_{}_snapshot_initial.fits".format(self.obs_count, detector.name))
             self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Background</span>".format(detector.name))
             self._log("info","Adding error to detector %s" % (detector.name))
             self._log("info","Adding background")
-            bkg = float(self.background)
-            self._log("info","Background is {}".format(bkg))
-            self._log("info", "Sum is {}".format(detector.sum))
-            detector += bkg
-            self._log("info", "Sum is {}".format(detector.sum))
+            self._log("info","Background is {} counts/s/pixel (or {} counts/s/oversampled pixel)".format(self.pixel_background, self.background))
+            detector.addBackground(self.pixel_background)
+            if 'background' in snapshots:
+                detector.toFits(self.imgbase+"_{}_{}_snapshot_background.fits".format(self.obs_count, detector.name))
             self._log("info","Inserting correct exposure time")
             self.updateState(base_state + "<br /><span class='indented'>Detector {}: Applying Exposure Time</span>".format(detector.name))
             detector.setExptime(self.exptime)
+            if 'exptime' in snapshots:
+                detector.toFits(self.imgbase+"_{}_{}_snapshot_exptime.fits".format(self.obs_count, detector.name))
             self._log("info","Convolving with PSF")
-            state_string = base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name)
-            self.updateState(state_string)
-            detector.convolve(self.psf, max=self.convolve_size-1, state_fn=self.updateState, state_str=state_string)
+            convolve_state = base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name)
+            self.updateState(convolve_state)
+            detector.convolve(self.psf, max=self.convolve_size-1, do_convolution=convolve, parallel=parallel, state_setter=self.updateState, base_state=convolve_state)
+            if 'convolve' in snapshots:
+                detector.toFits(self.imgbase+"_{}_{}_snapshot_convolve.fits".format(self.obs_count, detector.name))
             if self.oversample != 1:
                 self._log("info","Binning oversampled image")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Binning oversampled image</span>".format(detector.name))
                 detector.bin(self.oversample)
+                if 'bin' in snapshots:
+                    detector.toFits(self.imgbase+"_{}_{}_snapshot_bin.fits".format(self.obs_count, detector.name))
             if poisson: 
                 self._log("info","Adding poisson noise")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Poisson Noise</span>".format(detector.name))
                 detector.introducePoissonNoise()
+                if 'poisson' in snapshots:
+                    detector.toFits(self.imgbase+"_{}_{}_snapshot_poisson.fits".format(self.obs_count, detector.name))
             if readnoise:
                 self._log("info","Adding readnoise")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Readnoise</span>".format(detector.name))
                 detector.introduceReadnoise(rn)
+                if 'readnoise' in snapshots:
+                    detector.toFits(self.imgbase+"_{}_{}_snapshot_readnoise.fits".format(self.obs_count, detector.name))
             if flat:
                 self._log("info","Adding flatfield residual")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Flatfield Residual</span>".format(detector.name))
                 detector.introduceFlatfieldResidual(flat)
+                if 'flat' in snapshots:
+                    detector.toFits(self.imgbase+"_{}_{}_snapshot_flat.fits".format(self.obs_count, detector.name))
             if dark:
                 self._log("info","Adding dark residual")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Dark Residual</span>".format(detector.name))
                 detector.introduceDarkResidual(dark)
+                if 'dark' in snapshots:
+                    detector.toFits(self.imgbase+"_{}_{}_snapshot_dark.fits".format(self.obs_count, detector.name))
             if cosmic:
                 self._log("info","Adding cosmic ray residual")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Cosmic Ray Residual</span>".format(detector.name))
                 detector.introduceCosmicRayResidual(self.PIXEL_SIZE)
+                if 'cr' in snapshots:
+                    detector.toFits(self.imgbase+"_{}_{}_snapshot_cr.fits".format(self.obs_count, detector.name))
             self.updateState(base_state)
         self._log("info","Finished adding error")
 
@@ -760,7 +804,7 @@ class Instrument(object):
         sp = norm.to_pysynphot(norm_wave, norm_flux)
         sp.convert('angstroms')
         return sp
-     
+    
     def get_type(self, bandpass_str):
         if 'miri' in bandpass_str or 'nircam' in bandpass_str:
             return 'jwst'
@@ -822,11 +866,12 @@ class Instrument(object):
     @property
     def zeropoint(self):
         ps.setref(**self.REFS)
-        sp = ps.FileSpectrum(os.path.join(os.environ["PYSYN_CDBS"],"standards","alpha_lyr_stis_007.fits"))
+        standard_star_file = GetStipsData(os.path.join("standards", "alpha_lyr_stis_008.fits"))
+        sp = ps.FileSpectrum(standard_star_file)
         sp.convert('angstroms')
         bp = self.bandpass
         sp = sp.renorm(0.0,"VEGAMAG",bp)
-        obs = ps.Observation(sp,bp)
+        obs = ps.Observation(sp, bp, binset=sp.wave)
         zeropoint = obs.effstim("OBMAG")
         return zeropoint
     
@@ -836,8 +881,42 @@ class Instrument(object):
         sp = ps.FlatSpectrum(0, fluxunits='stmag')
         sp.convert('angstroms')
         bp = self.bandpass
-        obs = ps.Observation(sp, bp)
+        obs = ps.Observation(sp, bp, binset=sp.wave)
         return obs.effstim('flam') / obs.countrate()
+    
+    @property
+    def pixel_background(self):
+        if self.background_value == 'none':
+            return 0.
+        
+        from jwst_backgrounds import jbt
+        bg = jbt.background(self.ra, self.dec, self.PHOTPLAM[self.filter])
+        wave_array = bg.bkg_data['wave_array']
+        combined_bg_array = bg.bkg_data['total_bg']
+        
+        if self.background_value == 'avg':
+            flux_array = np.mean(combined_bg_array, axis=0)
+        elif self.background_value == 'med':
+            flux_array = np.median(combined_bg_array, axis=0)
+        elif self.background_value == 'max':
+            flux_array = np.max(combined_bg_array, axis=0)
+        elif self.background_value == 'min':
+            flux_array = np.min(combined_bg_array, axis=0)
+        else:
+            flux_array = combined_bg_array[0]
+        
+        # Convert background flux from MJy/sr to mJy/pixel.
+        #   Conversion: * 1e9 for MJy -> mJy
+        #   Conversion: * 2.3504e-11 for sr^-2 -> arcsec^-2
+        #   Conversion: * self.SCALE[0] * self.SCALE[1] for arcsec^-2 -> pixel^-2
+        flux_array_pixels = 1e9 * flux_array * 2.3504e-11 * self.SCALE[0] * self.SCALE[1]
+        
+        ps.setref(**self.REFS)
+        sp = ps.ArraySpectrum(wave_array, flux_array_pixels, waveunits='micron', fluxunits='mjy')
+        sp.convert('angstroms')
+        sp.convert('photlam')
+        obs = ps.Observation(sp, self.bandpass, binset=sp.wave)
+        return obs.countrate()
 
     def _log(self,mtype,message):
         """

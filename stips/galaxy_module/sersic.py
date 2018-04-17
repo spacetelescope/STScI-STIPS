@@ -141,7 +141,7 @@ class baseImage(object):
         self.image = noise - float(sky_level)
         return self.image
 
-    def writeFITS(self,filename,dir=None,clobber=True):
+    def writeFITS(self, filename, dir=None, overwrite=True):
         """Writes image to a FITS file using pyfits.
 
         This can be called directly as `galflex.writeFITS(image,...)` or as a baseImage method:
@@ -154,7 +154,7 @@ class baseImage(object):
         @param filename     The name of the file to write to
         @param dir          Optionally a directory name can be provided if the filename does not 
                             already include it.     [Default = None]
-        @param clobber      Setting `clobber=True` when `filename` is given will silently overwrite 
+        @param overwrite    Setting `overwrite=True` when `filename` is given will silently overwrite 
                             existing files.         [Default = True]
         """
 
@@ -175,13 +175,13 @@ class baseImage(object):
     
         printname = str(filename)+'.fits'
 
-        #Overwrite existing filename if clobber=True
+        #Overwrite existing filename if overwrite=True
         if os.path.isfile(printname):
-            if clobber:
+            if overwrite:
                 os.remove(printname)
             else:
                 raise IOError('File %r already exists'%printname)
-        hdulist.writeto(printname, clobber=True) # Save images as FITS file
+        hdulist.writeto(printname, overwrite=True) # Save images as FITS file
         print "FITS file destination: ", printname
 
 
