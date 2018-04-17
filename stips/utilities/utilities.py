@@ -6,7 +6,7 @@ General CGI form functions.
 :Organization: Space Telescope Science Institute
 
 """
-from __future__ import division
+from __future__ import absolute_import,division
 
 # External modules
 import importlib, inspect, os, shutil, sys, uuid
