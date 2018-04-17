@@ -351,7 +351,6 @@ class AstroImage(object):
             - the Sersic Profiles will be iteratively added via addSersicProfile
         The converted table (with X,Y instead of ra,dec and non-visible points removed) will be returned.
         """
-        parallel = kwargs.get('parallel', False)
         ras = t['ra']
         decs = t['dec']
         self._log("info", "Determining pixel co-ordinates")
@@ -377,9 +376,6 @@ class AstroImage(object):
             ratios = t['ratio'][to_keep]
             ids = t['id'][to_keep]
             old_notes = t['notes'][to_keep]
-#             notes = np.array((), dtype="S150")
-#             for item in old_notes:
-#                 notes = np.append(notes, "")
             notes = np.empty_like(xs, dtype="S150")
             notes[:] = old_notes[:]
             vegamags = -2.512 * np.log10(fluxes) - self.zeropoint
@@ -407,45 +403,16 @@ class AstroImage(object):
                 gfluxes_observed = np.empty_like(gxs, dtype='float32')
                 gnotes = np.empty_like(gxs, dtype='S150')
                 self._log('info', 'Starting Sersic Profiles at {}'.format(time.ctime()))
-                if parallel:
-                    p = Percenter(len(xs[gals_idx]))
-                    p.incr()
-                    pool = multiprocessing.Pool()
-                    m = multiprocessing.Manager()
-                    lock = m.Lock()
-                    print_lock = m.Lock()
-                    results = []
-                    self._log("info", "Starting job server with {} workers".format(pool._processes))
-                    def parallel_callback(items):
-                        index, flux = items
-                        print_lock.acquire()
-                        p.incr()
-                        self.updateState(base_state + "<br /><span class='indented'>Adding galaxy {} of {}</span>".format(p.current, p.total))
-                        fluxes_observed[index] = flux
-                        notes[index] = "{}: surface brightness {:.3f} yielded flux {:.3f}".format(notes[index], fluxes[index], flux)
-                        self._log("info", "Finished Galaxy {} of {} (index {})".format(p.current, p.total, index))
-                        print_lock.release()
                 for (x, y, flux, n, re, phi, ratio, id) in zip(gxs, gys, gfluxes, gns, gres, gphis, gratios, gids):
                     item_index = np.where(ids==id)[0][0]
                     self._log("info", "Index is {}".format(item_index))
-                    if parallel:
-                        res = pool.apply_async(self.addSersicProfileParallel, args=(item_index, x, y, flux, n, re, phi, ratio, lock), callback=parallel_callback)
-                        results.append(res)
-                    else:
-                        self.updateState(base_state + "<br /><span class='indented'>Adding galaxy {} of {}</span>".format(counter, len(xs[gals_idx])))
-                        central_flux = self.addSersicProfile(x, y, flux, n, re, phi, ratio, *args, **kwargs)
-                        fluxes_observed[item_index] = central_flux
-                        notes[item_index] = "{}: surface brightness {:.3f} yielded flux {:.3f}".format(notes[item_index], flux, central_flux)
-#                         gfluxes_observed = np.append(gfluxes_observed, central_flux)
-#                         gnotes = np.append(gnotes, "{}: surface brightness {:.3f} yielded flux {:.3f}".format(notes[item_index], flux, central_flux))
-                        self._log("info", "Finished Galaxy {} of {}".format(counter, total))
-                        counter += 1
-                if parallel:
-                    pool.close()
-                    pool.join()
+                    self.updateState(base_state + "<br /><span class='indented'>Adding galaxy {} of {}</span>".format(counter, len(xs[gals_idx])))
+                    central_flux = self.addSersicProfile(x, y, flux, n, re, phi, ratio, *args, **kwargs)
+                    fluxes_observed[item_index] = central_flux
+                    notes[item_index] = "{}: surface brightness {:.3f} yielded flux {:.3f}".format(notes[item_index], flux, central_flux)
+                    self._log("info", "Finished Galaxy {} of {}".format(counter, total))
+                    counter += 1
                 self._log('info', 'Finishing Sersic Profiles at {}'.format(time.ctime()))
-#                 notes[gals_idx] = gnotes[:]
-#                 fluxes_observed[gals_idx] = gfluxes_observed
             ot = Table()
             ot['x'] = Column(data=xfs, unit='pixels')
             ot['y'] = Column(data=yfs, unit='pixels')
@@ -514,76 +481,6 @@ class AstroImage(object):
         ys = np.floor(ys).astype(int)
         with ImageData(self.fname, self.shape) as dat:
             dat[ys, xs] += rates
-    
-    def addSersicProfileParallel(self, index, posX, posY, flux, n, re, phi, axialRatio, lock, *args, **kwargs):
-        """
-        Adds a single sersic profile to the image given its co-ordinates, count rate, and source 
-        type.
-        
-        (posX,posY) are the co-ordinates of the centre of the profile (pixels).
-        flux is the total number of counts to add to the AstroImage.
-        n is the Sersic profile index.
-        re is the radius enclosing half of the total light (pixels).
-        phi is the angle of the major axis (degrees east of north).
-        axialRatio is the ratio of major axis to minor axis.
-        """
-        if flux == 0.:
-            return 0.
-        self.addHistory("Adding Sersic profile at (%f,%f) with flux %f, index %f, Re %f, Phi %f, and axial ratio %f" % (posX,posY,flux,n,re,phi,axialRatio))
-        self._log("info","Adding Sersic: re={}, n={}, flux={}, phi={:.1f}, ratio={}".format(re, n, flux, phi, axialRatio))
-        
-        # Determine necessary parameters for the Sersic model -- the input radius and surface brightness are both in *detector* pixels.
-        pixel_radius = re * self.oversample
-        pixel_brightness = flux / (self.oversample*self.oversample)
-
-        # Determine the pixel offset of the profile from the centre of the AstroImage
-        # Centre of profile is (xc, yc)
-        # Centre of image is (self.xsize//2, self.ysize//2)
-        # Centre of profile on image is (posX, posY)
-        # Let's say we have a 20X20 profile, centre is 10,10
-        # Let's say our image is 1024X1024, centre is 512,512
-        # Let's say posX=39, posY=27
-        # So we want to go from 512,512 to 39,27, so offset is -473,-485
-        # Offset is posX-image_centre, posY-image_centre
-        offset_x, offset_y = np.floor(posX) - self.xsize//2, np.floor(posY) - self.ysize//2
-        fractional_x, fractional_y = posX - np.floor(posX), posY - np.floor(posY)
-
-        from astropy.modeling.models import Sersic2D
-        # Figure out an appropriate radius. Start at 5X pixel radius, and continue until the highest value on the outer edge is below the noise floor.
-        max_outer_value = 2*self.noise_floor
-        filled = False
-        radius_multiplier = 2.5
-        full_frame = False
-        model_size = int(np.ceil(pixel_radius*radius_multiplier))
-        while max_outer_value > self.noise_floor:
-            radius_multiplier *= 2
-            model_size = int(np.ceil(pixel_radius*radius_multiplier))
-            if not self._filled(offset_x, offset_y, model_size, model_size):
-#                 self._log("info", "Creating a {}x{} array for the Sersic model at ({},{})".format(model_size, model_size, posX, posY))
-                x, y, = np.meshgrid(np.arange(model_size), np.arange(model_size))
-                # In order to get fractional flux per pixel correct, carry the non-integer portion of the model centre through.
-                xc, yc = model_size//2 + fractional_x, model_size//2 + fractional_y
-                mod = Sersic2D(amplitude=pixel_brightness, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
-                img = mod(x, y)
-                max_outer_value = max(np.max(img[0,:]), np.max(img[-1,:]), np.max(img[:,0]), np.max(img[:,-1]))
-#                 self._log('info', "Max outer value is {}, noise floor is {}".format(max_outer_value, self.noise_floor))
-            else:
-                full_frame = True
-#                 self._log("info", "Creating full-frame Sersic model at ({},{})".format(posX, posY))
-                x, y = np.meshgrid(np.arange(self.ysize), np.arange(self.xsize))
-                xc, yc = posX, posY
-                mod = Sersic2D(amplitude=pixel_brightness, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
-                img = mod(x, y)
-                max_outer_value = 0.
-        img = np.where(img >= self.noise_floor, img, 0.)
-        aperture = CircularAperture((xc, yc), pixel_radius)
-        flux_table = aperture_photometry(img, aperture)
-        central_flux = flux_table['aperture_sum'][0]
-        lock.acquire()
-        self._log("info", "Sersic profile has final size {}x{}, maximum value {}, sum {}".format(model_size, model_size, np.max(img), np.sum(img)))
-        self._addArrayWithOffset(img, offset_x, offset_y)
-        lock.release()
-        return index, central_flux
     
     def addSersicProfile(self, posX, posY, flux, n, re, phi, axialRatio, *args, **kwargs):
         """
