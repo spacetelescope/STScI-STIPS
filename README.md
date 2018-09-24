@@ -142,20 +142,37 @@ equivalent method prior to running any of these example scripts.
   only one output catalogue or two depends on the input catalogue format.
 
 To install, in bash:
+
 Once you have a version of "conda" on your machine, Obtain a copy of cdbs and pandeia _data-1.0 (need link to these), and note their paths:
+
 export PYSYN_CDBS="[path to cdbs]"
+
 export pandeia_refdata="[path to pandeia_data-1.0]"
+
 conda create -n forSTIPS python=2.7.12 astropy=1.3.2 numpy=1.12.1 scipy=0.18.1 photutils=0.3.2 pysynphot=0.9.8.5 webbpsf=0.6
+
 source activate forSTIPS
+
 echo $WEBBPSF_PATH #if this is defined, then the environment should be correct
+
 pip install "esutil==0.6.0"
+
 pip install "montage-wrapper==0.9.9"
+
 pip install "jwst_backgrounds==1.1.1"
+
 pip install "pandeia.engine==1.0"
+
 #to install in /local/tmp/Work  Substitute directory as needed
+
 cd /local/tmp/Work
+
 git clone https://github.com/spacetelescope/STScI-STIPS-UI.git
+
 export stips_data="/local/tmp/Work/STScI-STIPS-UI/sim_input/stips_data"
+
 git clone https://github.com/spacetelescope/STScI-STIPS.git
+
 cd STScI-STIPS
+
 python setup.py install
