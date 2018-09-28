@@ -1066,8 +1066,20 @@ class AstroImage(object):
         sip = wcs.Sip(da,db,dap,dbp,crpix)
         return sip
     
-    def _wcs(self,ra,dec,pa,scale,crpix=None,sip=None,ranum=0,decnum=1):
-        """Create a WCS object given the scene information."""
+    def _wcs(self, ra, dec, pa, scale, crpix=None, sip=None, ranum=0, decnum=1):
+        """
+        Create a WCS object given the scene information.
+        
+        ra is right ascension in decimal degrees
+        dec is declination in decimal degrees
+        pa is the angle between north and east on the tangent plane, with the quadrant between north
+           and east being positive
+        scale is the pixel scale in arcseconds/pixel, for the (x, y) axes of the image
+        crpix is the (x, y) location on the image of the reference pixel (default is centre)
+        sip is the simple imaging polynomial distortion object (if present)
+        ranum indicates which image axis represents RA (default 0)
+        decnum indicates which image axis represents DEC (default 1)
+        """
         w = wcs.WCS(naxis=2)
         w.wcs.ctype = ["",""]
         w.wcs.ctype[ranum] = "RA---TAN"
@@ -1079,20 +1091,18 @@ class AstroImage(object):
         w.wcs.crval = [0.,0.]
         w.wcs.crval[ranum] = ra
         w.wcs.crval[decnum] = dec
-        scale_list = [-abs(scale[0])/3600., abs(scale[1]/3600.)]
-        cdelt_array = np.array(scale_list)
-        w.wcs.cdelt = cdelt_array
-        cpa = np.cos(np.radians(pa))
-        spa = np.sin(np.radians(pa))
-        w.wcs.pc = np.array([[cpa, -spa], [-spa, cpa]])
+        cd_11 = np.cos(np.radians(pa)) * scale[0]/3600.
+        cd_12 = -np.sin(np.radians(pa)) * scale[1]/3600.
+        cd_21 = np.sin(np.radians(pa)) * scale[0]/3600.
+        cd_22 = np.cos(np.radians(pa)) * scale[1]/3600.
+        w.wcs.cd = [[cd_11, cd_12], [cd_21, cd_22]]
+        w.wcs.cdelt = [abs(scale[0])/3600., abs(scale[1])/3600.]
         if sip is not None:
             w.wcs.ctype[ranum] = "RA---TAN-SIP"
             w.wcs.ctype[decnum] = "DEC--TAN-SIP"
             w.sip = sip
-        self._log("info", "{}: (RA, DEC, PA) set to ({}, {}, {}), found to be ({}, {}, {})".format(self.name, ra, dec, pa,
-                                                                                                   w.wcs.crval[ranum],
-                                                                                                   w.wcs.crval[decnum],
-                                                                                                   self._getPA(w, scale)))
+        message = "{}: (RA, DEC, PA) := ({}, {}, {}), detected as ({}, {}, {})"
+        self._log("info", message.format(self.name, ra, dec, pa, w.wcs.crval[ranum], w.wcs.crval[decnum], self._getPA(w, scale)))
         return w
     
     def _normalizeWCS(self,w):
