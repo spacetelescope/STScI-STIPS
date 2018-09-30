@@ -63,6 +63,7 @@ class Instrument(object):
         self.psf_commands = kwargs.get('psf_commands', None)
         self.instrument = kwargs.get('instrument', "")
         self.background_value = kwargs.get('background', 'none')
+        self.custom_background = kwargs.get('custom_background', 0.)
         self.CENTRAL_OFFSET = (0., 0., 0.)
         self.convolve_size = kwargs.get('convolve_size', 4096)
         self.set_celery = kwargs.get('set_celery', None)
@@ -125,7 +126,7 @@ class Instrument(object):
         if filter != self.filter:
             self.filter = filter
             self.resetPSF()
-            self.background = self.pixel_background/(self.oversample*self.oversample)
+            self.background = self.pixel_background
             self.photfnu = self.PHOTFNU[self.filter]
             self.photplam = self.PHOTPLAM[self.filter]
         self.resetDetectors()
@@ -888,6 +889,8 @@ class Instrument(object):
     def pixel_background(self):
         if self.background_value == 'none':
             return 0.
+        elif self.background_value == 'custom':
+            return self.custom_background
         
         from jwst_backgrounds import jbt
         bg = jbt.background(self.ra, self.dec, self.PHOTPLAM[self.filter])

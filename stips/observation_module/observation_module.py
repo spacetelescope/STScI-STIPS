@@ -57,6 +57,7 @@ class ObservationModule(object):
         self.exptime = float(obs.get('exptime', 1.))
         self.distortion = obs.get('distortion', False)
         self.background = obs.get('background', 'none')
+        self.custom_background = obs.get('custom_background', 0.)
         self.small_subarray = obs.get('small_subarray', False)
         if len(self.filters) == 0 and 'filter' in obs:
             self.filters.append(obs['filter'])
