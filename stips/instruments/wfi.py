@@ -131,7 +131,9 @@ class WFI(WfirstInstrument):
                  }
     BACKGROUNDS_V = ['none', 'avg', 'med', 'max', 'min']
     BACKGROUNDS = ['None', 'Average zodiacal background', 'Median zodiacal background', 'Maximum zodiacal background', 'Minimum zodiacal background']
-    BGTEXT = {'none': 'None', 'avg': 'Average zodiacal background', 'med': 'Median zodiacal background', 'max': 'Maximum zodiacal background', 'min': 'Minimum zodiacal background'}
+    BGTEXT = {'none': 'None', 'avg': 'Average zodiacal background', 
+              'med': 'Median zodiacal background', 'max': 'Maximum zodiacal background', 
+              'min': 'Minimum zodiacal background', 'custom': 'Custom thermal background rate'}
     #PHOTFNU has units of Jy
     #For now, just assuming similar PHOTFNU to WFC3IR.
     PHOTFNU = {     'Z087':1.0e-8,'Y106':1.0e-8,'J129':1.0e-8,'H158':1.0e-8,'F184':1.0e-8,'W149':1.0e-8}

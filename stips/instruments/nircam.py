@@ -164,7 +164,9 @@ class NIRCamBase(JwstInstrument):
                  }
     BACKGROUNDS_V = ['none', 'avg', 'med', 'max', 'min']
     BACKGROUNDS = ['None', 'Average zodiacal background', 'Median zodiacal background', 'Maximum zodiacal background', 'Minimum zodiacal background']
-    BGTEXT = {'none': 'None', 'avg': 'Average zodiacal background', 'med': 'Median zodiacal background', 'max': 'Maximum zodiacal background', 'min': 'Minimum zodiacal background'}
+    BGTEXT = {'none': 'None', 'avg': 'Average zodiacal background', 
+              'med': 'Median zodiacal background', 'max': 'Maximum zodiacal background', 
+              'min': 'Minimum zodiacal background', 'custom': 'Custom thermal background rate'}
     #PHOTFNU has units of Jy
     PHOTFNU = { 'F070W':5.085E-08, 'F090W':3.722E-08, 'F115W':3.171E-08, 'F140M':8.313E-08, 
                 'F150W':2.678E-08, 'F162M':8.396E-08, 'F164N':8.724E-07, 'F182M':7.073E-08, 

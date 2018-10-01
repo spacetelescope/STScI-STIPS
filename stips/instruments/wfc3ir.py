@@ -92,7 +92,9 @@ class WFC3IR(HstInstrument):
                  }
     BACKGROUNDS_V = ['none', 'avg', 'med', 'max', 'min']
     BACKGROUNDS = ['None', 'Average zodiacal background', 'Median zodiacal background', 'Maximum zodiacal background', 'Minimum zodiacal background']
-    BGTEXT = {'none': 'None', 'avg': 'Average zodiacal background', 'med': 'Median zodiacal background', 'max': 'Maximum zodiacal background', 'min': 'Minimum zodiacal background'}
+    BGTEXT = {'none': 'None', 'avg': 'Average zodiacal background', 
+              'med': 'Median zodiacal background', 'max': 'Maximum zodiacal background', 
+              'min': 'Minimum zodiacal background', 'custom': 'Custom thermal background rate'}
     #PHOTFNU has units of Jy
     PHOTFNU = {'F110W':6.760E-08, 'F160W':1.505E-07}
     #PHOTPLAM has units of um
