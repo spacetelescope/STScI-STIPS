@@ -59,6 +59,8 @@ class ObservationModule(object):
         self.background = obs.get('background', 'none')
         self.custom_background = obs.get('custom_background', 0.)
         self.small_subarray = obs.get('small_subarray', False)
+        if 'cache' in obs:
+            self.use_local_cache = obs['use_local_cache']
         if len(self.filters) == 0 and 'filter' in obs:
             self.filters.append(obs['filter'])
         
@@ -74,11 +76,15 @@ class ObservationModule(object):
             self.dec = kwargs['scene_general'].get('dec', 0.0)
             self.pa = kwargs['scene_general'].get('pa', 0.0)
             self.seed = kwargs['scene_general'].get('seed', 0)
+            if 'cache' in kwargs['scene_general'] and not hasattr(self, 'use_local_cache'):
+                self.use_local_cache = kwargs['scene_general']['cache']
         else:
             self.ra = kwargs.get('ra', 0.0)
             self.dec = kwargs.get('dec', 0.0)
             self.pa = kwargs.get('pa', 0.0)
             self.seed = kwargs.get('seed', 0)
+            if  and not hasattr(self, 'use_local_cache'):
+                self.use_local_cache = kwargs.get('cache', False)
         if 'residual' in kwargs:
             self.flat = kwargs['residual'].get('flat', True)
             self.dark = kwargs['residual'].get('dark', True)

@@ -68,6 +68,7 @@ class Instrument(object):
         self.convolve_size = kwargs.get('convolve_size', 4096)
         self.set_celery = kwargs.get('set_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
+        self.use_local_cache = kwargs.get('use_local_cache', False)
     
     @classmethod
     def initFromImage(cls, image, **kwargs):
@@ -886,7 +887,7 @@ class Instrument(object):
         return obs.effstim('flam') / obs.countrate()
     
     @property
-    def pixel_background(self, use_local_cache=True):
+    def pixel_background(self):
         if self.background_value == 'none':
             self._log("info", "Returning background 0.0 for 'none'")
             return 0.
@@ -895,7 +896,7 @@ class Instrument(object):
             return self.custom_background
 
         bg = None
-        if internet() and not use_local_cache:
+        if internet() and not self.use_local_cache:
             from jwst_backgrounds import jbt
             try:
                 bg = jbt.background(self.ra, self.dec, self.PHOTPLAM[self.filter])
