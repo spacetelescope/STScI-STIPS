@@ -15,7 +15,7 @@ from functools import wraps
 #Local Modules
 from ..stellar_module import StarGenerator
 from ..astro_image import AstroImage
-from ..utilities import GetStipsData, OffsetPosition, read_metadata, read_table
+from ..utilities import GetStipsData, OffsetPosition, read_metadata, read_table, internet
 
 import __builtin__
 
@@ -738,7 +738,7 @@ class Instrument(object):
             self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Background</span>".format(detector.name))
             self._log("info","Adding error to detector %s" % (detector.name))
             self._log("info","Adding background")
-            self._log("info","Background is {} counts/s/pixel (or {} counts/s/oversampled pixel)".format(self.pixel_background, self.background))
+            self._log("info","Background is {} counts/s/pixel".format(self.pixel_background))
             detector.addBackground(self.pixel_background)
             if 'background' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_background.fits".format(self.obs_count, detector.name))
@@ -886,17 +886,37 @@ class Instrument(object):
         return obs.effstim('flam') / obs.countrate()
     
     @property
-    def pixel_background(self):
+    def pixel_background(self, use_local_cache=True):
         if self.background_value == 'none':
+            self._log("info", "Returning background 0.0 for 'none'")
             return 0.
         elif self.background_value == 'custom':
+            self._log("info", "Returning background {} for 'custom'".format(self.custom_background))
             return self.custom_background
+
+        bg = None
+        if internet() and not use_local_cache:
+            from jwst_backgrounds import jbt
+            try:
+                bg = jbt.background(self.ra, self.dec, self.PHOTPLAM[self.filter])
+            except Exception as e:
+                self._log("error", "Accessing JBT background produced error {}".format(e))
+                self._log("warning", "Unable to connect to the JBT server")
         
-        from jwst_backgrounds import jbt
-        bg = jbt.background(self.ra, self.dec, self.PHOTPLAM[self.filter])
+        if bg is None:
+            self._log("info", "Using local cache of JBT background data")
+            from ..utilities import CachedJbtBackground
+            try:
+                bg = CachedJbtBackground(self.ra, self.dec, self.PHOTPLAM[self.filter])
+            except Exception as e:
+                self._log("error", "Retrieving local cache produced error {}".format(e))
+                message = "Unable to retrieve local cache. Returning background 0.0 for '{}'"
+                self._log("warning", message.format(self.background_value))
+                return 0.
+
         wave_array = bg.bkg_data['wave_array']
         combined_bg_array = bg.bkg_data['total_bg']
-        
+    
         if self.background_value == 'avg':
             flux_array = np.mean(combined_bg_array, axis=0)
         elif self.background_value == 'med':
@@ -907,19 +927,22 @@ class Instrument(object):
             flux_array = np.min(combined_bg_array, axis=0)
         else:
             flux_array = combined_bg_array[0]
-        
+    
         # Convert background flux from MJy/sr to mJy/pixel.
         #   Conversion: * 1e9 for MJy -> mJy
         #   Conversion: * 2.3504e-11 for sr^-2 -> arcsec^-2
         #   Conversion: * self.SCALE[0] * self.SCALE[1] for arcsec^-2 -> pixel^-2
         flux_array_pixels = 1e9 * flux_array * 2.3504e-11 * self.SCALE[0] * self.SCALE[1]
-        
+    
         ps.setref(**self.REFS)
         sp = ps.ArraySpectrum(wave_array, flux_array_pixels, waveunits='micron', fluxunits='mjy')
         sp.convert('angstroms')
         sp.convert('photlam')
         obs = ps.Observation(sp, self.bandpass, binset=sp.wave)
-        return obs.countrate()
+        bg = obs.countrate()
+        
+        self._log("info", "Returning background {} for '{}'".format(bg, self.background_value))
+        return bg
 
     def _log(self,mtype,message):
         """

@@ -852,6 +852,7 @@ class AstroImage(object):
         """
         per_pixel_background = background / (self.oversample*self.oversample)
         self.addHistory("Added background of {} counts/s/detector pixel ({} counts/s/oversampled pixel)".format(background, per_pixel_background))
+        self._log("info", "Added background of {} counts/s/detector pixel ({} counts/s/oversampled pixel)".format(background, per_pixel_background))
         with ImageData(self.fname, self.shape) as dat:
             dat += per_pixel_background
 

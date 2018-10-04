@@ -9,13 +9,14 @@ General CGI form functions.
 from __future__ import absolute_import,division
 
 # External modules
-import importlib, inspect, os, shutil, sys, uuid
+import importlib, inspect, os, shutil, socket, sys, urllib, uuid
 import numpy as np
 import astropy.io.fits as pyfits
 import multiprocessing.dummy as multiprocessing
 from numpy.fft import fft2, ifft2
 from astropy.io import ascii
 from astropy.table import Table
+from jwst_backgrounds.jbt import background
 
 
 #-----------
@@ -53,6 +54,37 @@ class ImageData(object):
         del self.fp
 
 #-----------
+class CachedJbtBackground(background, object):
+    '''
+    Version of the JBT Background class intended to work with a local cached file. Repeats the 
+    entire __init__ function because there doesn't seem to be any way to give jbt a local file
+    path instead of a URL.
+    '''
+    def __init__(self, ra, dec, wavelength, thresh=1.1):
+        # global attributes
+        self.cache_path = GetStipsData("background")
+        self.cache_url = urllib.pathname2url(os.path.join(self.cache_path, "remote_cache/"))
+        self.local_path = os.path.join(self.cache_path, 'jbt_refdata')
+        self.wave_file = 'std_spectrum_wavelengths.txt' # The wavelength grid of the background cache
+        self.thermal_file = 'thermal_curve_jwst_jrigby_cchen_1.1a.csv' # The constant (not time variable) thermal self-emission curve
+        self.nside = 128  # Healpy parameter, from generate_backgroundmodel_cache.c .  
+        self.wave_array,self.thermal_bg = self.read_static_data()
+        self.sl_nwave = self.wave_array.size  # Size of wavelength array
+        
+        # input parameters
+        self.ra = ra
+        self.dec = dec
+        self.wavelength = wavelength
+        self.thresh = thresh
+
+        # Load variable content
+        self.cache_file = self.myfile_from_healpix(ra, dec)
+        self.bkg_data = self.read_bkg_data(self.cache_file)
+                
+        # Interpolate bathtub curve and package it    
+        self.make_bathtub(wavelength)
+
+#-----------
 def GetStipsData(to_retrieve):
     """
     Retrieve a file from the stips_data directory. Will also print out a warning if the directory
@@ -72,6 +104,20 @@ def GetStipsData(to_retrieve):
         sys.stderr.write("ERROR: Please make sure that the stips_data environment variable exists and points to the location of stips_data.\n")
         sys.stderr.write("ERROR: Please try downloading the stips_data directory again.\n")
     return retrieval_file
+
+#-----------
+def internet(host="8.8.8.8", port=53, timeout=3):
+    """
+    Host: 8.8.8.8 (google-public-dns-a.google.com)
+    OpenPort: 53/tcp
+    Service: domain (DNS/TCP)
+    """
+    try:
+        socket.setdefaulttimeout(timeout)
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+        return True
+    except Exception as ex:
+        return False
 
 #-----------
 def OffsetPosition(in_ra,in_dec,delta_ra,delta_dec):
