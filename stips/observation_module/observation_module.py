@@ -83,7 +83,7 @@ class ObservationModule(object):
             self.dec = kwargs.get('dec', 0.0)
             self.pa = kwargs.get('pa', 0.0)
             self.seed = kwargs.get('seed', 0)
-            if  and not hasattr(self, 'use_local_cache'):
+            if not hasattr(self, 'use_local_cache'):
                 self.use_local_cache = kwargs.get('cache', False)
         if 'residual' in kwargs:
             self.flat = kwargs['residual'].get('flat', True)
