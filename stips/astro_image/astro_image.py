@@ -1092,12 +1092,12 @@ class AstroImage(object):
         w.wcs.crval = [0.,0.]
         w.wcs.crval[ranum] = ra
         w.wcs.crval[decnum] = dec
+        w.wcs.cdelt = [abs(scale[0])/3600., abs(scale[1])/3600.]
         cd_11 = np.cos(np.radians(pa)) * scale[0]/3600.
         cd_12 = -np.sin(np.radians(pa)) * scale[1]/3600.
         cd_21 = np.sin(np.radians(pa)) * scale[0]/3600.
         cd_22 = np.cos(np.radians(pa)) * scale[1]/3600.
         w.wcs.cd = [[cd_11, cd_12], [cd_21, cd_22]]
-        w.wcs.cdelt = [abs(scale[0])/3600., abs(scale[1])/3600.]
         if sip is not None:
             w.wcs.ctype[ranum] = "RA---TAN-SIP"
             w.wcs.ctype[decnum] = "DEC--TAN-SIP"
