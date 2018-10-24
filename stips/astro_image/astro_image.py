@@ -12,8 +12,6 @@ from astropy.io import fits as pyfits
 from astropy.table import Table, Column
 from photutils import CircularAperture, aperture_photometry
 
-from cStringIO import StringIO
-
 from scipy.ndimage.interpolation import zoom, rotate
 
 #Local Modules
