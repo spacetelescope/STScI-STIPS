@@ -8,7 +8,11 @@ import numpy as np
 from astropy.table import Table, Column
 from astropy.cosmology import WMAP9 as cosmo
 from astropy import units as u
-from cStringIO import StringIO
+
+if sys.version_info[0] >= 3:
+    from io import StringIO
+else:
+    from cStringIO import StringIO
 
 # Local modules
 from ..stellar_module import StarGenerator

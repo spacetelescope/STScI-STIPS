@@ -101,7 +101,11 @@ class ObservationModule(object):
         self.set_celery = kwargs.get('set_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
 
-        self.instrument_name = self.instrument_name.encode('ascii')
+        if sys.version_info[0] >= 3:
+            if isinstance(self.instrument_name, bytes):
+                self.instrument_name = self.instrument_name.decode('utf8')
+        else:
+            self.instrument_name = self.instrument_name.encode('ascii')
         if self.instrument_name == 'WFIRST':
             self.instrument_name = 'WFI'
         
@@ -117,7 +121,7 @@ class ObservationModule(object):
         self.imgbase = os.path.join(self.out_path, "{}_{}".format(self.prefix, self.id))
         
         self.instruments = InstrumentList(excludes=self.excludes)
-        self.instrument = self.instruments[self.instrument_name](**self.__dict__)
+        self.instrument = self.instruments[str(self.instrument_name)](**self.__dict__)
     
     #-----------
     def initParams(self):

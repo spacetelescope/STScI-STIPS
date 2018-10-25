@@ -14,6 +14,11 @@ from photutils import CircularAperture, aperture_photometry
 
 from scipy.ndimage.interpolation import zoom, rotate
 
+if sys.version_info[0] >= 3:
+    from io import StringIO
+else:
+    from cStringIO import StringIO
+
 #Local Modules
 from ..utilities import OffsetPosition, overlapadd2, overlapaddparallel, read_table, ImageData, Percenter
 from ..errors import GetCrProbs, GetCrTemplate, MakeCosmicRay
@@ -68,6 +73,7 @@ class AstroImage(object):
         self._init_dat(base_shape, psf_shape, data)
         
         #Get WCS values if present, or set up a default
+        self._scale = kwargs.get('scale', [0., 0.])
         self.wcs = self._getWcs(**kwargs)
         self._prepRaDec()
         
@@ -212,23 +218,23 @@ class AstroImage(object):
     
     @property
     def xscale(self):
-        return abs(self.wcs.wcs.cdelt[0])*3600.
+        return abs(self.scale[0])*3600.
     
     @property
     def yscale(self):
-        return abs(self.wcs.wcs.cdelt[1])*3600.
+        return abs(self.scale[1])*3600.
     
     @property
     def scale(self):
-        return [self.xscale, self.yscale]
+        return self._scale
     
     @property
     def rascale(self):
-        return abs(self.wcs.wcs.cdelt[self.ranum])*3600.
+        return abs(self.scale[self.ranum])*3600.
 
     @property
     def decscale(self):
-        return abs(self.wcs.wcs.cdelt[self.decnum])
+        return abs(self.scale[self.decnum])
     
     @property
     def distorted(self):
@@ -291,9 +297,16 @@ class AstroImage(object):
         """Output AstroImage as a FITS Primary HDU"""
         with ImageData(self.fname, self.shape, mode='r+') as dat:
             hdu = pyfits.PrimaryHDU(dat, header=self.wcs.to_header(relax=True))
-        for k,v in self.header.iteritems():
-            if k != "ASTROIMAGEVALID":
-                hdu.header[k] = v
+        hdu.header['CDELT1'] = self.scale[0]/3600.
+        hdu.header['CDELT2'] = self.scale[0]/3600.
+        if sys.version_info[0] >= 3:
+            for k,v in self.header.items():
+                if k != "ASTROIMAGEVALID":
+                    hdu.header[k] = v
+        else:
+            for k,v in self.header.iteritems():
+                if k != "ASTROIMAGEVALID":
+                    hdu.header[k] = v
         for item in self.history:
             hdu.header.add_history(item)
         self._log("info","Created Primary HDU from AstroImage %s" % (self.name))
@@ -305,8 +318,22 @@ class AstroImage(object):
         self._log("info","Creating Extension HDU from AstroImage %s" % (self.name))
         with ImageData(self.fname, self.shape, mode='r+') as dat:
             hdu = pyfits.ImageHDU(dat, header=self.wcs.to_header(relax=True), name=self.name)
-        for k, v in self.header.iteritems():
-            hdu.header[k] = v
+#         del hdu.header['PC1_1']
+#         del hdu.header['PC1_2']
+#         del hdu.header['PC2_1']
+#         del hdu.header['PC2_2']
+#         del hdu.header['CDELT1']
+#         del hdu.header['CDELT2']
+#         hdu.header['CD1_1'] = self.wcs.wcs.cd[0][0]
+#         hdu.header['CD1_2'] = self.wcs.wcs.cd[0][1]
+#         hdu.header['CD2_1'] = self.wcs.wcs.cd[1][0]
+#         hdu.header['CD2_2'] = self.wcs.wcs.cd[1][1]
+        if sys.version_info[0] >= 3:
+            for k,v in self.header.items():
+                hdu.header[k] = v
+        else:
+            for k,v in self.header.iteritems():
+                hdu.header[k] = v
         for item in self.history:
             hdu.header.add_history(item)
         self._log("info","Created Extension HDU from AstroImage %s" % (self.name))
@@ -795,6 +822,7 @@ class AstroImage(object):
             if os.path.exists(self.fname):
                 os.remove(self.fname)
             raise e
+        self._scale = scale
         self.wcs = self._wcs(self.ra, self.dec, self.pa, scale)
         self._prepHeader()
         
@@ -1091,15 +1119,17 @@ class AstroImage(object):
         w.wcs.crval[ranum] = ra
         w.wcs.crval[decnum] = dec
         w.wcs.cdelt = [abs(scale[0])/3600., abs(scale[1])/3600.]
-        cd_11 = np.cos(np.radians(pa)) * scale[0]/3600.
-        cd_12 = -np.sin(np.radians(pa)) * scale[1]/3600.
-        cd_21 = np.sin(np.radians(pa)) * scale[0]/3600.
-        cd_22 = np.cos(np.radians(pa)) * scale[1]/3600.
+        cd_11 = np.cos(np.radians(pa)) * (scale[0]/3600.)
+        cd_12 = -np.sin(np.radians(pa)) * (scale[1]/3600.)
+        cd_21 = np.sin(np.radians(pa)) * (scale[0]/3600.)
+        cd_22 = np.cos(np.radians(pa)) * (scale[1]/3600.)
         w.wcs.cd = [[cd_11, cd_12], [cd_21, cd_22]]
+        w.wcs.cdelt = [abs(scale[0])/3600., abs(scale[1])/3600.]
         if sip is not None:
             w.wcs.ctype[ranum] = "RA---TAN-SIP"
             w.wcs.ctype[decnum] = "DEC--TAN-SIP"
             w.sip = sip
+        self._scale = scale
         message = "{}: (RA, DEC, PA) := ({}, {}, {}), detected as ({}, {}, {})"
         self._log("info", message.format(self.name, ra, dec, pa, w.wcs.crval[ranum], w.wcs.crval[decnum], self._getPA(w, scale)))
         return w

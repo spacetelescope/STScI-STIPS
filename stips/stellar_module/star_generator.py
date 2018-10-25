@@ -278,18 +278,18 @@ class StarGenerator(object):
         return countrates
 
     def make_cluster_mags(self,masses):
-    	db = sqlite3.connect(self.dbname)
-    	sc = sqlite_util.SqliteConnection(self.dbname)
-    	stmt = "SELECT m_ini,johnson_i_abs,Te,log_g FROM star_info WHERE star_info.age = %f AND star_info.Z = %f" % (self.age,self.metallicity)
-    	arr = sc.execute(stmt, asarray=True)
-    	star_masses = arr['m_ini']
-    	star_i = arr['johnson_i_abs']
-    	star_t = arr['te']
-    	star_g = arr['log_g']
-    	countrates = np.interp(masses, star_masses, star_i)
-    	temps = np.interp(masses, star_masses, star_t)
-    	gravs = np.interp(masses, star_masses, star_g)
-        return countrates, temps, gravs
+        db = sqlite3.connect(self.dbname)
+        sc = sqlite_util.SqliteConnection(self.dbname)
+        stmt = "SELECT m_ini,johnson_i_abs,Te,log_g FROM star_info WHERE star_info.age = %f AND star_info.Z = %f" % (self.age,self.metallicity)
+        arr = sc.execute(stmt, asarray=True)
+        star_masses = arr['m_ini']
+        star_i = arr['johnson_i_abs']
+        star_t = arr['te']
+        star_g = arr['log_g']
+        countrates = np.interp(masses, star_masses, star_i)
+        temps = np.interp(masses, star_masses, star_t)
+        gravs = np.interp(masses, star_masses, star_g)
+        return (countrates, temps, gravs)
 
     def make_cluster(self,num_stars,nbins=1000,**kwargs):
         """
@@ -308,4 +308,4 @@ class StarGenerator(object):
         if self.logger is not None:
             getattr(self.logger, priority)(message)
         else:
-            print "{}: {}".format(priority, message)
+            print("{}: {}".format(priority, message))

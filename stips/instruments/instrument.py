@@ -9,7 +9,6 @@ import pysynphot as ps
 
 from astropy.io import fits as pyfits
 from astropy.table import Table, Column
-from cStringIO import StringIO
 from functools import wraps
 
 #Local Modules
@@ -17,7 +16,12 @@ from ..stellar_module import StarGenerator
 from ..astro_image import AstroImage
 from ..utilities import GetStipsData, OffsetPosition, read_metadata, read_table, internet
 
-import __builtin__
+if sys.version_info[0] >= 3:
+    import builtins
+    from io import StringIO
+else:
+    import __builtin__
+    from CStringIO import StringIO
 
 
 class Instrument(object):
