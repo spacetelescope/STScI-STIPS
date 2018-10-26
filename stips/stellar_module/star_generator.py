@@ -94,6 +94,7 @@ class StarGenerator(object):
         self.imf = massfunctions[kwargs.get('imf', 'powerlaw').lower().replace(" ","_")]
         self.alpha = kwargs.get('alpha', -2.35)
         self.logger = kwargs.get('logger', None)
+        self.seed = kwargs.get('seed', 1234)
         db = sqlite3.connect(self.dbname)
         c = db.cursor()
         c.execute("""SELECT age FROM star_info ORDER BY ABS(? - age) LIMIT 1""",(self.age,))
@@ -228,7 +229,7 @@ class StarGenerator(object):
         kwargs are passed to `inverse_imf`
         """
 
-        masses = self.inverse_imf(np.random.random(num_stars),nbins=nbins,**kwargs)
+        masses = self.inverse_imf(np.random.RandomState(seed=self.seed).random(num_stars),nbins=nbins,**kwargs)
 
         return masses
     

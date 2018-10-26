@@ -123,7 +123,7 @@ class baseImage(object):
         @param sigma        Standard deviation of distribution  [default = 1.0]
         @param mean         Mean of Gaussian distribution       [default = 0.0]
         """
-        noise = np.random.normal(loc=float(mean),scale=float(sigma),size=(self.N,self.N))
+        noise = np.random.RandomState(seed=self.seed).normal(loc=float(mean),scale=float(sigma),size=(self.N,self.N))
         self.image += noise
         return self.image
 
@@ -137,7 +137,7 @@ class baseImage(object):
         """
 
         totalCount = self.image+float(sky_level)
-        noise =  np.random.poisson(totalCount)
+        noise =  np.random.RandomState(seed=self.seed).poisson(totalCount)
         self.image = noise - float(sky_level)
         return self.image
 

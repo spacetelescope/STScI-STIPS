@@ -161,9 +161,13 @@ class Instrument(object):
             scale = [self.SCALE[0]/self.oversample,self.SCALE[1]/self.oversample]
             self._log("info","Creating Detector with (RA,DEC,PA) = (%f,%f,%f)" % (ra,dec,pa))
             self._log("info","Creating Detector with pixel offset ({},{})".format(delta_ra/scale[0], delta_dec/scale[1]))
-            detector = AstroImage(out_path=self.out_path, shape=(ysize, xsize), scale=scale, ra=ra, dec=dec, pa=pa, exptime=1., header=hdr, history=hist, 
-                                  psf_shape=self.psf.shape, zeropoint=self.zeropoint, background=self.background, noise_floor=1./self.exptime, photflam=self.photflam, detname=name, 
-                                  logger=self.logger, oversample=self.oversample, small_subarray=self.small_subarray, distortion=distortion, prefix=self.prefix, 
+            detector = AstroImage(out_path=self.out_path, shape=(ysize, xsize), scale=scale, ra=ra, 
+                                  dec=dec, pa=pa, exptime=1., header=hdr, history=hist, 
+                                  psf_shape=self.psf.shape, zeropoint=self.zeropoint, 
+                                  background=self.background, noise_floor=1./self.exptime, 
+                                  photflam=self.photflam, detname=name, logger=self.logger, 
+                                  oversample=self.oversample, small_subarray=self.small_subarray, 
+                                  distortion=distortion, prefix=self.prefix, seed=self.seed,
                                   set_celery=self.set_celery, get_celery=self.get_celery)
             self._log("info", "Detector created")
             self.detectors.append(detector)
@@ -436,7 +440,7 @@ class Instrument(object):
         for dataset in all_datasets:
             idx = np.where(datasets == dataset)
             if len(idx[0]) > 0:
-                stargen = StarGenerator(ages[idx][0], metallicities[idx][0], logger=self.logger)
+                stargen = StarGenerator(ages[idx][0], metallicities[idx][0], seed=self.seed, logger=self.logger)
                 rates[idx] = stargen.make_cluster_rates(masses[idx], self.DETECTOR, self.filter, bp, self.REFS)
                 del stargen
         rates = rates * 100 / (distances**2) #convert absolute to apparent rates

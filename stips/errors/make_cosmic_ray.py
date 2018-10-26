@@ -50,7 +50,7 @@ def GaussPsf2D(npix, fwhm, normalize=True):
     return psf
 
 #-----------
-def MakeCosmicRay(xSize, ySize, crProb, crElectrons, crSize, crPsf, verbose=True):
+def MakeCosmicRay(xSize, ySize, crProb, crElectrons, crSize, crPsf, seed, verbose=True):
     """
     Simulate cosmic rays.
 
@@ -85,7 +85,7 @@ def MakeCosmicRay(xSize, ySize, crProb, crElectrons, crSize, crPsf, verbose=True
     crArray = np.zeros((ySize,xSize))
 
     # See if a CR hit
-    crPoisson = np.random.poisson(lam=crProb, size=xSize*ySize)
+    crPoisson = np.random.RandomSeed(seed=seed).poisson(lam=crProb, size=xSize*ySize)
     cr_locs = np.where(crPoisson >= 1)
     num_crs = len(cr_locs[0])
     if num_crs == 0:
@@ -110,7 +110,7 @@ def MakeCosmicRay(xSize, ySize, crProb, crElectrons, crSize, crPsf, verbose=True
         return crArray
 
     # CR energy in e-
-    cr_electrons = crElectrons + np.sqrt(crElectrons) * np.random.randn(numGood)
+    cr_electrons = crElectrons + np.sqrt(crElectrons) * np.random.RandomSeed(seed=seed).randn(numGood)
 
     # Populate CR
     for i in range(numGood):

@@ -59,6 +59,7 @@ class AstroImage(object):
         self.fname = os.path.join(self.out_path, self.prefix+"_"+uuid.uuid4().hex+"_"+self.name+".tmp")
         self.set_celery = kwargs.get('set_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
+        self.seed = kwargs.get('seed', 1234)
         
         self.oversample = kwargs.get('oversample', 1)
         psf_shape = kwargs.get('psf_shape', (0, 0))
@@ -524,9 +525,11 @@ class AstroImage(object):
         self.addHistory("Adding Sersic profile at (%f,%f) with flux %f, index %f, Re %f, Phi %f, and axial ratio %f" % (posX,posY,flux,n,re,phi,axialRatio))
         self._log("info","Adding Sersic: re={}, n={}, flux={}, phi={:.1f}, ratio={}".format(re, n, flux, phi, axialRatio))
         
-        # Determine necessary parameters for the Sersic model -- the input radius and surface brightness are both in *detector* pixels.
+        # Determine necessary parameters for the Sersic model -- the input radius, surface 
+        # brightness and noise floor are all in *detector* pixels.
         pixel_radius = re * self.oversample
         pixel_brightness = flux / (self.oversample*self.oversample)
+        noise_floor = self.noise_floor / (self.oversample*self.oversample)
 
         # Determine the pixel offset of the profile from the centre of the AstroImage
         # Centre of profile is (xc, yc)
@@ -542,12 +545,12 @@ class AstroImage(object):
 
         from astropy.modeling.models import Sersic2D
         # Figure out an appropriate radius. Start at 5X pixel radius, and continue until the highest value on the outer edge is below the noise floor.
-        max_outer_value = 2*self.noise_floor
+        max_outer_value = 2*noise_floor
         filled = False
         radius_multiplier = 2.5
         full_frame = False
         model_size = int(np.ceil(pixel_radius*radius_multiplier))
-        while max_outer_value > self.noise_floor:
+        while max_outer_value > noise_floor:
             radius_multiplier *= 2
             model_size = int(np.ceil(pixel_radius*radius_multiplier))
             if not self._filled(offset_x, offset_y, model_size, model_size):
@@ -558,7 +561,7 @@ class AstroImage(object):
                 mod = Sersic2D(amplitude=pixel_brightness, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
                 img = mod(x, y)
                 max_outer_value = max(np.max(img[0,:]), np.max(img[-1,:]), np.max(img[:,0]), np.max(img[:,-1]))
-#                 self._log('info', "Max outer value is {}, noise floor is {}".format(max_outer_value, self.noise_floor))
+#                 self._log('info', "Max outer value is {}, noise floor is {}".format(max_outer_value, noise_floor))
             else:
                 full_frame = True
 #                 self._log("info", "Creating full-frame Sersic model at ({},{})".format(posX, posY))
@@ -567,7 +570,7 @@ class AstroImage(object):
                 mod = Sersic2D(amplitude=pixel_brightness, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
                 img = mod(x, y)
                 max_outer_value = 0.
-        img = np.where(img >= self.noise_floor, img, 0.)
+        img = np.where(img >= noise_floor, img, 0.)
         aperture = CircularAperture((xc, yc), pixel_radius)
         flux_table = aperture_photometry(img, aperture)
         central_flux = flux_table['aperture_sum'][0]
@@ -901,7 +904,7 @@ class AstroImage(object):
                 np.absolute(dat, abs_data)
 
                 noise_data = np.memmap(n, dtype='float32', mode='w+', shape=self.shape)
-                noise_data[:,:] = np.random.normal(size=self.shape) * np.sqrt(abs_data)
+                noise_data[:,:] = np.random.RandomState(seed=self.seed).normal(size=self.shape) * np.sqrt(abs_data)
                 del abs_data
                 if absVal:
                     noise_data[:,:] = np.abs(noise_data)
@@ -935,7 +938,7 @@ class AstroImage(object):
         try:
             with ImageData(self.fname, self.shape, mode='r+') as dat:
                 noise_data = np.memmap(n, dtype='float32', mode='w+', shape=self.shape)
-                noise_data[:,:] = readnoise * np.random.randn(self.ysize,self.xsize)            
+                noise_data[:,:] = readnoise * np.random.RandomState(seed=seed).randn(self.ysize,self.xsize)            
                 mean, std = noise_data.mean(), noise_data.std()
                 dat += noise_data
                 del noise_data
@@ -1000,7 +1003,7 @@ class AstroImage(object):
                 noise_data = np.memmap(n, dtype='float32', mode='w+', shape=self.shape)
                 noise_data.fill(0.)
                 for i in range(len(energies)):
-                    noise_data += MakeCosmicRay(self.shape[1], self.shape[0], probs[i], energies[i], cr_size, cr_psf, verbose=False)
+                    noise_data += MakeCosmicRay(self.shape[1], self.shape[0], probs[i], energies[i], cr_size, cr_psf, self.seed, verbose=False)
                 noise_data *= 0.01
                 mean, std = noise_data.mean(), noise_data.std()
                 dat += noise_data
