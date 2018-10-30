@@ -21,7 +21,7 @@ if sys.version_info[0] >= 3:
     from io import StringIO
 else:
     import __builtin__
-    from CStringIO import StringIO
+    from cStringIO import StringIO
 
 
 class Instrument(object):
