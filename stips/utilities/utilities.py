@@ -63,7 +63,10 @@ class CachedJbtBackground(background, object):
     def __init__(self, ra, dec, wavelength, thresh=1.1):
         # global attributes
         self.cache_path = GetStipsData("background")
-        self.cache_url = urllib.pathname2url(os.path.join(self.cache_path, "remote_cache/"))
+        if sys.version_info[0] >= 3:
+            self.cache_url = urllib.request.pathname2url(os.path.join(self.cache_path, "remote_cache/"))
+        else:
+            self.cache_url = urllib.pathname2url(os.path.join(self.cache_path, "remote_cache/"))
         self.local_path = os.path.join(self.cache_path, 'jbt_refdata')
         self.wave_file = 'std_spectrum_wavelengths.txt' # The wavelength grid of the background cache
         self.thermal_file = 'thermal_curve_jwst_jrigby_cchen_1.1a.csv' # The constant (not time variable) thermal self-emission curve
