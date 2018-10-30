@@ -64,7 +64,7 @@ class CachedJbtBackground(background, object):
         # global attributes
         self.cache_path = GetStipsData("background")
         if sys.version_info[0] >= 3:
-            self.cache_url = urllib.request.pathname2url(os.path.join(self.cache_path, "remote_cache/"))
+            self.cache_url = "file://" + urllib.request.pathname2url(os.path.join(self.cache_path, "remote_cache/"))
         else:
             self.cache_url = urllib.pathname2url(os.path.join(self.cache_path, "remote_cache/"))
         self.local_path = os.path.join(self.cache_path, 'jbt_refdata')
