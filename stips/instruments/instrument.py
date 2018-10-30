@@ -57,6 +57,7 @@ class Instrument(object):
         self.darkfile = GetStipsData(os.path.join("residual_files", self.DARKFILE))
         self.oversample = 1
         self.seed = kwargs.get('seed', 1234)
+        self.imgbase = kwargs.get('imgbase', '')
         self.ra = kwargs.get('ra', 0.)
         self.dec = kwargs.get('dec', 0.)
         self.pa = kwargs.get('pa', 0.)
