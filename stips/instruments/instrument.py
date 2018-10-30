@@ -920,6 +920,7 @@ class Instrument(object):
                 bg = CachedJbtBackground(self.ra, self.dec, self.PHOTPLAM[self.filter])
             except Exception as e:
                 self._log("error", "Retrieving local cache produced error {}".format(e))
+                self._log("info", "More complete error: {}".format(repr(e)))
                 message = "Unable to retrieve local cache. Returning background 0.0 for '{}'"
                 self._log("warning", message.format(self.background_value))
                 return 0.
