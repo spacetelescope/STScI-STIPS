@@ -595,6 +595,7 @@ class AstroImage(object):
                     self._log('info', "Using overlapping arrays of size {}".format(sub_shape))
                     self._log('info', "Starting Convolution at {}".format(time.ctime()))
                     if parallel:
+                        self._log('info', 'Convolving in parallel')
                         del fp_result
                         overlapaddparallel(dat, psf, sub_shape, y=f, verbose=True, logger=self.logger, base_state=base_state, state_setter=state_setter, path=self.out_path)
                         fp_result = np.memmap(f, dtype='float32', mode='r+', shape=(self.shape[0]+psf.shape[0]-1, self.shape[1]+psf.shape[1]-1))
