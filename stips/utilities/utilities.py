@@ -9,7 +9,7 @@ General CGI form functions.
 from __future__ import absolute_import,division
 
 # External modules
-import importlib, inspect, os, shutil, socket, sys, urllib, uuid
+import importlib, inspect, os, shutil, socket, struct, sys, urllib, uuid
 import numpy as np
 import astropy.io.fits as pyfits
 import multiprocessing.dummy as multiprocessing
