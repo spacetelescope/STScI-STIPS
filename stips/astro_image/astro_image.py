@@ -938,7 +938,7 @@ class AstroImage(object):
         try:
             with ImageData(self.fname, self.shape, mode='r+') as dat:
                 noise_data = np.memmap(n, dtype='float32', mode='w+', shape=self.shape)
-                noise_data[:,:] = readnoise * np.random.RandomState(seed=seed).randn(self.ysize,self.xsize)            
+                noise_data[:,:] = readnoise * np.random.RandomState(seed=self.seed).randn(self.ysize,self.xsize)            
                 mean, std = noise_data.mean(), noise_data.std()
                 dat += noise_data
                 del noise_data
