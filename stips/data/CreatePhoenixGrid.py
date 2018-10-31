@@ -85,38 +85,38 @@ def get_grid_points():
 
 norm_bandpass = ps.ObsBandpass('johnson,i')
 coords = get_grid_points()
-print coords
+print(coords)
 bandpasses = {}
 result_arrays = {}
 
 instruments = InstrumentList()
-print "{}: Making Bandpasses...".format(time.ctime())
+print("{}: Making Bandpasses...".format(time.ctime()))
 for instrument in instruments:
     my_instrument = instruments[instrument]()
     bandpasses[instrument.lower()] = {}
     result_arrays[instrument.lower()] = {}
     for mode in modes[instrument.lower()]:
         for filter in filters[instrument.lower()][mode]:
-            print "\t{}: {},{},{},{}".format(time.ctime(), instrument, mode, filter, apertures[instrument.lower()][mode])
+            print("\t{}: {},{},{},{}".format(time.ctime(), instrument, mode, filter, apertures[instrument.lower()][mode]))
             my_instrument.reset(0., 0., 0., filter.upper(), 0.)
             bandpasses[instrument.lower()][filter] = my_instrument.bandpass
             result_arrays[instrument.lower()][filter] = np.empty((len(coords[0]), len(coords[1]), len(coords[2]), len(coords[3])))
-print "Done\n"
+print("Done\n")
 
 total = len(coords[0]) * len(coords[1]) * len(coords[2]) * len(coords[3])
 n = 0
 for i, Z in enumerate(coords[0]):
-    print "{}: Starting Z = {}".format(time.ctime(), Z)
+    print("{}: Starting Z = {}".format(time.ctime(), Z))
     for j, logg in enumerate(coords[1]):
-        print "\t{}: Starting log(g) = {}".format(time.ctime(), logg)
+        print("\t{}: Starting log(g) = {}".format(time.ctime(), logg))
         for k, teff in enumerate(coords[2]):
-            print "\t\t{}: Starting Teff = {}".format(time.ctime(), teff)
+            print("\t\t{}: Starting Teff = {}".format(time.ctime(), teff))
             spec = ps.Icat('phoenix', teff, Z, logg)
             counts = False
             if sum(spec.flux) > 0:
                 counts = True
             for l, mag in enumerate(coords[3]):
-                print "\t\t\t{} of {}: {}: Starting Z = {}, log(g) = {}, Teff = {}, Mabs = {:>4}".format(n+1, total, time.ctime(), Z, logg, teff, mag),
+                print("\t\t\t{} of {}: {}: Starting Z = {}, log(g) = {}, Teff = {}, Mabs = {:>4}".format(n+1, total, time.ctime(), Z, logg, teff, mag), end='')
                 if counts:
                     spec_norm = spec.renorm(mag, 'vegamag', norm_bandpass)
                 for instrument in instruments:
@@ -126,14 +126,14 @@ for i, Z in enumerate(coords[0]):
                             if counts:
                                 obs = ps.Observation(spec_norm, bandpasses[instrument.lower()][filter], binset=spec_norm.wave)
                                 result_arrays[instrument.lower()][filter][i,j,k,l] = obs.countrate()
-                                print ".",
+                                print(".", end='')
                             else:
                                 result_arrays[instrument.lower()][filter][i,j,k,l] = 0.
-                                print "x",
-                print ""
+                                print("x", end='')
+                print("")
                 n += 1
 
-print "{}: Saving files...".format(time.ctime()),
+print("{}: Saving files...".format(time.ctime()), end='')
 with open(os.path.join(os.getcwd(), "grid", "VERSION.txt"), "wt") as outf:
     outf.write("Pandeia: {}\n".format(pandeia_version_info))
     outf.write("STIPS: {}\n".format(stips_version_info))
@@ -143,4 +143,4 @@ for instrument in instruments:
         for filter in filters[instrument.lower()][mode]:
             np.save(os.path.join(os.getcwd(), 'grid', 'result_{}_{}.npy'.format(instrument.lower(), filter)),
                     result_arrays[instrument.lower()][filter])
-print "done"
+print("done")
