@@ -70,7 +70,7 @@ class NIRCamBase(JwstInstrument):
             max_ins_size = max(self.DETECTOR_SIZE) * self.oversample
             max_conv_size = int(np.floor(2048 / self.oversample))
             self._log("info", "PSF choosing between {}, {}, and {}".format(max_safe_size, max_ins_size, max_conv_size))
-            psf = ins.calcPSF(oversample=self.oversample,fov_pixels=min(max_safe_size, max_ins_size, max_conv_size))
+            psf = ins.calcPSF(oversample=self.oversample, fov_pixels=min(max_safe_size, max_ins_size, max_conv_size) normalize='last')
             psf[0].header['VERSION'] = webbpsf.__version__
             if os.path.exists(os.path.join(self.out_path, "psf_cache")):
                 dest = os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("NIRCam", self.filter, self.oversample))
