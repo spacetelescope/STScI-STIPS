@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import glob
 import os
 import sys
@@ -6,12 +8,6 @@ import time
 # Set plot backend. Must happen before importing pylab.
 import matplotlib
 matplotlib.use('Agg')
-
-os.environ["PYSYN_CDBS"] = os.path.abspath(os.path.join(os.getcwd(), "..", "cdbs"))
-os.environ["pandeia_refdata"] = os.path.abspath(os.path.join(os.getcwd(), "..", "pandeia_data"))
-os.environ['WEBBPSF_PATH'] = os.path.join(os.getcwd(), "..", "webbpsf-data")
-os.environ['WEBBPSF_SKIP_CHECK'] = '1'
-os.environ["stips_data"] = os.path.abspath(os.getcwd())
 
 pandeia_version_file = os.path.join(os.environ["pandeia_refdata"], "VERSION_PSF")
 with open(pandeia_version_file, 'r') as inf:
