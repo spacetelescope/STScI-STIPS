@@ -119,16 +119,12 @@ class WFI(WfirstInstrument):
                 [   0.,             0.,             0.],
                 [   0.,             0.,             0.]]
     FILTERS = ('R062', 'Z087', 'Y106', 'J129', 'H158', 'F184', 'W146', 'W149') #W149 needs to go away at some point.
-    DEFAULT_FILTER = 'F184W' #Assume for now
-    FILTER_THROUGHPUT = {   'Z087':(0.760,0.987,0.7),'Y106':(0.927,1.192,0.7),
-                            'J129':(1.131,1.454,0.7),'H158':(1.380,1.774,0.7),
-                            'F184':(1.683,2.000,0.7),'W149':(0.927,2.000,0.7)}
-    INSTRUMENT_THROUGHPUT = (0.7,2.0,0.7)
-    OTE_THROUGHPUT_FILE = "comp/jwstote/jwst_ote_002.fits"
+    DEFAULT_FILTER = 'F184' #Assume for now
     FLATFILE = 'err_flat_wfi.fits' #Use for the moment
     DARKFILE = 'err_rdrk_wfi.fits' # IREF, IHB (use for the moment)
-    BACKGROUND = {  'none': {'Z087': 0.,'Y106': 0.,'J129': 0.,'H158': 0.,'F184': 0.,'W149': 0.},
-                    'avg':  {'Z087': 1.401E+00,'Y106': 1.401E+00,'J129': 7.000E-01,'H158': 7.521E-01,'F184': 8.500E-01,'W149': 7.000E-01}
+    BACKGROUND = {  'none': {'R062': 0., 'Z087': 0.,'Y106': 0.,'J129': 0.,'H158': 0.,'F184': 0., 'W146': 0., 'W149': 0.},
+                    'avg':  {'R062': 1.401E+00, 'Z087': 1.401E+00, 'Y106': 1.401E+00, 'J129': 7.000E-01,
+                             'H158': 7.521E-01, 'F184': 8.500E-01, 'W146': 7.000E-01, 'W149': 7.000E-01}
                  }
     BACKGROUNDS_V = ['none', 'avg', 'med', 'max', 'min']
     BACKGROUNDS = ['None', 'Average zodiacal background', 'Median zodiacal background', 'Maximum zodiacal background', 'Minimum zodiacal background']
@@ -137,10 +133,10 @@ class WFI(WfirstInstrument):
               'min': 'Minimum zodiacal background', 'custom': 'Custom thermal background rate'}
     #PHOTFNU has units of Jy
     #For now, just assuming similar PHOTFNU to WFC3IR.
-    PHOTFNU = {     'Z087':1.0e-8,'Y106':1.0e-8,'J129':1.0e-8,'H158':1.0e-8,'F184':1.0e-8,'W149':1.0e-8}
+    PHOTFNU = {     'R062': 1.0e-8, 'Z087':1.0e-8, 'Y106':1.0e-8, 'J129':1.0e-8, 'H158':1.0e-8, 'F184':1.0e-8, 'W146':1.0e-8, 'W149':1.0e-8}
     #PHOTPLAM has units of um
     #For now, just put them in the middle
-    PHOTPLAM = {    'Z087':0.8735,'Y106':1.0595,'J129':1.2925,'H158':1.577,'F184':1.5815,'W149':1.4635}
+    PHOTPLAM = {'R067': 0.6700, 'Z087':0.8735, 'Y106':1.0595, 'J129':1.2925, 'H158':1.577, 'F184':1.5815, 'W146':1.4635, 'W149':1.4635}
     #For now, just put in HST-style dithers.
     DITHERS = ("SUBPIXEL ONLY","BOX-UVIS","BLOB") #Assume for now
     DITHER_POINTS = {
