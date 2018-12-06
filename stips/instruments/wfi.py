@@ -136,7 +136,7 @@ class WFI(WfirstInstrument):
     PHOTFNU = {     'R062': 1.0e-8, 'Z087':1.0e-8, 'Y106':1.0e-8, 'J129':1.0e-8, 'H158':1.0e-8, 'F184':1.0e-8, 'W146':1.0e-8, 'W149':1.0e-8}
     #PHOTPLAM has units of um
     #For now, just put them in the middle
-    PHOTPLAM = {'R067': 0.6700, 'Z087':0.8735, 'Y106':1.0595, 'J129':1.2925, 'H158':1.577, 'F184':1.5815, 'W146':1.4635, 'W149':1.4635}
+    PHOTPLAM = {'R062': 0.6700, 'Z087':0.8735, 'Y106':1.0595, 'J129':1.2925, 'H158':1.577, 'F184':1.5815, 'W146':1.4635, 'W149':1.4635}
     #For now, just put in HST-style dithers.
     DITHERS = ("SUBPIXEL ONLY","BOX-UVIS","BLOB") #Assume for now
     DITHER_POINTS = {
