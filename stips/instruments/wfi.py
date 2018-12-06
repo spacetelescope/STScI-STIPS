@@ -118,7 +118,7 @@ class WFI(WfirstInstrument):
     DIST_BP =  [[   0.,             0.,             0.],
                 [   0.,             0.,             0.],
                 [   0.,             0.,             0.]]
-    FILTERS = ('Z087','Y106','J129','H158','F184','W149') #Names may change
+    FILTERS = ('R062', 'Z087', 'Y106', 'J129', 'H158', 'F184', 'W146', 'W149') #W149 needs to go away at some point.
     DEFAULT_FILTER = 'F184W' #Assume for now
     FILTER_THROUGHPUT = {   'Z087':(0.760,0.987,0.7),'Y106':(0.927,1.192,0.7),
                             'J129':(1.131,1.454,0.7),'H158':(1.380,1.774,0.7),
