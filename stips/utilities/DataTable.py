@@ -99,7 +99,7 @@ class StipsIpacTable(StipsDataTable):
         if os.path.isfile(self.file):
             self.names, self.meta = self.init_names()
     
-    def read_chunk(self, chunk=None)
+    def read_chunk(self, chunk=None):
         if chunk is None:
             chunk = self._current_chunk
         lines = []
