@@ -183,9 +183,9 @@ class SceneModule(object):
         self._log("info","Wrote preamble")
         
         self._log("info","Creating age and metallicity numbers")
-        ages = np.random.RandomState(seed=self.seed).random(size=len(age_bins))
+        ages = np.random.RandomState(seed=self.seed).random_sample(size=len(age_bins))
         ages /= ages.sum()
-        mets = np.random.RandomState(seed=self.seed).random(size=len(met_bins))
+        mets = np.random.RandomState(seed=self.seed).random_sample(size=len(met_bins))
         mets /= mets.sum()
         self._log("info","Created age and metallicity numbers")
         

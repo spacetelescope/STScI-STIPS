@@ -606,7 +606,7 @@ class Instrument(object):
                 obs = ps.Observation(sp, self.bandpass, force='taper', binset=sp.wave)
                 rate = obs.countrate()
             except PysynphotError as e:
-                self._log('warning', 'Source {} of {}: Pysynphot Error {} encountered'.format(i, total, e.message))
+                self._log('warning', 'Source {} of {}: Pysynphot Error {} encountered'.format(i, total, e))
                 rate = 0.
             rates = np.append(rates,rate)
             indices = np.append(indices,proflist[profile])
@@ -950,7 +950,7 @@ class Instrument(object):
         sp = ps.ArraySpectrum(wave_array, flux_array_pixels, waveunits='micron', fluxunits='mjy')
         sp.convert('angstroms')
         sp.convert('photlam')
-        obs = ps.Observation(sp, self.bandpass, binset=sp.wave)
+        obs = ps.Observation(sp, self.bandpass, binset=sp.wave, force='taper')
         bg = obs.countrate()
         
         self._log("info", "Returning background {} for '{}'".format(bg, self.background_value))

@@ -229,7 +229,7 @@ class StarGenerator(object):
         kwargs are passed to `inverse_imf`
         """
 
-        masses = self.inverse_imf(np.random.RandomState(seed=self.seed).random(num_stars),nbins=nbins,**kwargs)
+        masses = self.inverse_imf(np.random.RandomState(seed=self.seed).random_sample(num_stars), nbins=nbins, **kwargs)
 
         return masses
     
@@ -240,7 +240,10 @@ class StarGenerator(object):
         return arr['m_ini'],arr['te'],arr['log_g'],arr['johnson_i_abs']
     
     def make_cluster_rates(self,masses,instrument,filter,bandpass=None,refs=None):
-        coords = np.load(os.path.join(self.gridpath, 'input.npy'))
+        try:
+            coords = np.load(os.path.join(self.gridpath, 'input.npy'))
+        except UnicodeError:
+            coords = np.load(os.path.join(self.gridpath, 'input.npy'), encoding='bytes')
         m, t, g, i = self.get_star_info()
         temps = np.interp(masses,m,t)
         gravs = np.interp(masses,m,g)
@@ -276,6 +279,7 @@ class StarGenerator(object):
                 spectrum = spectrum.renorm(j_i, 'vegamag', johnson_i)
                 obs = ps.Observation(spectrum, bandpass, binset=spectrum.wave)
                 countrates = np.append(countrates, obs.countrate())
+                self.log('info', 'Manually created star {} of {}'.format(len(countrates), len(temps)))
         return countrates
 
     def make_cluster_mags(self,masses):
