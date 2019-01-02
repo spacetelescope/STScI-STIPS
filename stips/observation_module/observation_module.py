@@ -38,11 +38,12 @@ class ObservationModule(object):
         if 'logger' in kwargs:
             self.logger = kwargs['logger']
         else:
-            stream_handler = logging.StreamHandler(sys.stderr)
-            stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
-            self.logger = logging.getLogger()
+            self.logger = logging.getLogger('__stips__')
             self.logger.setLevel(logging.INFO)
-            self.logger.addHandler(stream_handler)
+            if not len(logger.handlers):
+                stream_handler = logging.StreamHandler(sys.stderr)
+                stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))# [in %(pathname)s:%(lineno)d]'))
+                self.logger.addHandler(stream_handler)
         
         #initialize parameters from the supplied observation
         self.instrument_name = obs.get('instrument', 'NIRCamShort')
@@ -57,7 +58,10 @@ class ObservationModule(object):
         self.exptime = float(obs.get('exptime', 1.))
         self.distortion = obs.get('distortion', False)
         self.background = obs.get('background', 'none')
+        self.custom_background = obs.get('custom_background', 0.)
         self.small_subarray = obs.get('small_subarray', False)
+        if 'cache' in obs:
+            self.use_local_cache = obs['use_local_cache']
         if len(self.filters) == 0 and 'filter' in obs:
             self.filters.append(obs['filter'])
         
@@ -73,11 +77,15 @@ class ObservationModule(object):
             self.dec = kwargs['scene_general'].get('dec', 0.0)
             self.pa = kwargs['scene_general'].get('pa', 0.0)
             self.seed = kwargs['scene_general'].get('seed', 0)
+            if 'cache' in kwargs['scene_general'] and not hasattr(self, 'use_local_cache'):
+                self.use_local_cache = kwargs['scene_general']['cache']
         else:
             self.ra = kwargs.get('ra', 0.0)
             self.dec = kwargs.get('dec', 0.0)
             self.pa = kwargs.get('pa', 0.0)
             self.seed = kwargs.get('seed', 0)
+            if not hasattr(self, 'use_local_cache'):
+                self.use_local_cache = kwargs.get('cache', False)
         if 'residual' in kwargs:
             self.flat = kwargs['residual'].get('flat', True)
             self.dark = kwargs['residual'].get('dark', True)
@@ -94,7 +102,11 @@ class ObservationModule(object):
         self.set_celery = kwargs.get('set_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
 
-        self.instrument_name = self.instrument_name.encode('ascii')
+        if sys.version_info[0] >= 3:
+            if isinstance(self.instrument_name, bytes):
+                self.instrument_name = self.instrument_name.decode('utf8')
+        else:
+            self.instrument_name = self.instrument_name.encode('ascii')
         if self.instrument_name == 'WFIRST':
             self.instrument_name = 'WFI'
         
@@ -110,7 +122,7 @@ class ObservationModule(object):
         self.imgbase = os.path.join(self.out_path, "{}_{}".format(self.prefix, self.id))
         
         self.instruments = InstrumentList(excludes=self.excludes)
-        self.instrument = self.instruments[self.instrument_name](**self.__dict__)
+        self.instrument = self.instruments[str(self.instrument_name)](**self.__dict__)
     
     #-----------
     def initParams(self):

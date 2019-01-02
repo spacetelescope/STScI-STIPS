@@ -12,9 +12,12 @@ from astropy.io import fits as pyfits
 from astropy.table import Table, Column
 from photutils import CircularAperture, aperture_photometry
 
-from cStringIO import StringIO
-
 from scipy.ndimage.interpolation import zoom, rotate
+
+if sys.version_info[0] >= 3:
+    from io import StringIO
+else:
+    from cStringIO import StringIO
 
 #Local Modules
 from ..utilities import OffsetPosition, overlapadd2, overlapaddparallel, read_table, ImageData, Percenter
@@ -43,11 +46,12 @@ class AstroImage(object):
         if 'logger' in kwargs:
             self.logger = kwargs['logger']
         else:
-            stream_handler = logging.StreamHandler(sys.stderr)
-            stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
-            self.logger = logging.getLogger()
+            self.logger = logging.getLogger('__stips__')
             self.logger.setLevel(logging.INFO)
-            self.logger.addHandler(stream_handler)
+            if not len(logger.handlers):
+                stream_handler = logging.StreamHandler(sys.stderr)
+                stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))# [in %(pathname)s:%(lineno)d]'))
+                self.logger.addHandler(stream_handler)
     
         #Set unique ID and figure out where the numpy memmap will be stored
         self.out_path = kwargs.get('out_path', os.getcwd())
@@ -56,6 +60,7 @@ class AstroImage(object):
         self.fname = os.path.join(self.out_path, self.prefix+"_"+uuid.uuid4().hex+"_"+self.name+".tmp")
         self.set_celery = kwargs.get('set_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
+        self.seed = kwargs.get('seed', 1234)
         
         self.oversample = kwargs.get('oversample', 1)
         psf_shape = kwargs.get('psf_shape', (0, 0))
@@ -70,6 +75,7 @@ class AstroImage(object):
         self._init_dat(base_shape, psf_shape, data)
         
         #Get WCS values if present, or set up a default
+        self._scale = kwargs.get('scale', [0., 0.])
         self.wcs = self._getWcs(**kwargs)
         self._prepRaDec()
         
@@ -214,23 +220,23 @@ class AstroImage(object):
     
     @property
     def xscale(self):
-        return abs(self.wcs.wcs.cdelt[0])*3600.
+        return abs(self.scale[0])*3600.
     
     @property
     def yscale(self):
-        return abs(self.wcs.wcs.cdelt[1])*3600.
+        return abs(self.scale[1])*3600.
     
     @property
     def scale(self):
-        return [self.xscale, self.yscale]
+        return self._scale
     
     @property
     def rascale(self):
-        return abs(self.wcs.wcs.cdelt[self.ranum])*3600.
+        return abs(self.scale[self.ranum])*3600.
 
     @property
     def decscale(self):
-        return abs(self.wcs.wcs.cdelt[self.decnum])
+        return abs(self.scale[self.decnum])
     
     @property
     def distorted(self):
@@ -293,9 +299,16 @@ class AstroImage(object):
         """Output AstroImage as a FITS Primary HDU"""
         with ImageData(self.fname, self.shape, mode='r+') as dat:
             hdu = pyfits.PrimaryHDU(dat, header=self.wcs.to_header(relax=True))
-        for k,v in self.header.iteritems():
-            if k != "ASTROIMAGEVALID":
-                hdu.header[k] = v
+        hdu.header['CDELT1'] = self.scale[0]/3600.
+        hdu.header['CDELT2'] = self.scale[0]/3600.
+        if sys.version_info[0] >= 3:
+            for k,v in self.header.items():
+                if k != "ASTROIMAGEVALID":
+                    hdu.header[k] = v
+        else:
+            for k,v in self.header.iteritems():
+                if k != "ASTROIMAGEVALID":
+                    hdu.header[k] = v
         for item in self.history:
             hdu.header.add_history(item)
         self._log("info","Created Primary HDU from AstroImage %s" % (self.name))
@@ -307,8 +320,22 @@ class AstroImage(object):
         self._log("info","Creating Extension HDU from AstroImage %s" % (self.name))
         with ImageData(self.fname, self.shape, mode='r+') as dat:
             hdu = pyfits.ImageHDU(dat, header=self.wcs.to_header(relax=True), name=self.name)
-        for k, v in self.header.iteritems():
-            hdu.header[k] = v
+#         del hdu.header['PC1_1']
+#         del hdu.header['PC1_2']
+#         del hdu.header['PC2_1']
+#         del hdu.header['PC2_2']
+#         del hdu.header['CDELT1']
+#         del hdu.header['CDELT2']
+#         hdu.header['CD1_1'] = self.wcs.wcs.cd[0][0]
+#         hdu.header['CD1_2'] = self.wcs.wcs.cd[0][1]
+#         hdu.header['CD2_1'] = self.wcs.wcs.cd[1][0]
+#         hdu.header['CD2_2'] = self.wcs.wcs.cd[1][1]
+        if sys.version_info[0] >= 3:
+            for k,v in self.header.items():
+                hdu.header[k] = v
+        else:
+            for k,v in self.header.iteritems():
+                hdu.header[k] = v
         for item in self.history:
             hdu.header.add_history(item)
         self._log("info","Created Extension HDU from AstroImage %s" % (self.name))
@@ -499,9 +526,11 @@ class AstroImage(object):
         self.addHistory("Adding Sersic profile at (%f,%f) with flux %f, index %f, Re %f, Phi %f, and axial ratio %f" % (posX,posY,flux,n,re,phi,axialRatio))
         self._log("info","Adding Sersic: re={}, n={}, flux={}, phi={:.1f}, ratio={}".format(re, n, flux, phi, axialRatio))
         
-        # Determine necessary parameters for the Sersic model -- the input radius and surface brightness are both in *detector* pixels.
+        # Determine necessary parameters for the Sersic model -- the input radius, surface 
+        # brightness and noise floor are all in *detector* pixels.
         pixel_radius = re * self.oversample
         pixel_brightness = flux / (self.oversample*self.oversample)
+        noise_floor = self.noise_floor / (self.oversample*self.oversample)
 
         # Determine the pixel offset of the profile from the centre of the AstroImage
         # Centre of profile is (xc, yc)
@@ -517,12 +546,12 @@ class AstroImage(object):
 
         from astropy.modeling.models import Sersic2D
         # Figure out an appropriate radius. Start at 5X pixel radius, and continue until the highest value on the outer edge is below the noise floor.
-        max_outer_value = 2*self.noise_floor
+        max_outer_value = 2*noise_floor
         filled = False
         radius_multiplier = 2.5
         full_frame = False
         model_size = int(np.ceil(pixel_radius*radius_multiplier))
-        while max_outer_value > self.noise_floor:
+        while max_outer_value > noise_floor:
             radius_multiplier *= 2
             model_size = int(np.ceil(pixel_radius*radius_multiplier))
             if not self._filled(offset_x, offset_y, model_size, model_size):
@@ -533,7 +562,7 @@ class AstroImage(object):
                 mod = Sersic2D(amplitude=pixel_brightness, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
                 img = mod(x, y)
                 max_outer_value = max(np.max(img[0,:]), np.max(img[-1,:]), np.max(img[:,0]), np.max(img[:,-1]))
-#                 self._log('info', "Max outer value is {}, noise floor is {}".format(max_outer_value, self.noise_floor))
+#                 self._log('info', "Max outer value is {}, noise floor is {}".format(max_outer_value, noise_floor))
             else:
                 full_frame = True
 #                 self._log("info", "Creating full-frame Sersic model at ({},{})".format(posX, posY))
@@ -542,7 +571,7 @@ class AstroImage(object):
                 mod = Sersic2D(amplitude=pixel_brightness, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
                 img = mod(x, y)
                 max_outer_value = 0.
-        img = np.where(img >= self.noise_floor, img, 0.)
+        img = np.where(img >= noise_floor, img, 0.)
         aperture = CircularAperture((xc, yc), pixel_radius)
         flux_table = aperture_photometry(img, aperture)
         central_flux = flux_table['aperture_sum'][0]
@@ -567,6 +596,7 @@ class AstroImage(object):
                     self._log('info', "Using overlapping arrays of size {}".format(sub_shape))
                     self._log('info', "Starting Convolution at {}".format(time.ctime()))
                     if parallel:
+                        self._log('info', 'Convolving in parallel')
                         del fp_result
                         overlapaddparallel(dat, psf, sub_shape, y=f, verbose=True, logger=self.logger, base_state=base_state, state_setter=state_setter, path=self.out_path)
                         fp_result = np.memmap(f, dtype='float32', mode='r+', shape=(self.shape[0]+psf.shape[0]-1, self.shape[1]+psf.shape[1]-1))
@@ -797,6 +827,7 @@ class AstroImage(object):
             if os.path.exists(self.fname):
                 os.remove(self.fname)
             raise e
+        self._scale = scale
         self.wcs = self._wcs(self.ra, self.dec, self.pa, scale)
         self._prepHeader()
         
@@ -852,6 +883,7 @@ class AstroImage(object):
         """
         per_pixel_background = background / (self.oversample*self.oversample)
         self.addHistory("Added background of {} counts/s/detector pixel ({} counts/s/oversampled pixel)".format(background, per_pixel_background))
+        self._log("info", "Added background of {} counts/s/detector pixel ({} counts/s/oversampled pixel)".format(background, per_pixel_background))
         with ImageData(self.fname, self.shape) as dat:
             dat += per_pixel_background
 
@@ -874,7 +906,7 @@ class AstroImage(object):
                 np.absolute(dat, abs_data)
 
                 noise_data = np.memmap(n, dtype='float32', mode='w+', shape=self.shape)
-                noise_data[:,:] = np.random.normal(size=self.shape) * np.sqrt(abs_data)
+                noise_data[:,:] = np.random.RandomState(seed=self.seed).normal(size=self.shape) * np.sqrt(abs_data)
                 del abs_data
                 if absVal:
                     noise_data[:,:] = np.abs(noise_data)
@@ -908,7 +940,7 @@ class AstroImage(object):
         try:
             with ImageData(self.fname, self.shape, mode='r+') as dat:
                 noise_data = np.memmap(n, dtype='float32', mode='w+', shape=self.shape)
-                noise_data[:,:] = readnoise * np.random.randn(self.ysize,self.xsize)            
+                noise_data[:,:] = readnoise * np.random.RandomState(seed=self.seed).randn(self.ysize,self.xsize)            
                 mean, std = noise_data.mean(), noise_data.std()
                 dat += noise_data
                 del noise_data
@@ -973,7 +1005,7 @@ class AstroImage(object):
                 noise_data = np.memmap(n, dtype='float32', mode='w+', shape=self.shape)
                 noise_data.fill(0.)
                 for i in range(len(energies)):
-                    noise_data += MakeCosmicRay(self.shape[1], self.shape[0], probs[i], energies[i], cr_size, cr_psf, verbose=False)
+                    noise_data += MakeCosmicRay(self.shape[1], self.shape[0], probs[i], energies[i], cr_size, cr_psf, self.seed, verbose=False)
                 noise_data *= 0.01
                 mean, std = noise_data.mean(), noise_data.std()
                 dat += noise_data
@@ -1066,8 +1098,20 @@ class AstroImage(object):
         sip = wcs.Sip(da,db,dap,dbp,crpix)
         return sip
     
-    def _wcs(self,ra,dec,pa,scale,crpix=None,sip=None,ranum=0,decnum=1):
-        """Create a WCS object given the scene information."""
+    def _wcs(self, ra, dec, pa, scale, crpix=None, sip=None, ranum=0, decnum=1):
+        """
+        Create a WCS object given the scene information.
+        
+        ra is right ascension in decimal degrees
+        dec is declination in decimal degrees
+        pa is the angle between north and east on the tangent plane, with the quadrant between north
+           and east being positive
+        scale is the pixel scale in arcseconds/pixel, for the (x, y) axes of the image
+        crpix is the (x, y) location on the image of the reference pixel (default is centre)
+        sip is the simple imaging polynomial distortion object (if present)
+        ranum indicates which image axis represents RA (default 0)
+        decnum indicates which image axis represents DEC (default 1)
+        """
         w = wcs.WCS(naxis=2)
         w.wcs.ctype = ["",""]
         w.wcs.ctype[ranum] = "RA---TAN"
@@ -1079,20 +1123,20 @@ class AstroImage(object):
         w.wcs.crval = [0.,0.]
         w.wcs.crval[ranum] = ra
         w.wcs.crval[decnum] = dec
-        scale_list = [-abs(scale[0])/3600., abs(scale[1]/3600.)]
-        cdelt_array = np.array(scale_list)
-        w.wcs.cdelt = cdelt_array
-        cpa = np.cos(np.radians(pa))
-        spa = np.sin(np.radians(pa))
-        w.wcs.pc = np.array([[cpa, -spa], [-spa, cpa]])
+        w.wcs.cdelt = [abs(scale[0])/3600., abs(scale[1])/3600.]
+        cd_11 = np.cos(np.radians(pa)) * (scale[0]/3600.)
+        cd_12 = -np.sin(np.radians(pa)) * (scale[1]/3600.)
+        cd_21 = np.sin(np.radians(pa)) * (scale[0]/3600.)
+        cd_22 = np.cos(np.radians(pa)) * (scale[1]/3600.)
+        w.wcs.cd = [[cd_11, cd_12], [cd_21, cd_22]]
+        w.wcs.cdelt = [abs(scale[0])/3600., abs(scale[1])/3600.]
         if sip is not None:
             w.wcs.ctype[ranum] = "RA---TAN-SIP"
             w.wcs.ctype[decnum] = "DEC--TAN-SIP"
             w.sip = sip
-        self._log("info", "{}: (RA, DEC, PA) set to ({}, {}, {}), found to be ({}, {}, {})".format(self.name, ra, dec, pa,
-                                                                                                   w.wcs.crval[ranum],
-                                                                                                   w.wcs.crval[decnum],
-                                                                                                   self._getPA(w, scale)))
+        self._scale = scale
+        message = "{}: (RA, DEC, PA) := ({}, {}, {}), detected as ({}, {}, {})"
+        self._log("info", message.format(self.name, ra, dec, pa, w.wcs.crval[ranum], w.wcs.crval[decnum], self._getPA(w, scale)))
         return w
     
     def _normalizeWCS(self,w):

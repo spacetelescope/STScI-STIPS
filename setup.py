@@ -22,5 +22,5 @@ setup(name='stips',
       packages=find_packages(),
       zip_safe=False,
       install_requires=['astropy', 'automodinit', 'esutil', 'numpy', 'photutils', 'pysynphot', 
-                        'scipy'],
+                        'scipy', 'jwst_backgrounds', 'webbpsf', 'pandeia.engine'],
       include_package_data=True)

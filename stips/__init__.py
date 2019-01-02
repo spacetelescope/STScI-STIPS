@@ -12,7 +12,7 @@ from .instruments import Instrument
 from .observation_module import ObservationModule
 from .scene_module import SceneModule
 from .version import __version__
-from .utilities import GetStipsData, __grid__
+from .utilities import GetStipsData, internet, CachedJbtBackground, __grid__
 
 __grid__pandeia__version__ = __grid__.__pandeia__version__
 __grid__stips__version__ = __grid__.__stips__version__

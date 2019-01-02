@@ -50,7 +50,7 @@ def GaussPsf2D(npix, fwhm, normalize=True):
     return psf
 
 #-----------
-def MakeCosmicRay(xSize, ySize, crProb, crElectrons, crSize, crPsf, verbose=True):
+def MakeCosmicRay(xSize, ySize, crProb, crElectrons, crSize, crPsf, seed, verbose=True):
     """
     Simulate cosmic rays.
 
@@ -85,11 +85,12 @@ def MakeCosmicRay(xSize, ySize, crProb, crElectrons, crSize, crPsf, verbose=True
     crArray = np.zeros((ySize,xSize))
 
     # See if a CR hit
-    crPoisson = np.random.poisson(lam=crProb, size=xSize*ySize)
+    crPoisson = np.random.RandomState(seed=seed).poisson(lam=crProb, size=xSize*ySize)
     cr_locs = np.where(crPoisson >= 1)
     num_crs = len(cr_locs[0])
     if num_crs == 0:
-        if verbose: print 'No CR in poisson'
+        if verbose: 
+            print('No CR in poisson')
         return crArray
 
     # CR locations
@@ -104,11 +105,12 @@ def MakeCosmicRay(xSize, ySize, crProb, crElectrons, crSize, crPsf, verbose=True
     idxGood = np.where((crXMin > 0) & (crXMax < xSize) & (crYMin > 0) & (crYMax < ySize))
     numGood = len(idxGood[0])
     if numGood == 0:
-        if verbose: print 'No CR fully inside frame'
+        if verbose: 
+            print('No CR fully inside frame')
         return crArray
 
     # CR energy in e-
-    cr_electrons = crElectrons + np.sqrt(crElectrons) * np.random.randn(numGood)
+    cr_electrons = crElectrons + np.sqrt(crElectrons) * np.random.RandomState(seed=seed).randn(numGood)
 
     # Populate CR
     for i in range(numGood):
@@ -118,7 +120,7 @@ def MakeCosmicRay(xSize, ySize, crProb, crElectrons, crSize, crPsf, verbose=True
         y1 = crYMin[ii]
         y2 = crYMax[ii] + 1
         cr_sim = cr_electrons[i] * crPsf
-        crArray[y1:y2,x1:x2] += cr_sim
+        crArray[int(y1):int(y2),int(x1):int(x2)] += cr_sim
     # End of i loop
 
     return crArray

@@ -8,7 +8,11 @@ import numpy as np
 from astropy.table import Table, Column
 from astropy.cosmology import WMAP9 as cosmo
 from astropy import units as u
-from cStringIO import StringIO
+
+if sys.version_info[0] >= 3:
+    from io import StringIO
+else:
+    from cStringIO import StringIO
 
 # Local modules
 from ..stellar_module import StarGenerator
@@ -53,11 +57,12 @@ class SceneModule(object):
         if 'logger' in kwargs:
             self.logger = kwargs['logger']
         else:
-            stream_handler = logging.StreamHandler(sys.stderr)
-            stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
-            self.logger = logging.getLogger()
+            self.logger = logging.getLogger('__stips__')
             self.logger.setLevel(logging.INFO)
-            self.logger.addHandler(stream_handler)
+            if not len(logger.handlers):
+                stream_handler = logging.StreamHandler(sys.stderr)
+                stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))# [in %(pathname)s:%(lineno)d]'))
+                self.logger.addHandler(stream_handler)
         if 'scene_general' in kwargs:
             self.ra = kwargs['scene_general'].get('ra', 0.0)
             self.dec = kwargs['scene_general'].get('dec', 0.0)
@@ -67,7 +72,6 @@ class SceneModule(object):
             self.dec = kwargs.get('dec', 0.0)
             self.seed = kwargs.get('seed', 0)
 
-        np.random.seed(self.seed)
         self.params =  [ 'Random seed: %d' % (self.seed) ]
         self.params += [ 'Centre (RA,DEC) = (%f,%f)' % (self.ra,self.dec) ]
         self.catalogues = {}
@@ -180,9 +184,9 @@ class SceneModule(object):
         self._log("info","Wrote preamble")
         
         self._log("info","Creating age and metallicity numbers")
-        ages = np.random.random(size=len(age_bins))
+        ages = np.random.RandomState(seed=self.seed).random_sample(size=len(age_bins))
         ages /= ages.sum()
-        mets = np.random.random(size=len(met_bins))
+        mets = np.random.RandomState(seed=self.seed).random_sample(size=len(met_bins))
         mets /= mets.sum()
         self._log("info","Created age and metallicity numbers")
         
@@ -199,13 +203,13 @@ class SceneModule(object):
                 if num_stars == 0:
                     continue
                 self.logger.info("Creating %d stars",num_stars)
-                stargen = StarGenerator(age, met, imf=imf, alpha=alpha, logger=self.logger)
+                stargen = StarGenerator(age, met, imf=imf, alpha=alpha, seed=self.seed, logger=self.logger)
                 all_masses, all_rates, all_temps, all_gravs = stargen.make_cluster(num_stars)
                 all_x, all_y, all_z = self._MakeCoords(num_stars, radius, func=distribution, scale=2.8, do_z=True)
-                all_distances = np.random.uniform(low=dist_l, high=dist_h, size=num_stars)
+                all_distances = np.random.RandomState(seed=self.seed).uniform(low=dist_l, high=dist_h, size=num_stars)
                 if clustered:
                     all_x, all_y, all_z = self._CenterObjByMass(all_x, all_y, all_masses, z=all_z)
-                all_binaries = np.random.binomial(1,binary_fraction,len(all_masses))
+                all_binaries = np.random.RandomState(seed=self.seed).binomial(1,binary_fraction,len(all_masses))
                 idx = np.where(all_binaries==1)[0]
                 mb, rb, tb, gb = stargen.make_cluster(len(idx))
                 xb, yb, zb = all_x[idx], all_y[idx], all_z[idx]
@@ -366,7 +370,7 @@ class SceneModule(object):
 
         # Roughly 50% spiral, 50% elliptical
         ellipRatio = 0.5
-        binoDist = np.random.binomial(1, ellipRatio, n_gals)
+        binoDist = np.random.RandomState(seed=self.seed).binomial(1, ellipRatio, n_gals)
         idx_ellip = np.where(binoDist == 1)
         idx_spiral = np.where(binoDist != 1)
         types = np.array( ['expdisk'] * n_gals )
@@ -380,39 +384,39 @@ class SceneModule(object):
         axialRatioSpiralMin, axialRatioSpiralMax = 0.1, 1.0
         axialRatioEllipMin,  axialRatioEllipMax  = 0.5, 1.0
         axials = np.zeros(n_gals)
-        axials[idx_spiral] = np.random.uniform(axialRatioSpiralMin, axialRatioSpiralMax, n_spiral)
-        axials[idx_ellip] = np.random.uniform(axialRatioEllipMin,  axialRatioEllipMax, n_ellip)
+        axials[idx_spiral] = np.random.RandomState(seed=self.seed).uniform(axialRatioSpiralMin, axialRatioSpiralMax, n_spiral)
+        axials[idx_ellip] = np.random.RandomState(seed=self.seed).uniform(axialRatioEllipMin,  axialRatioEllipMax, n_ellip)
         
         # Position angle
         posAngleAlgo = 'uniform'
-        angles = np.random.uniform(0.0, 359.9, n_gals)
+        angles = np.random.RandomState(seed=self.seed).uniform(0.0, 359.9, n_gals)
 
         # Half-flux radius - uniform
-        rads = np.random.uniform(r_l, r_h, n_gals)
+        rads = np.random.RandomState(seed=self.seed).uniform(r_l, r_h, n_gals)
         
         # Redshifts
         # If both z_low and z_high are zero, do local galaxies. Distance is 0.5 Mpc -- 50 Mpc.
         # In the future, offer an option for straight distance or redshift.
         if z_l == 0. and z_h == 0.:
             z_label = "distance"
-            distances = np.random.uniform(5.e5, 5.e7, n_gals)
+            distances = np.random.RandomState(seed=self.seed).uniform(5.e5, 5.e7, n_gals)
             zs = distances / 1.e3
             convs = np.log10(distances)
         else:
             z_label = "redshift"
-            zs = np.random.uniform(z_l, z_h, n_gals)
+            zs = np.random.RandomState(seed=self.seed).uniform(z_l, z_h, n_gals)
             distances = np.array(cosmo.comoving_distance(zs).to(u.pc))
             convs = np.log10(np.array(cosmo.luminosity_distance(zs).to(u.pc)))
 
         # Luminosity function - power law
         lumPow = -1.8
-        vmags = np.random.power(np.abs(lumPow)+1.0, size=n_gals)
+        vmags = np.random.RandomState(seed=self.seed).power(np.abs(lumPow)+1.0, size=n_gals)
         if lumPow < 0: vmags = 1.0 - vmags
         vmags = RescaleArray(vmags, m_l, m_h)
         vmags_abs = vmags - 5*(convs-1.)
         
-        models = np.random.choice(bc95_models,size=n_gals)
-        ages = np.random.choice(bc95_ages,size=n_gals)
+        models = np.random.RandomState(seed=self.seed).choice(bc95_models,size=n_gals)
+        ages = np.random.RandomState(seed=self.seed).choice(bc95_ages,size=n_gals)
 
         self._log("info","Making Co-ordinates")
         x,y = self._MakeCoords(n_gals,radius,func=distribution,scale=2.8)
@@ -600,17 +604,17 @@ class SceneModule(object):
 
         # Random radii for polar coordinates, except uniform
         if func == 'exp':
-            r_arr = np.random.exponential(scale=scale, size=numObj)
+            r_arr = np.random.RandomState(seed=self.seed).exponential(scale=scale, size=numObj)
         elif func == 'invpow':
-            r_arr = 1.0 - np.random.power(scale, size=numObj)
+            r_arr = 1.0 - np.random.RandomState(seed=self.seed).power(scale, size=numObj)
         elif func == 'regpow':
-            r_arr = np.random.power(scale, size=numObj)
+            r_arr = np.random.RandomState(seed=self.seed).power(scale, size=numObj)
         elif func == 'uniform':
             isPolar = False
-            x = np.random.uniform(-radMax, radMax, numObj)
-            y = np.random.uniform(-radMax, radMax, numObj)
+            x = np.random.RandomState(seed=self.seed).uniform(-radMax, radMax, numObj)
+            y = np.random.RandomState(seed=self.seed).uniform(-radMax, radMax, numObj)
             if do_z:
-                z = np.random.uniform(-radMax, radMax, numObj)
+                z = np.random.RandomState(seed=self.seed).uniform(-radMax, radMax, numObj)
         else:
             raise ValueError('Invalid _MakeCoords func')
 
@@ -620,15 +624,15 @@ class SceneModule(object):
 
             if do_z:
                 # Random angles for spherical co-ordinates
-                t_arr = np.random.uniform(0,np.pi,numObj)
-                p_arr = np.random.uniform(0,np.pi*2,numObj)
+                t_arr = np.random.RandomState(seed=self.seed).uniform(0,np.pi,numObj)
+                p_arr = np.random.RandomState(seed=self.seed).uniform(0,np.pi*2,numObj)
                 
                 x = r_arr * np.sin(t_arr) * np.cos(p_arr)
                 y = r_arr * np.sin(t_arr) * np.sin(p_arr)
                 z = r_arr * np.cos(t_arr)
             else:
                 # Random angles for polar coordinates
-                t_arr = np.random.uniform(0, np.pi*2, numObj)
+                t_arr = np.random.RandomState(seed=self.seed).uniform(0, np.pi*2, numObj)
                 
                 # Convert to cartesian coordinates
                 x = r_arr * np.cos(t_arr)

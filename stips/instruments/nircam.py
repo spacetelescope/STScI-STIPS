@@ -70,7 +70,7 @@ class NIRCamBase(JwstInstrument):
             max_ins_size = max(self.DETECTOR_SIZE) * self.oversample
             max_conv_size = int(np.floor(2048 / self.oversample))
             self._log("info", "PSF choosing between {}, {}, and {}".format(max_safe_size, max_ins_size, max_conv_size))
-            psf = ins.calcPSF(oversample=self.oversample,fov_pixels=min(max_safe_size, max_ins_size, max_conv_size))
+            psf = ins.calcPSF(oversample=self.oversample, fov_pixels=min(max_safe_size, max_ins_size, max_conv_size), normalize='last')
             psf[0].header['VERSION'] = webbpsf.__version__
             if os.path.exists(os.path.join(self.out_path, "psf_cache")):
                 dest = os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("NIRCam", self.filter, self.oversample))
@@ -164,7 +164,9 @@ class NIRCamBase(JwstInstrument):
                  }
     BACKGROUNDS_V = ['none', 'avg', 'med', 'max', 'min']
     BACKGROUNDS = ['None', 'Average zodiacal background', 'Median zodiacal background', 'Maximum zodiacal background', 'Minimum zodiacal background']
-    BGTEXT = {'none': 'None', 'avg': 'Average zodiacal background', 'med': 'Median zodiacal background', 'max': 'Maximum zodiacal background', 'min': 'Minimum zodiacal background'}
+    BGTEXT = {'none': 'None', 'avg': 'Average zodiacal background', 
+              'med': 'Median zodiacal background', 'max': 'Maximum zodiacal background', 
+              'min': 'Minimum zodiacal background', 'custom': 'Custom thermal background rate'}
     #PHOTFNU has units of Jy
     PHOTFNU = { 'F070W':5.085E-08, 'F090W':3.722E-08, 'F115W':3.171E-08, 'F140M':8.313E-08, 
                 'F150W':2.678E-08, 'F162M':8.396E-08, 'F164N':8.724E-07, 'F182M':7.073E-08, 

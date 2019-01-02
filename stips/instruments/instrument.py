@@ -9,15 +9,19 @@ import pysynphot as ps
 
 from astropy.io import fits as pyfits
 from astropy.table import Table, Column
-from cStringIO import StringIO
 from functools import wraps
 
 #Local Modules
 from ..stellar_module import StarGenerator
 from ..astro_image import AstroImage
-from ..utilities import GetStipsData, OffsetPosition, read_metadata, read_table
+from ..utilities import GetStipsData, OffsetPosition, read_metadata, read_table, internet
 
-import __builtin__
+if sys.version_info[0] >= 3:
+    import builtins
+    from io import StringIO
+else:
+    import __builtin__
+    from cStringIO import StringIO
 
 
 class Instrument(object):
@@ -41,17 +45,20 @@ class Instrument(object):
         if 'logger' in kwargs:
             self.logger = kwargs['logger']
         else:
-            stream_handler = logging.StreamHandler(sys.stderr)
-            stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
-            self.logger = logging.getLogger()
+            self.logger = logging.getLogger('__stips__')
             self.logger.setLevel(logging.INFO)
-            self.logger.addHandler(stream_handler)
+            if not len(logger.handlers):
+                stream_handler = logging.StreamHandler(sys.stderr)
+                stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))# [in %(pathname)s:%(lineno)d]'))
+                self.logger.addHandler(stream_handler)
         
         self.out_path = kwargs.get('out_path', os.getcwd())
         self.prefix = kwargs.get('prefix', '')
         self.flatfile = GetStipsData(os.path.join("residual_files", self.FLATFILE))
         self.darkfile = GetStipsData(os.path.join("residual_files", self.DARKFILE))
         self.oversample = 1
+        self.seed = kwargs.get('seed', 1234)
+        self.imgbase = kwargs.get('imgbase', '')
         self.ra = kwargs.get('ra', 0.)
         self.dec = kwargs.get('dec', 0.)
         self.pa = kwargs.get('pa', 0.)
@@ -63,10 +70,12 @@ class Instrument(object):
         self.psf_commands = kwargs.get('psf_commands', None)
         self.instrument = kwargs.get('instrument', "")
         self.background_value = kwargs.get('background', 'none')
+        self.custom_background = kwargs.get('custom_background', 0.)
         self.CENTRAL_OFFSET = (0., 0., 0.)
         self.convolve_size = kwargs.get('convolve_size', 4096)
         self.set_celery = kwargs.get('set_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
+        self.use_local_cache = kwargs.get('use_local_cache', False)
     
     @classmethod
     def initFromImage(cls, image, **kwargs):
@@ -125,7 +134,7 @@ class Instrument(object):
         if filter != self.filter:
             self.filter = filter
             self.resetPSF()
-            self.background = self.pixel_background/(self.oversample*self.oversample)
+            self.background = self.pixel_background
             self.photfnu = self.PHOTFNU[self.filter]
             self.photplam = self.PHOTPLAM[self.filter]
         self.resetDetectors()
@@ -155,9 +164,13 @@ class Instrument(object):
             scale = [self.SCALE[0]/self.oversample,self.SCALE[1]/self.oversample]
             self._log("info","Creating Detector with (RA,DEC,PA) = (%f,%f,%f)" % (ra,dec,pa))
             self._log("info","Creating Detector with pixel offset ({},{})".format(delta_ra/scale[0], delta_dec/scale[1]))
-            detector = AstroImage(out_path=self.out_path, shape=(ysize, xsize), scale=scale, ra=ra, dec=dec, pa=pa, exptime=1., header=hdr, history=hist, 
-                                  psf_shape=self.psf.shape, zeropoint=self.zeropoint, background=self.background, noise_floor=1./self.exptime, photflam=self.photflam, detname=name, 
-                                  logger=self.logger, oversample=self.oversample, small_subarray=self.small_subarray, distortion=distortion, prefix=self.prefix, 
+            detector = AstroImage(out_path=self.out_path, shape=(ysize, xsize), scale=scale, ra=ra, 
+                                  dec=dec, pa=pa, exptime=1., header=hdr, history=hist, 
+                                  psf_shape=self.psf.shape, zeropoint=self.zeropoint, 
+                                  background=self.background, noise_floor=1./self.exptime, 
+                                  photflam=self.photflam, detname=name, logger=self.logger, 
+                                  oversample=self.oversample, small_subarray=self.small_subarray, 
+                                  distortion=distortion, prefix=self.prefix, seed=self.seed,
                                   set_celery=self.set_celery, get_celery=self.get_celery)
             self._log("info", "Detector created")
             self.detectors.append(detector)
@@ -430,7 +443,7 @@ class Instrument(object):
         for dataset in all_datasets:
             idx = np.where(datasets == dataset)
             if len(idx[0]) > 0:
-                stargen = StarGenerator(ages[idx][0], metallicities[idx][0], logger=self.logger)
+                stargen = StarGenerator(ages[idx][0], metallicities[idx][0], seed=self.seed, logger=self.logger)
                 rates[idx] = stargen.make_cluster_rates(masses[idx], self.DETECTOR, self.filter, bp, self.REFS)
                 del stargen
         rates = rates * 100 / (distances**2) #convert absolute to apparent rates
@@ -594,7 +607,7 @@ class Instrument(object):
                 obs = ps.Observation(sp, self.bandpass, force='taper', binset=sp.wave)
                 rate = obs.countrate()
             except PysynphotError as e:
-                self._log('warning', 'Source {} of {}: Pysynphot Error {} encountered'.format(i, total, e.message))
+                self._log('warning', 'Source {} of {}: Pysynphot Error {} encountered'.format(i, total, e))
                 rate = 0.
             rates = np.append(rates,rate)
             indices = np.append(indices,proflist[profile])
@@ -737,56 +750,56 @@ class Instrument(object):
             self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Background</span>".format(detector.name))
             self._log("info","Adding error to detector %s" % (detector.name))
             self._log("info","Adding background")
-            self._log("info","Background is {} counts/s/pixel (or {} counts/s/oversampled pixel)".format(self.pixel_background, self.background))
+            self._log("info","Background is {} counts/s/pixel".format(self.pixel_background))
             detector.addBackground(self.pixel_background)
-            if 'background' in snapshots:
+            if 'background' in snapshots or 'all' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_background.fits".format(self.obs_count, detector.name))
             self._log("info","Inserting correct exposure time")
             self.updateState(base_state + "<br /><span class='indented'>Detector {}: Applying Exposure Time</span>".format(detector.name))
             detector.setExptime(self.exptime)
-            if 'exptime' in snapshots:
+            if 'exptime' in snapshots or 'all' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_exptime.fits".format(self.obs_count, detector.name))
             self._log("info","Convolving with PSF")
             convolve_state = base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name)
             self.updateState(convolve_state)
             detector.convolve(self.psf, max=self.convolve_size-1, do_convolution=convolve, parallel=parallel, state_setter=self.updateState, base_state=convolve_state)
-            if 'convolve' in snapshots:
+            if 'convolve' in snapshots or 'all' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_convolve.fits".format(self.obs_count, detector.name))
             if self.oversample != 1:
                 self._log("info","Binning oversampled image")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Binning oversampled image</span>".format(detector.name))
                 detector.bin(self.oversample)
-                if 'bin' in snapshots:
+                if 'bin' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_bin.fits".format(self.obs_count, detector.name))
             if poisson: 
                 self._log("info","Adding poisson noise")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Poisson Noise</span>".format(detector.name))
                 detector.introducePoissonNoise()
-                if 'poisson' in snapshots:
+                if 'poisson' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_poisson.fits".format(self.obs_count, detector.name))
             if readnoise:
                 self._log("info","Adding readnoise")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Readnoise</span>".format(detector.name))
                 detector.introduceReadnoise(rn)
-                if 'readnoise' in snapshots:
+                if 'readnoise' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_readnoise.fits".format(self.obs_count, detector.name))
             if flat:
                 self._log("info","Adding flatfield residual")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Flatfield Residual</span>".format(detector.name))
                 detector.introduceFlatfieldResidual(flat)
-                if 'flat' in snapshots:
+                if 'flat' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_flat.fits".format(self.obs_count, detector.name))
             if dark:
                 self._log("info","Adding dark residual")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Dark Residual</span>".format(detector.name))
                 detector.introduceDarkResidual(dark)
-                if 'dark' in snapshots:
+                if 'dark' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_dark.fits".format(self.obs_count, detector.name))
             if cosmic:
                 self._log("info","Adding cosmic ray residual")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Cosmic Ray Residual</span>".format(detector.name))
                 detector.introduceCosmicRayResidual(self.PIXEL_SIZE)
-                if 'cr' in snapshots:
+                if 'cr' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_cr.fits".format(self.obs_count, detector.name))
             self.updateState(base_state)
         self._log("info","Finished adding error")
@@ -887,13 +900,36 @@ class Instrument(object):
     @property
     def pixel_background(self):
         if self.background_value == 'none':
+            self._log("info", "Returning background 0.0 for 'none'")
             return 0.
+        elif self.background_value == 'custom':
+            self._log("info", "Returning background {} for 'custom'".format(self.custom_background))
+            return self.custom_background
+
+        bg = None
+        if internet() and not self.use_local_cache:
+            from jwst_backgrounds import jbt
+            try:
+                bg = jbt.background(self.ra, self.dec, self.PHOTPLAM[self.filter])
+            except Exception as e:
+                self._log("error", "Accessing JBT background produced error {}".format(e))
+                self._log("warning", "Unable to connect to the JBT server")
         
-        from jwst_backgrounds import jbt
-        bg = jbt.background(self.ra, self.dec, self.PHOTPLAM[self.filter])
+        if bg is None:
+            self._log("info", "Using local cache of JBT background data")
+            from ..utilities import CachedJbtBackground
+            try:
+                bg = CachedJbtBackground(self.ra, self.dec, self.PHOTPLAM[self.filter])
+            except Exception as e:
+                self._log("error", "Retrieving local cache produced error {}".format(e))
+                self._log("info", "More complete error: {}".format(repr(e)))
+                message = "Unable to retrieve local cache. Returning background 0.0 for '{}'"
+                self._log("warning", message.format(self.background_value))
+                return 0.
+
         wave_array = bg.bkg_data['wave_array']
         combined_bg_array = bg.bkg_data['total_bg']
-        
+    
         if self.background_value == 'avg':
             flux_array = np.mean(combined_bg_array, axis=0)
         elif self.background_value == 'med':
@@ -904,19 +940,22 @@ class Instrument(object):
             flux_array = np.min(combined_bg_array, axis=0)
         else:
             flux_array = combined_bg_array[0]
-        
+    
         # Convert background flux from MJy/sr to mJy/pixel.
         #   Conversion: * 1e9 for MJy -> mJy
         #   Conversion: * 2.3504e-11 for sr^-2 -> arcsec^-2
         #   Conversion: * self.SCALE[0] * self.SCALE[1] for arcsec^-2 -> pixel^-2
         flux_array_pixels = 1e9 * flux_array * 2.3504e-11 * self.SCALE[0] * self.SCALE[1]
-        
+    
         ps.setref(**self.REFS)
         sp = ps.ArraySpectrum(wave_array, flux_array_pixels, waveunits='micron', fluxunits='mjy')
         sp.convert('angstroms')
         sp.convert('photlam')
-        obs = ps.Observation(sp, self.bandpass, binset=sp.wave)
-        return obs.countrate()
+        obs = ps.Observation(sp, self.bandpass, binset=sp.wave, force='taper')
+        bg = obs.countrate()
+        
+        self._log("info", "Returning background {} for '{}'".format(bg, self.background_value))
+        return bg
 
     def _log(self,mtype,message):
         """

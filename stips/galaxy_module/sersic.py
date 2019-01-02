@@ -123,7 +123,7 @@ class baseImage(object):
         @param sigma        Standard deviation of distribution  [default = 1.0]
         @param mean         Mean of Gaussian distribution       [default = 0.0]
         """
-        noise = np.random.normal(loc=float(mean),scale=float(sigma),size=(self.N,self.N))
+        noise = np.random.RandomState(seed=self.seed).normal(loc=float(mean),scale=float(sigma),size=(self.N,self.N))
         self.image += noise
         return self.image
 
@@ -137,7 +137,7 @@ class baseImage(object):
         """
 
         totalCount = self.image+float(sky_level)
-        noise =  np.random.poisson(totalCount)
+        noise =  np.random.RandomState(seed=self.seed).poisson(totalCount)
         self.image = noise - float(sky_level)
         return self.image
 
@@ -180,9 +180,9 @@ class baseImage(object):
             if overwrite:
                 os.remove(printname)
             else:
-                raise IOError('File %r already exists'%printname)
+                raise IOError('File {} already exists'.format(printname))
         hdulist.writeto(printname, overwrite=True) # Save images as FITS file
-        print "FITS file destination: ", printname
+        print("FITS file destination: {}".format(printname))
 
 
     def add(self,*args):
@@ -197,7 +197,7 @@ class baseImage(object):
             try:
                 m += args[i].image
             except Exception:
-                print "Addition ",i+1," failed"
+                print("Addition {} failed".format(i+1))
                 pass
         return baseImage(m,self.xmax)   
             
@@ -265,7 +265,7 @@ class Sersic(baseImage):
         assert n > 0, "ValueError: Sersic Index must be larger than zero..."
         assert (q >= 0.0 and q<=1.0), "ValueError: Axis ratio q must be between 0.0 and 1.0"
         if flux<0.0:
-            print "Warning: Negative total flux value entered"
+            print("Warning: Negative total flux value entered")
     
         bn = 1.992*n - 0.3271 #Approximation valid for 0.5<n<8.0
 

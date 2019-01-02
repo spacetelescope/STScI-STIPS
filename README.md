@@ -6,6 +6,7 @@
 * [Why use STIPS?](#why-use-stips)
 * [STIPS Python Requirements](#stips-python-requirements)
 * [STIPS Examples](#stips-examples)
+* [STIPS and Python 3](#stips-python-3-status)
 
 ## Overview
 
@@ -140,6 +141,14 @@ equivalent method prior to running any of these example scripts.
   
   In this case, the output catalogue(s) will show the actual applied count rates. Whether there is
   only one output catalogue or two depends on the input catalogue format.
+
+## STIPS Python 3 Status
+
+STIPS was originally designed with and for python 2, but work has recently begun on converting it to 
+python 3. Currently, STIPS is known to be importable from python 3, and the STIPS observation
+module has been used with an internal-format catalogue. Any issues encountered when using STIPS with
+python 3 should be reported on 
+[STIPS Github Issue 16](https://github.com/spacetelescope/STScI-STIPS/issues/16).
 
 To install, in bash:
 

@@ -94,6 +94,7 @@ class StarGenerator(object):
         self.imf = massfunctions[kwargs.get('imf', 'powerlaw').lower().replace(" ","_")]
         self.alpha = kwargs.get('alpha', -2.35)
         self.logger = kwargs.get('logger', None)
+        self.seed = kwargs.get('seed', 1234)
         db = sqlite3.connect(self.dbname)
         c = db.cursor()
         c.execute("""SELECT age FROM star_info ORDER BY ABS(? - age) LIMIT 1""",(self.age,))
@@ -228,7 +229,7 @@ class StarGenerator(object):
         kwargs are passed to `inverse_imf`
         """
 
-        masses = self.inverse_imf(np.random.random(num_stars),nbins=nbins,**kwargs)
+        masses = self.inverse_imf(np.random.RandomState(seed=self.seed).random_sample(num_stars), nbins=nbins, **kwargs)
 
         return masses
     
@@ -239,7 +240,10 @@ class StarGenerator(object):
         return arr['m_ini'],arr['te'],arr['log_g'],arr['johnson_i_abs']
     
     def make_cluster_rates(self,masses,instrument,filter,bandpass=None,refs=None):
-        coords = np.load(os.path.join(self.gridpath, 'input.npy'))
+        try:
+            coords = np.load(os.path.join(self.gridpath, 'input.npy'))
+        except UnicodeError:
+            coords = np.load(os.path.join(self.gridpath, 'input.npy'), encoding='bytes')
         m, t, g, i = self.get_star_info()
         temps = np.interp(masses,m,t)
         gravs = np.interp(masses,m,g)
@@ -275,21 +279,22 @@ class StarGenerator(object):
                 spectrum = spectrum.renorm(j_i, 'vegamag', johnson_i)
                 obs = ps.Observation(spectrum, bandpass, binset=spectrum.wave)
                 countrates = np.append(countrates, obs.countrate())
+                self.log('info', 'Manually created star {} of {}'.format(len(countrates), len(temps)))
         return countrates
 
     def make_cluster_mags(self,masses):
-    	db = sqlite3.connect(self.dbname)
-    	sc = sqlite_util.SqliteConnection(self.dbname)
-    	stmt = "SELECT m_ini,johnson_i_abs,Te,log_g FROM star_info WHERE star_info.age = %f AND star_info.Z = %f" % (self.age,self.metallicity)
-    	arr = sc.execute(stmt, asarray=True)
-    	star_masses = arr['m_ini']
-    	star_i = arr['johnson_i_abs']
-    	star_t = arr['te']
-    	star_g = arr['log_g']
-    	countrates = np.interp(masses, star_masses, star_i)
-    	temps = np.interp(masses, star_masses, star_t)
-    	gravs = np.interp(masses, star_masses, star_g)
-        return countrates, temps, gravs
+        db = sqlite3.connect(self.dbname)
+        sc = sqlite_util.SqliteConnection(self.dbname)
+        stmt = "SELECT m_ini,johnson_i_abs,Te,log_g FROM star_info WHERE star_info.age = %f AND star_info.Z = %f" % (self.age,self.metallicity)
+        arr = sc.execute(stmt, asarray=True)
+        star_masses = arr['m_ini']
+        star_i = arr['johnson_i_abs']
+        star_t = arr['te']
+        star_g = arr['log_g']
+        countrates = np.interp(masses, star_masses, star_i)
+        temps = np.interp(masses, star_masses, star_t)
+        gravs = np.interp(masses, star_masses, star_g)
+        return (countrates, temps, gravs)
 
     def make_cluster(self,num_stars,nbins=1000,**kwargs):
         """
@@ -308,4 +313,4 @@ class StarGenerator(object):
         if self.logger is not None:
             getattr(self.logger, priority)(message)
         else:
-            print "{}: {}".format(priority, message)
+            print("{}: {}".format(priority, message))
