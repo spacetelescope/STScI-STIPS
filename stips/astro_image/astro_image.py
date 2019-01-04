@@ -20,7 +20,7 @@ else:
     from cStringIO import StringIO
 
 #Local Modules
-from ..utilities import OffsetPosition, overlapadd2, overlapaddparallel, read_table, ImageData, Percenter
+from ..utilities import OffsetPosition, overlapadd2, overlapaddparallel, read_table, ImageData, Percenter, StipsDataTable
 from ..errors import GetCrProbs, GetCrTemplate, MakeCosmicRay
 
 
@@ -56,6 +56,7 @@ class AstroImage(object):
         #Set unique ID and figure out where the numpy memmap will be stored
         self.out_path = kwargs.get('out_path', os.getcwd())
         self.prefix = kwargs.get('prefix', '')
+        self.cat_type = kwargs.get('cat_type', 'fits')
         self.name = kwargs.get('detname', "")
         self.fname = os.path.join(self.out_path, self.prefix+"_"+uuid.uuid4().hex+"_"+self.name+".tmp")
         self.set_celery = kwargs.get('set_celery', None)
@@ -320,16 +321,6 @@ class AstroImage(object):
         self._log("info","Creating Extension HDU from AstroImage %s" % (self.name))
         with ImageData(self.fname, self.shape, mode='r+') as dat:
             hdu = pyfits.ImageHDU(dat, header=self.wcs.to_header(relax=True), name=self.name)
-#         del hdu.header['PC1_1']
-#         del hdu.header['PC1_2']
-#         del hdu.header['PC2_1']
-#         del hdu.header['PC2_2']
-#         del hdu.header['CDELT1']
-#         del hdu.header['CDELT2']
-#         hdu.header['CD1_1'] = self.wcs.wcs.cd[0][0]
-#         hdu.header['CD1_2'] = self.wcs.wcs.cd[0][1]
-#         hdu.header['CD2_1'] = self.wcs.wcs.cd[1][0]
-#         hdu.header['CD2_2'] = self.wcs.wcs.cd[1][1]
         if sys.version_info[0] >= 3:
             for k,v in self.header.items():
                 hdu.header[k] = v
@@ -472,30 +463,26 @@ class AstroImage(object):
             - the Sersic Profiles will be iteratively added via addSersicProfile
         """
         (path, catname) = os.path.split(cat)
+        (catbase, catext) = os.path.splitext(catname)
         self._log("info","Adding catalogue %s to AstroImage %s" % (catname, self.name))
-        obsname = os.path.join(self.out_path, os.path.splitext(catname)[0]+"_observed_%s.txt" % (self.name))
-        self.addHistory("Adding items from catalogue %s" % (cat))
+        obs_file_name = "{}_observed_{}.{}".format(catbase, self.name, self.cat_type)
+        obsname = os.path.join(self.out_path, obs_file_name)
+        self.addHistory("Adding items from catalogue %s" % (catname))
         data = None
-        with open(obsname, 'w') as outf:
-            base_state = self.getState()
-            counter = 0
-            for i, t in enumerate(read_table(cat)):
-                table_length = len(t['id'])
-                self.updateState(base_state + "<br /><span class='indented'>Adding sources {} to {}</span>".format(counter, counter+table_length))
-                ot = self.addTable(t, dist, *args, **kwargs)
-                if ot is not None:
-                    data = StringIO()
-                    ot.write(data, format='ascii.ipac')
-                    data.seek(0)
-                    if i != 0: # get rid of the header lines
-                        data.readline()
-                        data.readline()
-                        data.readline()
-                        data.readline()
-                    outf.write(data.read())
-                counter += table_length
-            if data is None:
-                outf.write("No sources from catalogue were visible.\n")
+        in_data = StipsDataTable.dataTableFromFile(cat)
+        out_data = StipsDataTable.dataTableFromFile(obsname)
+        out_data.meta = {'name': 'Observed Catalogue', 'type': 'observed', 'detector': self.name, 'input_catalogue': catname}
+        base_state = self.getState()
+        counter = 0
+        current_chunk = in_data.read_chunk()
+        while current_chunk is not None:
+            table_length = len(current_chunk['id'])
+            self.updateState(base_state + "<br /><span class='indented'>Adding sources {} to {}</span>".format(counter, counter+table_length))
+            out_chunk = self.addTable(current_chunk, dist, *args, **kwargs)
+            if out_chunk is not None:
+                out_data.write_chunk(out_chunk)
+            counter += table_length
+            current_chunk = in_data.read_chunk()
         self.updateState(base_state)
         self._log("info","Added catalogue %s to AstroImage %s" % (catname, self.name))
         return obsname            

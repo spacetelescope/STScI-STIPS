@@ -14,7 +14,7 @@ from functools import wraps
 #Local Modules
 from ..stellar_module import StarGenerator
 from ..astro_image import AstroImage
-from ..utilities import GetStipsData, OffsetPosition, read_metadata, read_table, internet
+from ..utilities import GetStipsData, OffsetPosition, read_metadata, read_table, internet, StipsDataTable
 
 if sys.version_info[0] >= 3:
     import builtins
@@ -54,6 +54,7 @@ class Instrument(object):
         
         self.out_path = kwargs.get('out_path', os.getcwd())
         self.prefix = kwargs.get('prefix', '')
+        self.cat_type = kwargs.get('cat_type', 'fits')
         self.flatfile = GetStipsData(os.path.join("residual_files", self.FLATFILE))
         self.darkfile = GetStipsData(os.path.join("residual_files", self.DARKFILE))
         self.oversample = 1
@@ -171,7 +172,8 @@ class Instrument(object):
                                   photflam=self.photflam, detname=name, logger=self.logger, 
                                   oversample=self.oversample, small_subarray=self.small_subarray, 
                                   distortion=distortion, prefix=self.prefix, seed=self.seed,
-                                  set_celery=self.set_celery, get_celery=self.get_celery)
+                                  set_celery=self.set_celery, get_celery=self.get_celery,
+                                  cat_type=self.cat_type)
             self._log("info", "Detector created")
             self.detectors.append(detector)
         
@@ -325,32 +327,42 @@ class Instrument(object):
         
         returns: cat: new catalogue in Internal format
         """
-        (catpath,catname) = os.path.split(catalogue)
-        (catbase,ext) = os.path.splitext(catname)
-        obsname = os.path.join(self.out_path, catbase+"_{:02d}_conv_{}.txt".format(obs_num, self.filter))
-        t = read_metadata(catalogue, n_lines=1000)
+        (in_cat_path, in_cat_name) = os.path.split(catalogue)
+        (in_cat_base, ext) = os.path.splitext(in_cat_name)
+        obs_cat_name = "{}_{:02d}_conv_{}.{}".format(in_cat_base, obs_num, self.filter, self.cat_type)
+        obsname = os.path.join(self.out_path, obs_cat_name)
+        in_data_table = StipsDataTable.dataTableFromFile(catalogue)
+        cols = in_data_table.columns
+        if "keywords" in in_data_table.meta:
+            meta = {k.lower():v['value'] for k,v in in_data_table.meta['keywords'].items()}
+        else:
+            meta = {k.lower():v for k,v in in_data_table.meta.items()}
         #Check for built-in metadata
         table_type = ""
-        if 'keywords' in t.meta:
-            if 'type' in t.meta['keywords']:
-                table_type = t.meta['keywords']['type']['value']
+#         if 'keywords' in in_meta:
+#             if 'type' in in_meta['keywords']:
+#                 table_type = in_meta['keywords']['type']['value']
+        if 'type' in meta:
+            table_type = meta['type']
         if table_type in ['phoenix', 'phoenix_realtime', 'bc95']:
             pass
         elif table_type == 'internal':
-            filter = t.meta['keywords']['filter']['value'].lower()
+            filter = meta['filter'].lower()
+#             filter = t.meta['keywords']['filter']['value'].lower()
             if filter != self.filter.lower(): 
                 raise ValueError("Adding catalogue with filter {} to {} {}".format(filter, self.DETECTOR, self.filter))
             return catalogue
         elif table_type == 'mixed':
-            filter = t.meta['keywords']['filter']['value'].lower()
+            filter = meta['filter'].lower()
+#             filter = t.meta['keywords']['filter']['value'].lower()
             if filter != self.filter.lower(): 
                 raise ValueError("Adding catalogue with filter {} to {} {}".format(filter, self.DETECTOR, self.filter))
         elif table_type == 'multifilter':
-            if self.filter.lower() not in [c.lower() for c in t.columns]:
-                raise ValueError("Adding catalogue with filters {} to {} {}".format(t.columns, self.DETECTOR, self.filter))
+            if self.filter.lower() not in [c.lower() for c in in_data_table.columns]:
+                raise ValueError("Adding catalogue with filters {} to {} {}".format(in_data_table.columns, self.DETECTOR, self.filter))
         else: #check for necessary columns
             #We want RA, DEC, and count rate in the appropriate filter
-            if 'ra' not in t.columns or 'dec' not in t.columns or self.filter.lower() not in [c.lower() for c in t.columns]:
+            if 'ra' not in cols or 'dec' not in cols or self.filter.lower() not in [c.lower() for c in cols]:
                 raise ValueError("Can't parse catalogue without proper columns")
         return self.handleConversion(catalogue, table_type, obsname)
     
@@ -395,30 +407,20 @@ class Instrument(object):
             os.remove(obsname)
         cat_function = self.getTableFunction(table_type)
         
-        with open(obsname, 'w') as f:
-            f.write('\\ Internal Format Catalogue\n')
-            f.write('\\ \n')
-            f.write('\\ Parameters:\n')
-            f.write('\\ \n')
-            f.write('\\type="internal"\n')
-            f.write('\\filter="%s"\n'%(self.filter))
-            f.write('\\ \n')
-            bp = self.bandpass
-            cached = -1.
-            for i, table in enumerate(read_table(catalogue)):
-                self._log("info", "Converting chunk {}".format(i+1))
-                t, cached = cat_function(table, bp, cached)
-                data = StringIO()
-                t.write(data, format='ascii.ipac')
-                data.seek(0)
-                if i != 0: # get rid of the header lines
-                    data.readline()
-                    data.readline()
-                    data.readline()
-                    data.readline()
-                f.write(data.read())
-                del data
-        self._log("info","Finished output table")
+        in_data_table = StipsDataTable.dataTableFromFile(catalogue)
+        out_data_table = StipsDataTable.dataTableFromFile(obsname)
+        out_data_table.meta = {'name': 'Internal Format Catalogue', 'type': 'internal', 
+                               'filter': self.filter}
+        
+        
+        bp = self.bandpass
+        cached = -1
+        current_chunk = in_data_table.read_chunk()
+        while current_chunk is not None:
+            self._log("info", "Converting chunk {}".format(in_data_table.chunk))
+            out_chunk, cached = cat_function(current_chunk, bp, cached)
+            out_data_table.write_chunk(out_chunk)
+            current_chunk = in_data_table.read_chunk()
         return obsname
     
     def readPhoenixTable(self, table, bp, cached=-1):
@@ -427,6 +429,8 @@ class Instrument(object):
         return an output table (not yet in ascii form) in the internal format, with those sources
         in it.
         """
+        if table is None:
+            return None
         self._log("info","Converting Phoenix Table to Internal format")
         ids = table['id']
         datasets = table['dataset']
@@ -449,7 +453,7 @@ class Instrument(object):
         rates = rates * 100 / (distances**2) #convert absolute to apparent rates
         if cached > 0:
             rates[0] += cached
-            cached = -1.
+            cached = -1
         #Now, deal with binaries. Remember that if Binary == 1, then the star below is the binary companion.
         idx = np.where(binaries==1.0)[0] #Stars with binary companions
         idxp = (idx+1) #binary companions
@@ -487,6 +491,8 @@ class Instrument(object):
         Converts a set of Phoenix sources specified as (id, ra, dec, T, Z, log(g), apparent) into individual stars, observes them,
         and then produces an output catalogue
         """
+        if table is None:
+            return None
         ps.setref(**self.REFS)
         ids = table['id']
         ras = table['ra']
@@ -524,6 +530,8 @@ class Instrument(object):
         Converts a set of Pandeia phoenix sources specified as (id, ra, dec, key, apparent) into individual stars, observes them,
         and then produces an output catalogue
         """
+        if table is None:
+            return None
         from pandeia.engine.sed import SEDFactory
         ps.setref(**self.REFS)
         ids = table['id']
@@ -560,6 +568,8 @@ class Instrument(object):
         """
         Converts a BC95 galaxy grid of sources into the internal source table standard
         """
+        if table is None:
+            return None
         # This function is needed because I can't get python not to read '50E8' as a number, or to output it as a correctly formatted string
         def stringify(num):
             num = float(num)
@@ -611,18 +621,18 @@ class Instrument(object):
                 rate = 0.
             rates = np.append(rates,rate)
             indices = np.append(indices,proflist[profile])
-            notes = np.append(notes,"BC95_%s_%s_%f" % (model, stringify(age), mag))
+            notes = np.append(notes,"BC95_{}_{}_{}".format(model, stringify(age), mag))
         t = Table()
-        t['ra'] = Column(data=ras, format='%8.4f')
-        t['dec'] = Column(data=decs, format='% 9.4f')
-        t['flux'] = Column(data=rates, format='%8g')
-        t['type'] = Column(data=np.full_like(ras,'sersic',dtype='S7'), format='%-7s')
-        t['n'] = Column(data=indices, format='%8g')
-        t['re'] = Column(data=radii, format='%9.5f')
-        t['phi'] = Column(data=pas, format='%9.5f')
-        t['ratio'] = Column(data=ratios, format='%9.5f')
-        t['id'] = Column(data=ids, format='%8d')
-        t['notes'] = Column(data=notes, format='%-25s')
+        t['ra'] = Column(data=ras, dtype=np.float)
+        t['dec'] = Column(data=decs)
+        t['flux'] = Column(data=rates)
+        t['type'] = Column(data=np.full_like(ras, 'sersic', dtype='S7'))
+        t['n'] = Column(data=indices)
+        t['re'] = Column(data=radii)
+        t['phi'] = Column(data=pas)
+        t['ratio'] = Column(data=ratios)
+        t['id'] = Column(data=ids)
+        t['notes'] = Column(data=notes, dtype='S25')
         
         return t, cached
 
@@ -630,6 +640,8 @@ class Instrument(object):
         """
         Converts a mixed internal list of sources into the internal source table standard
         """
+        if table is None:
+            return None
         ras = table['ra']
         decs = table['dec']
         types = table['type']
@@ -666,6 +678,8 @@ class Instrument(object):
         """
         Converts an internal multifilter list of sources into the internal source table standard
         """
+        if table is None:
+            return None
         ras = table['ra']
         decs = table['dec']
         types = table['type']
@@ -694,6 +708,8 @@ class Instrument(object):
         """
         Converts a generic list of point sources into the internal source table standard
         """
+        if table is None:
+            return None
         ras = table['ra']
         decs = table['dec']
         rates = table[self.filter.lower()]

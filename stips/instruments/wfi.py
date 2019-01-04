@@ -60,6 +60,8 @@ class WFI(WfirstInstrument):
             max_ins_size = max(self.DETECTOR_SIZE) * self.oversample
             max_conv_size = int(np.floor(2048 / self.oversample))
             self._log("info", "PSF choosing between {}, {}, and {}".format(max_safe_size, max_ins_size, max_conv_size))
+            if hasattr(ins, 'calc_psf'):
+                ins.calcPSF = ins.calc_psf
             psf = ins.calcPSF(oversample=self.oversample, fov_pixels=min(max_safe_size, max_ins_size, max_conv_size), normalize='last')
             self._log("info", "PSF Total Flux: {}".format(np.sum(psf[0].data)))
             psf[0].header['VERSION'] = webbpsf.__version__

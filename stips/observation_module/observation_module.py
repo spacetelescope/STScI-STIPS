@@ -4,7 +4,7 @@ from __future__ import absolute_import
 import logging, os, sys
 
 # Local modules
-from ..utilities import GetStipsData, InstrumentList, OffsetPosition
+from ..utilities import GetStipsData, InstrumentList, OffsetPosition, StipsDataTable
 from ..astro_image import AstroImage
 
 #-----------
@@ -40,7 +40,7 @@ class ObservationModule(object):
         else:
             self.logger = logging.getLogger('__stips__')
             self.logger.setLevel(logging.INFO)
-            if not len(logger.handlers):
+            if not len(self.logger.handlers):
                 stream_handler = logging.StreamHandler(sys.stderr)
                 stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))# [in %(pathname)s:%(lineno)d]'))
                 self.logger.addHandler(stream_handler)
@@ -69,6 +69,7 @@ class ObservationModule(object):
         self.prefix = kwargs.get('out_prefix', 'sim')
         self.cat_path = kwargs.get('cat_path', os.getcwd())
         self.out_path = kwargs.get('out_path', os.getcwd())
+        self.cat_type = kwargs.get('cat_type', 'fits')
         self.convolve_size = kwargs.get('convolve_size', 4096)
         self.parallel = kwargs.get('parallel', False)
         
