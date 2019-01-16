@@ -12,6 +12,10 @@ from astropy.io import fits as pyfits
 from astropy.table import Table, Column
 from photutils import CircularAperture, aperture_photometry
 
+from pandeia.engine.profile import ProfileFactory
+from pandeia.engine.source import Source
+from pandeia.engine.coords import Grid
+
 from scipy.ndimage.interpolation import zoom, rotate
 
 if sys.version_info[0] >= 3:
@@ -502,7 +506,7 @@ class AstroImage(object):
         type.
         
         (posX,posY) are the co-ordinates of the centre of the profile (pixels).
-        flux is the total number of counts to add to the AstroImage.
+        flux is the count rate (in counts/s/pixel) at the scale radius of the sersic profile
         n is the Sersic profile index.
         re is the radius enclosing half of the total light (pixels).
         phi is the angle of the major axis (degrees east of north).
@@ -516,8 +520,53 @@ class AstroImage(object):
         # Determine necessary parameters for the Sersic model -- the input radius, surface 
         # brightness and noise floor are all in *detector* pixels.
         pixel_radius = re * self.oversample
-        pixel_brightness = flux / (self.oversample*self.oversample)
         noise_floor = self.noise_floor / (self.oversample*self.oversample)
+        minor_axis = pixel_radius * axialRatio
+        self._log("info", "Major axis {}, Minor axis {}, Noise floor {}".format(pixel_radius, minor_axis, noise_floor))
+        
+        # Determine the offset of the centre of the profile (since we're going to add the profile to
+        # an integer-offset position, we're only considering the sub-pixel offset here)
+        offset_x, offset_y = np.floor(posX) - self.xsize//2, np.floor(posY) - self.ysize//2
+        position = {'x_offset': posX - np.floor(posX), 'y_offset': posY - np.floor(posY), 
+                    'orientation': phi}
+        shape = {'geometry': 'sersic', 'shape_parameters': ['major', 'minor', 'sersic_index'],
+                 'major': re, 'minor': minor_axis, 'sersic_index': n, 'norm_method': 'surf_scale',
+                 'surf_area_units': 'arcsec^2'}
+        source = {'position': position, 'shape': shape}
+        src = Source(config=source)
+
+        full_frame = False
+        radius_multiplier = 2.5
+        max_outer_value = 2. * noise_floor
+        while max_outer_value > noise_floor and not full_frame:
+            radius_multiplier *= 2.
+            model_size = int(np.ceil(pixel_radius*radius_multiplier))
+            self._log("info", "Creating Sersic profile with size {}x{}".format(model_size, model_size))
+            self._log("info", "Sersic Profile Scale is {}x{}".format(1./self.oversample, 1./self.oversample))
+            if not self._filled(offset_x, offset_y, model_size, model_size):
+                grid = Grid(1./self.oversample, 1./self.oversample, model_size, model_size)
+            else:
+                full_frame = True
+                position['x_offset'] = posX
+                position['y_offset'] = posY
+                source = {'position': position, 'shape': shape}
+                src = Source(config=source)
+                grid = Grid(1./self.oversample, 1./self.oversample, self.xsize, self.ysize)
+                model_size = max(self.xsize, self.ysize)
+            src.grid = grid
+            profile = ProfileFactory(config=src)
+            prof = profile.prof
+            self._log("info", "Sersic profile created with max {:e} and sum {:e}".format(np.max(prof), np.sum(prof)))
+            norm = profile.norm_prof
+            self._log("info", "Normalized Sersic profile created with max {:e} and sum {:e}".format(np.max(norm), np.sum(norm)))
+            img = profile.norm_prof * flux
+            self._log("info", "After scaling {}x{} profile has max {:e} sum {:e}".format(img.shape[1], img.shape[0], np.max(img), np.sum(img)))
+            max_outer_value = max(np.max(img[0,:]), np.max(img[-1,:]), np.max(img[:,0]), np.max(img[:,-1]))
+            self._log("info", "Maximum outer value is {:e}".format(max_outer_value))
+        img = np.where(img >= noise_floor, img, 0.)
+        self._log("info", "Sersic profile has final size {}x{}, maximum value {:e}, sum {:e}".format(model_size, model_size, np.max(img), np.sum(img)))
+        self._addArrayWithOffset(img, offset_x, offset_y)
+        return np.sum(img)
 
         # Determine the pixel offset of the profile from the centre of the AstroImage
         # Centre of profile is (xc, yc)
@@ -528,43 +577,43 @@ class AstroImage(object):
         # Let's say posX=39, posY=27
         # So we want to go from 512,512 to 39,27, so offset is -473,-485
         # Offset is posX-image_centre, posY-image_centre
-        offset_x, offset_y = np.floor(posX) - self.xsize//2, np.floor(posY) - self.ysize//2
-        fractional_x, fractional_y = posX - np.floor(posX), posY - np.floor(posY)
+#         offset_x, offset_y = np.floor(posX) - self.xsize//2, np.floor(posY) - self.ysize//2
+#         fractional_x, fractional_y = posX - np.floor(posX), posY - np.floor(posY)
 
-        from astropy.modeling.models import Sersic2D
+#         from astropy.modeling.models import Sersic2D
         # Figure out an appropriate radius. Start at 5X pixel radius, and continue until the highest value on the outer edge is below the noise floor.
-        max_outer_value = 2*noise_floor
-        filled = False
-        radius_multiplier = 2.5
-        full_frame = False
-        model_size = int(np.ceil(pixel_radius*radius_multiplier))
-        while max_outer_value > noise_floor:
-            radius_multiplier *= 2
-            model_size = int(np.ceil(pixel_radius*radius_multiplier))
-            if not self._filled(offset_x, offset_y, model_size, model_size):
+#         max_outer_value = 2*noise_floor
+#         filled = False
+#         radius_multiplier = 2.5
+#         full_frame = False
+#         model_size = int(np.ceil(pixel_radius*radius_multiplier))
+#         while max_outer_value > noise_floor:
+#             radius_multiplier *= 2
+#             model_size = int(np.ceil(pixel_radius*radius_multiplier))
+#             if not self._filled(offset_x, offset_y, model_size, model_size):
 #                 self._log("info", "Creating a {}x{} array for the Sersic model at ({},{})".format(model_size, model_size, posX, posY))
-                x, y, = np.meshgrid(np.arange(model_size), np.arange(model_size))
+#                 x, y, = np.meshgrid(np.arange(model_size), np.arange(model_size))
                 # In order to get fractional flux per pixel correct, carry the non-integer portion of the model centre through.
-                xc, yc = model_size//2 + fractional_x, model_size//2 + fractional_y
-                mod = Sersic2D(amplitude=pixel_brightness, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
-                img = mod(x, y)
-                max_outer_value = max(np.max(img[0,:]), np.max(img[-1,:]), np.max(img[:,0]), np.max(img[:,-1]))
+#                 xc, yc = model_size//2 + fractional_x, model_size//2 + fractional_y
+#                 mod = Sersic2D(amplitude=pixel_brightness, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
+#                 img = mod(x, y)
+#                 max_outer_value = max(np.max(img[0,:]), np.max(img[-1,:]), np.max(img[:,0]), np.max(img[:,-1]))
 #                 self._log('info', "Max outer value is {}, noise floor is {}".format(max_outer_value, noise_floor))
-            else:
-                full_frame = True
+#             else:
+#                 full_frame = True
 #                 self._log("info", "Creating full-frame Sersic model at ({},{})".format(posX, posY))
-                x, y = np.meshgrid(np.arange(self.ysize), np.arange(self.xsize))
-                xc, yc = posX, posY
-                mod = Sersic2D(amplitude=pixel_brightness, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
-                img = mod(x, y)
-                max_outer_value = 0.
-        img = np.where(img >= noise_floor, img, 0.)
-        aperture = CircularAperture((xc, yc), pixel_radius)
-        flux_table = aperture_photometry(img, aperture)
-        central_flux = flux_table['aperture_sum'][0]
-        self._log("info", "Sersic profile has final size {}x{}, maximum value {}, sum {}".format(model_size, model_size, np.max(img), np.sum(img)))
-        self._addArrayWithOffset(img, offset_x, offset_y)
-        return central_flux
+#                 x, y = np.meshgrid(np.arange(self.ysize), np.arange(self.xsize))
+#                 xc, yc = posX, posY
+#                 mod = Sersic2D(amplitude=pixel_brightness, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
+#                 img = mod(x, y)
+#                 max_outer_value = 0.
+#         img = np.where(img >= noise_floor, img, 0.)
+#         aperture = CircularAperture((xc, yc), pixel_radius)
+#         flux_table = aperture_photometry(img, aperture)
+#         central_flux = flux_table['aperture_sum'][0]
+#         self._log("info", "Sersic profile has final size {}x{}, maximum value {}, sum {}".format(model_size, model_size, np.max(img), np.sum(img)))
+#         self._addArrayWithOffset(img, offset_x, offset_y)
+#         return central_flux
 
     def convolve(self, other, max=4095, do_convolution=True, parallel=False, state_setter=None, base_state=""):
         """Convolves the AstroImage with another (provided) AstroImage, e.g. for PSF convolution."""

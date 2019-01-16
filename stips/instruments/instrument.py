@@ -619,13 +619,16 @@ class Instrument(object):
             except PysynphotError as e:
                 self._log('warning', 'Source {} of {}: Pysynphot Error {} encountered'.format(i, total, e))
                 rate = 0.
-            rates = np.append(rates,rate)
+            # Rate is currently in counts/arcsec^2 at the scale radius in the observing filter.
+            # To convert to counts/pixel, multiply by the both the x and y pixel scales (in arcsec/pix)
+            per_pixel_rate = rate * self.SCALE[0] * self.SCALE[1]
+            rates = np.append(rates, per_pixel_rate)
             indices = np.append(indices,proflist[profile])
             notes = np.append(notes,"BC95_{}_{}_{}".format(model, stringify(age), mag))
         t = Table()
         t['ra'] = Column(data=ras, dtype=np.float)
         t['dec'] = Column(data=decs)
-        t['flux'] = Column(data=rates)
+        t['flux'] = Column(data=rates, unit='counts/s/pix')
         t['type'] = Column(data=np.full_like(ras, 'sersic', dtype='S7'))
         t['n'] = Column(data=indices)
         t['re'] = Column(data=radii)
