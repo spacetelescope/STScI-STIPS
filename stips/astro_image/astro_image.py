@@ -2,7 +2,7 @@ from __future__ import absolute_import,division
 __filetype__ = "base"
 
 #External Modules
-import logging, os, shutil, sys, time, uuid
+import logging, math, os, shutil, sys, time, uuid
 
 import numpy as np
 import multiprocessing.dummy as multiprocessing
@@ -197,11 +197,11 @@ class AstroImage(object):
         return img
     
     @classmethod
-    def initFromProfile(cls,posX,posY,flux,n,re,phi,axialRatio,**kwargs):
+    def initFromProfile(cls, posX, posY, flux, n, re, phi, axialRatio, **kwargs):
         """Convenience to initialize a blank image and add a sersic profile to it"""
         img = cls(**kwargs)
         img._log("info","Creating AstroImage %s from Sersic Profile" % (img.name))
-        img.addSersicProfile(posX, posY, flux, n, re, phi, axialRatio)
+        img.addSersicProfile(posX, posY, flux, n, re, phi, axialRatio, **kwargs)
         return img
     
     @property
@@ -505,24 +505,18 @@ class AstroImage(object):
         """
         Add a sersic profile using Pandeia's profile generator.
         """
-        # The b value is needed to convert from half-light radius (re) to scale radius (h).
-        # The conversion formula is from equation 16 of Graham & Driver (2005) 2005PASA...22..118G
-        # In particular, Re = b^n * h, so
-        # h = re / b^n
-        b = sp.gammaincinv(2*n, 0.5)
-        h = re / (b**n)
         noise_floor = self.noise_floor / (self.oversample * self.oversample)
-        h_minor = h * axialRatio
+        re_minor = re * axialRatio
         grid_scale = 1./self.oversample
-        self._log("info", "Scale axes: {}x{}, noise floor {}".format(h, h_minor, noise_floor))
+        self._log("info", "Scale axes: {}x{}, noise floor {}".format(re, re_minor, noise_floor))
         
         # Determine the offset of the centre of the profile (since we're going to add the profile to
         # an integer-offset position, we're only considering the sub-pixel offset here)
         offset_x, offset_y = np.floor(posX) - self.xsize//2, np.floor(posY) - self.ysize//2
         position = {'x_offset': posX - np.floor(posX), 'y_offset': posY - np.floor(posY), 
-                    'orientation': phi}
+                    'orientation': (phi+90.)}
         shape = {'geometry': 'sersic', 'shape_parameters': ['major', 'minor', 'sersic_index'],
-                 'major': h, 'minor': h_minor, 'sersic_index': n, 'norm_method': 'surf_scale',
+                 'major': re, 'minor': re_minor, 'sersic_index': n, 'norm_method': 'surf_scale',
                  'surf_area_units': 'arcsec^2'}
         source = {'position': position, 'shape': shape}
         src = Source(config=source)
@@ -563,7 +557,7 @@ class AstroImage(object):
         type.
         
         (posX,posY) are the co-ordinates of the centre of the profile (pixels).
-        flux is the count rate (in counts/s/(detector) pixel) at the scale radius of the sersic profile
+        flux is the count rate (in counts/s/(detector) pixel) at the half-light radius of the sersic profile
         n is the Sersic profile index.
         re is the radius enclosing half of the total light (detector pixels).
         phi is the angle of the major axis (degrees east of north).
@@ -617,7 +611,7 @@ class AstroImage(object):
                 offset_x, offset_y = 0, 0
             self._log("info", "Creating a {}x{} array for the Sersic model at ({},{})".format(model_size, model_size, posX, posY))
             x, y = np.meshgrid(np.arange(model_size), np.arange(model_size))
-            mod = Sersic2D(amplitude=pixel_flux, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
+            mod = Sersic2D(amplitude=pixel_flux, r_eff=pixel_radius, n=n, x_0=xc, y_0=yc, ellip=(1.-axialRatio), theta=-(np.radians(phi) + 0.5*np.pi))
             img = mod(x, y)
             max_outer_value = max(np.max(img[0,:]), np.max(img[-1,:]), np.max(img[:,0]), np.max(img[:,-1]))
             self._log('info', "Max outer value is {:e}, noise floor is {:e}".format(max_outer_value, noise_floor))

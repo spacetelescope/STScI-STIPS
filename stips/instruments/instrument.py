@@ -97,7 +97,7 @@ class Instrument(object):
         return ins
 
     @classmethod
-    def initFromCatalogue(cls,catalogue,**kwargs):
+    def initFromCatalogue(cls, catalogue, **kwargs):
         """
             Takes an input catalogue, and observes that catalogue with all detectors.
             
@@ -119,7 +119,7 @@ class Instrument(object):
         cat = ins.convertCatalogue(catalogue)
         for detector in ins.detectors:
             self._log("info","Adding image to detector %s" % (detector.name))
-            detector.addCatalogue(cat, dist=self.distortion)
+            detector.addCatalogue(cat, dist=self.distortion, **kwargs)
         self._log("info","Finished initialization")
         return ins
     
