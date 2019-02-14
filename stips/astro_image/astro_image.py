@@ -565,7 +565,7 @@ class AstroImage(object):
         self._addArrayWithOffset(img, offset_x, offset_y)
         return central_flux
 
-    def convolve(self, other, max=4095, do_convolution=True, parallel=False, state_setter=None, base_state=""):
+    def convolve(self, other, max=4095, do_convolution=True, parallel=False, cores=None, state_setter=None, base_state=""):
         """Convolves the AstroImage with another (provided) AstroImage, e.g. for PSF convolution."""
         self.addHistory("Convolving with file %s" % (other.name))
         self._log("info","Convolving AstroImage %s with %s" % (self.name,other.name))
@@ -584,7 +584,7 @@ class AstroImage(object):
                     if parallel:
                         self._log('info', 'Convolving in parallel')
                         del fp_result
-                        overlapaddparallel(dat, psf, sub_shape, y=f, verbose=True, logger=self.logger, base_state=base_state, state_setter=state_setter, path=self.out_path)
+                        overlapaddparallel(dat, psf, sub_shape, y=f, verbose=True, logger=self.logger, base_state=base_state, state_setter=state_setter, path=self.out_path, cores=cores)
                         fp_result = np.memmap(f, dtype='float32', mode='r+', shape=(self.shape[0]+psf.shape[0]-1, self.shape[1]+psf.shape[1]-1))
                     else:
                         overlapadd2(dat, psf, sub_shape, y=fp_result, verbose=True, logger=self.logger, base_state=base_state, state_setter=state_setter)

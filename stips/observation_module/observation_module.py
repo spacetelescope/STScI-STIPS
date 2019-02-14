@@ -72,6 +72,7 @@ class ObservationModule(object):
         self.cat_type = kwargs.get('cat_type', 'fits')
         self.convolve_size = kwargs.get('convolve_size', 4096)
         self.parallel = kwargs.get('parallel', False)
+        self.cores = kwargs.get('cores', None)
         
         if 'scene_general' in kwargs:
             self.ra = kwargs['scene_general'].get('ra', 0.0)
@@ -210,6 +211,8 @@ class ObservationModule(object):
         self._log("info","Running catalogue %s" % (catalogue))
         if 'parallel' not in kwargs:
             kwargs['parallel'] = self.parallel
+        if 'cores' not in kwargs:
+            kwargs['cores'] = self.cores
         cats = self.instrument.addCatalogue(catalogue, self.id, *args, **kwargs)
         self._log("info",'Finished catalogue %s' % (catalogue))
         return cats
@@ -234,6 +237,8 @@ class ObservationModule(object):
         self._log("info","Running {} table".format(table_type))
         if 'parallel' not in kwargs:
             kwargs['parallel'] = self.parallel
+        if 'cores' not in kwargs:
+            kwargs['cores'] = self.cores
         tables = self.instrument.addTable(table, table_type, *args, **kwargs)
         self._log("info", "Finished {} table".format(table_type))
         return tables
@@ -277,6 +282,8 @@ class ObservationModule(object):
         self._log("info","Adding Error")
         if 'parallel' not in kwargs:
             kwargs['parallel'] = self.parallel
+        if 'cores' not in kwargs:
+            kwargs['cores'] = self.cores
         self.instrument.addError(poisson=self.poisson, readnoise=self.readnoise, flat=self.flat, dark=self.dark, cosmic=self.cosmic, *args, **kwargs)
         self._log("info","Finished Adding Error")
         return psf_name

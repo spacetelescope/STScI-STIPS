@@ -342,7 +342,7 @@ def computation(arr, Hf, pos, Nfft, y, ys, adjust, lock, path):
     return "[{}, {}]".format(start_y, start_x)
 
 
-def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state="", path=None):
+def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state="", path=None, cores=None):
     """
     Fast two-dimensional linear convolution via the overlap-add method.
     The overlap-add method is well-suited to convolving a very large array,
@@ -423,7 +423,7 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
 
     Hf = fft2(Hmat, Nfft)
     
-    pool = multiprocessing.Pool()
+    pool = multiprocessing.Pool(processes=cores)
     m = multiprocessing.Manager()
     lock = m.Lock()
     print_lock = m.Lock()

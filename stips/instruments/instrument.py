@@ -752,6 +752,7 @@ class Instrument(object):
     def addError(self, convolve=True, poisson=True, readnoise=True, flat=True, dark=True, cosmic=True, parallel=False, snapshots={}, *args, **kwargs):
         """Base function for adding in residual error"""
         self._log("info","Adding residual error")
+        cores = kwargs.get('cores', None)
         base_state = self.getState()
         if flat:
             flat = AstroImage.initDataFromFits(self.flatfile,ext='COMPRESSED_IMAGE',logger=self.logger)
@@ -778,7 +779,7 @@ class Instrument(object):
             self._log("info","Convolving with PSF")
             convolve_state = base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name)
             self.updateState(convolve_state)
-            detector.convolve(self.psf, max=self.convolve_size-1, do_convolution=convolve, parallel=parallel, state_setter=self.updateState, base_state=convolve_state)
+            detector.convolve(self.psf, max=self.convolve_size-1, do_convolution=convolve, parallel=parallel, cores=cores, state_setter=self.updateState, base_state=convolve_state)
             if 'convolve' in snapshots or 'all' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_convolve.fits".format(self.obs_count, detector.name))
             if self.oversample != 1:
