@@ -12,7 +12,6 @@ from __future__ import absolute_import,division
 import importlib, inspect, os, shutil, socket, struct, sys, urllib, uuid
 import numpy as np
 import astropy.io.fits as pyfits
-import multiprocessing.dummy as multiprocessing
 from numpy.fft import fft2, ifft2
 from astropy.io import ascii
 from astropy.table import Table
@@ -394,6 +393,8 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
     ----------
     Wikipedia is only semi-unhelpful on this topic: see "Overlap-add method".
     """
+    
+    import multiprocessing.dummy as multiprocessing
     
     M = np.array(Hmat.shape)
     Na = np.array(Amat.shape)
