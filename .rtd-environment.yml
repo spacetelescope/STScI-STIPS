@@ -8,7 +8,9 @@ dependencies:
     - astropy
     - Cython
     - matplotlib
-    - numpy
+    - numpy >= 1.13
     - sphinx-astropy
-#   - pip:
-#       - dependency_from_pip
+    - astropy-helpers
+
+   - pip:
+       - stsci_rtd_theme
