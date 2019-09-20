@@ -7,7 +7,7 @@ STIPS Examples
 * Creating a scene with a single stellar population and a single galaxy population, then observing
   it with NIRCam Short F115W:
 
-.. code-block::
+.. code-block:: language
     from stips.scene_module import SceneModule
     from stips.observation_module import ObservationModule
 
@@ -51,13 +51,13 @@ STIPS Examples
     fits_file, mosaic_file, params = obm.finalize(mosaic=False)
 
 
-  In this case, the output FITS file will be in the variable `fits_file`, and the output catalogues
-  (showing the actual count rate and position of the sources observed) will be in the variables
-  `output_stellar_catalogues` and `output_galaxy_catalogues`.
+In this case, the output FITS file will be in the variable `fits_file`, and the output catalogues
+(showing the actual count rate and position of the sources observed) will be in the variables
+`output_stellar_catalogues` and `output_galaxy_catalogues`.
 * Creating a scene from an existing source catalogue `input_sources.txt`, and observing it with the
   WFIRST WFI "J129" filter, offset by 0.5 degrees in RA, and rotated by 27 degrees:
 
-.. code-block::
+.. code-block:: language
     from stips.observation_module import ObservationModule
 
     obs = {'instrument': 'WFI',
@@ -77,5 +77,5 @@ STIPS Examples
     psf_file = obm.addError()
     fits_file, mosaic_file, params = obm.finalize(mosaic=False)
 
-  In this case, the output catalogue(s) will show the actual applied count rates. Whether there is
-  only one output catalogue or two depends on the input catalogue format.
+In this case, the output catalogue(s) will show the actual applied count rates. Whether there is
+only one output catalogue or two depends on the input catalogue format.
