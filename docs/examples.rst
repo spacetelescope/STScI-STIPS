@@ -1,8 +1,9 @@
 STIPS Examples
 ===============
-.. note:: If you do not have environment variables pointing to the location of your Pandeia data,
-          STIPS data, and Webbpsf data, you must set these environment variables using `os.environ` or other
-          equivalent method prior to running any of these example scripts.
+.. note::
+    If you do not have environment variables pointing to the location of your Pandeia data,
+    STIPS data, and Webbpsf data, you must set these environment variables using `os.environ` or other
+    equivalent method prior to running any of these example scripts.
 
 * Creating a scene with a single stellar population and a single galaxy population, then observing
   it with NIRCam Short F115W:
@@ -54,6 +55,7 @@ STIPS Examples
 In this case, the output FITS file will be in the variable `fits_file`, and the output catalogues
 (showing the actual count rate and position of the sources observed) will be in the variables
 `output_stellar_catalogues` and `output_galaxy_catalogues`.
+
 * Creating a scene from an existing source catalogue `input_sources.txt`, and observing it with the
   WFIRST WFI "J129" filter, offset by 0.5 degrees in RA, and rotated by 27 degrees:
 
