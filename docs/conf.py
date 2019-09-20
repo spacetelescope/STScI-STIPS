@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# Licensed under a 3-clause BSD style license - see LICENSE.md
 #
 # Astropy documentation build configuration file.
 #
@@ -25,28 +25,56 @@
 # Thus, any C-extensions that are needed to build the documentation will *not*
 # be accessible, and the documentation will not build correctly.
 
+import datetime
 import os
 import sys
-import datetime
-from importlib import import_module
+import stsci_rtd_theme
 
 try:
-    from sphinx_astropy.conf.v1 import *  # noqa
+    import astropy_helpers
 except ImportError:
-    print('ERROR: the documentation requires the sphinx-astropy package to be installed')
-    sys.exit(1)
+    # Building from inside the docs/ directory?
+    if os.path.basename(os.getcwd()) == 'docs':
+        a_h_path = os.path.abspath(os.path.join('..', 'astropy_helpers'))
+        if os.path.isdir(a_h_path):
+            sys.path.insert(1, a_h_path)
+
+def setup(app):
+    app.add_stylesheet("stsci.css")
+
+# Load all of the global Astropy configuration
+from astropy_helpers.sphinx.conf import *
 
 # Get configuration information from setup.cfg
-from configparser import ConfigParser
+try:
+    from ConfigParser import ConfigParser
+except ImportError:
+    from configparser import ConfigParser
 conf = ConfigParser()
 
 conf.read([os.path.join(os.path.dirname(__file__), '..', 'setup.cfg')])
 setup_cfg = dict(conf.items('metadata'))
 
-# -- General configuration ----------------------------------------------------
+# If extensions (or modules to document with autodoc) are in another directory,
+# add these directories to sys.path here. If the directory is relative to the
+# documentation root, use os.path.abspath to make it absolute, like shown here.
+sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath('../webbpsf/'))
+sys.path.insert(0, os.path.abspath('exts/'))
 
-# By default, highlight as Python 3.
-highlight_language = 'python3'
+extensions = [
+    'numfig',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.todo',
+    'sphinx.ext.inheritance_diagram',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.autosummary',
+    'sphinx_automodapi.automodapi',
+    ]
+numpydoc_show_class_members = False
+
+# -- General configuration ----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.2'
@@ -64,10 +92,14 @@ exclude_patterns.append('_templates')
 rst_epilog += """
 """
 
+intersphinx_mapping.update({
+    'poppy': ('http://poppy-optics.readthedocs.io/', None),
+})
+
 # -- Project information ------------------------------------------------------
 
 # This does not *have* to match the package name, but typically does
-project = setup_cfg['name']
+project = setup_cfg['package_name']
 author = setup_cfg['author']
 copyright = '{0}, {1}'.format(
     datetime.datetime.now().year, setup_cfg['author'])
@@ -76,14 +108,16 @@ copyright = '{0}, {1}'.format(
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 
-import_module(setup_cfg['name'])
-package = sys.modules[setup_cfg['name']]
+__import__(setup_cfg['package_name'])
+package = sys.modules[setup_cfg['package_name']]
 
 # The short X.Y version.
 version = package.__version__.split('-', 1)[0]
 # The full version, including alpha/beta/rc tags.
 release = package.__version__
 
+# The name of the Pygments (syntax highlighting) style to use.
+pygments_style = 'sphinx'
 
 # -- Options for HTML output --------------------------------------------------
 
@@ -94,30 +128,17 @@ release = package.__version__
 # variables set in the global configuration. The variables set in the
 # global configuration are listed below, commented out.
 
-
 # Add any paths that contain custom themes here, relative to this directory.
 # To use a different custom theme, add the directory containing the theme.
-#html_theme_path = []
+html_theme_path = [stsci_rtd_theme.get_html_theme_path()]
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes. To override the custom theme, set this to the
 # name of a builtin theme or the name of a custom theme in html_theme_path.
-#html_theme = None
-
-
-html_theme_options = {
-    'logotext1': 'stips',  # white,  semi-bold
-    'logotext2': '',  # orange, light
-    'logotext3': ':docs'   # white,  light
-    }
-
+html_theme = 'stsci_rtd_theme'
 
 # Custom sidebar templates, maps document names to template names.
 #html_sidebars = {}
-
-# The name of an image file (relative to this directory) to place at the top
-# of the sidebar.
-#html_logo = ''
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -155,7 +176,7 @@ man_pages = [('index', project.lower(), project + u' Documentation',
 # -- Options for the edit_on_github extension ---------------------------------
 
 if eval(setup_cfg.get('edit_on_github')):
-    extensions += ['sphinx_astropy.ext.edit_on_github']
+    extensions += ['astropy_helpers.sphinx.ext.edit_on_github']
 
     versionmod = __import__(setup_cfg['package_name'] + '.version')
     edit_on_github_project = setup_cfg['github_project']
@@ -169,29 +190,3 @@ if eval(setup_cfg.get('edit_on_github')):
 
 # -- Resolving issue number to links in changelog -----------------------------
 github_issues_url = 'https://github.com/{0}/issues/'.format(setup_cfg['github_project'])
-
-# -- Turn on nitpicky mode for sphinx (to warn about references not found) ----
-#
-# nitpicky = True
-# nitpick_ignore = []
-#
-# Some warnings are impossible to suppress, and you can list specific references
-# that should be ignored in a nitpick-exceptions file which should be inside
-# the docs/ directory. The format of the file should be:
-#
-# <type> <class>
-#
-# for example:
-#
-# py:class astropy.io.votable.tree.Element
-# py:class astropy.io.votable.tree.SimpleElement
-# py:class astropy.io.votable.tree.SimpleElementWithContent
-#
-# Uncomment the following lines to enable the exceptions:
-#
-# for line in open('nitpick-exceptions'):
-#     if line.strip() == "" or line.startswith("#"):
-#         continue
-#     dtype, target = line.split(None, 1)
-#     target = target.strip()
-#     nitpick_ignore.append((dtype, six.u(target)))

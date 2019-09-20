@@ -34,16 +34,34 @@ help:
 	@echo "  man        to make manual pages"
 	@echo "  changes    to make an overview of all changed/added/deprecated items"
 	@echo "  linkcheck  to check all external links for integrity"
+	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 
 clean:
 	-rm -rf $(BUILDDIR)
 	-rm -rf api
-	-rm -rf generated
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
+	@echo " try this to examine it: "
+	@echo "        open  $(BUILDDIR)/html/index.html"
+
+
+htmlstsci:
+	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	rsync -av $(BUILDDIR)/html/ science1.stsci.edu:web/software/webbpsf/
+	@echo "Software built and copied to STScI"
+	@echo "try :"
+	@echo "   open http://www.stsci.edu/~mperrin/software/webbpsf/"
+
+htmlprerelease:
+	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	rsync -av $(BUILDDIR)/html/ science1.stsci.edu:web/software/webbpsf_prerelease/
+	@echo "Software built and copied to STScI prerelease"
+	@echo "try :"
+	@echo "   open http://www.stsci.edu/~mperrin/software/webbpsf_prerelease/"
+
 
 dirhtml:
 	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
@@ -129,5 +147,6 @@ linkcheck:
 	      "or in $(BUILDDIR)/linkcheck/output.txt."
 
 doctest:
-	@echo "Run 'python setup.py test' in the root directory to run doctests " \
-	@echo "in the documentation."
+	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
+	@echo "Testing of doctests in the sources finished, look at the " \
+	      "results in $(BUILDDIR)/doctest/output.txt."
