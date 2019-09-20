@@ -51,7 +51,15 @@ env:
         
         # List other runtime dependencies for the package that are available as
         # pip packages here.
-        - PIP_DEPENDENCIES=''
+        - PIP_DEPENDENCIES='six==1.11.0, uwsgi==2.0.17, Flask==0.12.2, amqp==2.2.2,
+          billiard==3.5.0.3, celery==4.0.0, itsdangerous==0.24, validate_email==1.3, pytest==3.3.1, wtforms==2.1,
+          Flask-WTF==0.14.2, wtforms-recaptcha==0.3.2, Flask-ReCaptcha==0.3, Sijax==0.3.2, WTForms-Components==0.10.3,
+          Flask-Sijax==0.4.1, automodinit==0.16, GitPython==2.1.8, redis==2.10.6, numpy==1.14.0, esutil==0.6.2.5,
+          Pillow==4.3.0, astropy==2.0.3, photutils==0.4, matplotlib==2.0.0, scipy==1.0.0, pysynphot==0.9.6,
+          jwxml==0.3.0, poppy==0.6.1, stscipython==2.14, webbpsf==0.5.0, montage-wrapper, pytest==2.6.4, wtforms==2.0.2,
+          Flask-WTF==0.11, wtforms-recaptcha==0.3.2, Flask-ReCaptcha==0.3, Pillow==2.6.1, Sijax==0.3.2,
+          WTForms-Components==0.10.0, Flask-Sijax==0.4.1, automodinit==0.14, GitPython==2.1.5, jwst-backgrounds==1.1.1,
+          pandeia.engine==1.2.2, webbpsf==0.8.1'
 
         # Conda packages for affiliated packages are hosted in channel
         # "astropy" while builds for astropy LTS with recent numpy versions
@@ -79,6 +87,9 @@ matrix:
         - stage: Initial tests
           env: PYTHON_VERSION=3.7 SETUP_CMD='egg_info'
 
+        # Test python 2.7
+        - python: 2.7
+
         # Try MacOS X, usually enough only to run from cron as hardly there are
         # issues that are not picked up by a linux worker
         - os: osx
@@ -86,9 +97,9 @@ matrix:
           env: SETUP_CMD='test' EVENT_TYPE='cron'
 
         # Do a coverage test.
-        - os: linux
-          stage: Initial tests
-          env: SETUP_CMD='test --coverage'
+        #- os: linux
+        #  stage: Initial tests
+        #  env: SETUP_CMD='test --coverage'
 
         # Check for sphinx doc build warnings - we do this first because it
         # may run for a long time
@@ -127,9 +138,9 @@ matrix:
           env: NUMPY_VERSION=1.15
 
         # Do a PEP8 test with flake8
-        - os: linux
-          stage: Initial tests
-          env: MAIN_CMD='flake8 stips --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
+        #- os: linux
+        #  stage: Initial tests
+        #  env: MAIN_CMD='flake8 stips --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
 
     allow_failures:
         # Do a PEP8 test with flake8
