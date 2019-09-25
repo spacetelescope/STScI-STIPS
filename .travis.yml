@@ -56,10 +56,8 @@ env:
           Flask-WTF==0.14.2 wtforms-recaptcha==0.3.2 Flask-ReCaptcha==0.3 Sijax==0.3.2 WTForms-Components==0.10.3
           Flask-Sijax==0.4.1 automodinit==0.16 GitPython==2.1.8 redis==2.10.6 numpy==1.14.0 esutil==0.6.2.5
           Pillow==4.3.0 astropy==2.0.3 photutils==0.4 matplotlib==2.0.0 scipy==1.0.0 pysynphot==0.9.6
-          jwxml==0.3.0 poppy==0.6.1 stscipython==2.14 webbpsf==0.5.0 montage-wrapper pytest==2.6.4 wtforms==2.0.2
-          Flask-WTF==0.11 wtforms-recaptcha==0.3.2 Flask-ReCaptcha==0.3 Pillow==2.6.1 Sijax==0.3.2
-          WTForms-Components==0.10.0 Flask-Sijax==0.4.1 automodinit==0.14 GitPython==2.1.5 jwst-backgrounds==1.1.1
-          pandeia.engine==1.2.2 webbpsf==0.8.1 '
+          jwxml==0.3.0 poppy==0.6.1 stscipython==2.14 webbpsf==0.8.0 montage-wrapper pytest==2.6.4
+          Sijax==0.3.2 jwst-backgrounds==1.1.1 pandeia.engine==1.2.2'
 
         # Conda packages for affiliated packages are hosted in channel
         # "astropy" while builds for astropy LTS with recent numpy versions
