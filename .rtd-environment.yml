@@ -1,0 +1,16 @@
+name: stips
+
+channels:
+    - astropy
+
+dependencies:
+    - python>=3.7
+    - astropy
+    - Cython
+    - matplotlib
+    - numpy >= 1.13
+    - sphinx-astropy
+    - astropy-helpers
+
+   - pip:
+       - stsci_rtd_theme
