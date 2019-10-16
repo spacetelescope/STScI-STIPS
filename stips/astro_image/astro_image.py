@@ -431,8 +431,8 @@ class AstroImage(object):
                     counter += 1
                 self._log('info', 'Finishing Sersic Profiles at {}'.format(time.ctime()))
             ot = Table()
-            ot['x'] = Column(data=xfs, unit='pixels')
-            ot['y'] = Column(data=yfs, unit='pixels')
+            ot['x'] = Column(data=xfs, unit='pixel')
+            ot['y'] = Column(data=yfs, unit='pixel')
             ot['type'] = Column(data=types)
             ot['vegamag'] = Column(data=vegamags)
             ot['stmag'] = Column(data=stmags)
@@ -1127,7 +1127,7 @@ class AstroImage(object):
             w.sip = sip
         self._scale = scale
         message = "{}: (RA, DEC, PA) := ({}, {}, {}), detected as ({}, {}, {})"
-        self._log("info", message.format(self.name, ra, dec, pa, w.wcs.crval[ranum], w.wcs.crval[decnum], self._getPA(w, scale)))
+        self._log("info", message.format(self.name, ra, dec, pa, w.wcs.crval[ranum], w.wcs.crval[decnum], self._getPA(w, scale, decnum)))
         return w
     
     def _normalizeWCS(self,w):
@@ -1137,6 +1137,9 @@ class AstroImage(object):
         elif w.wcs.lattyp == 'RA' and w.wcs.lngtyp == 'DEC':
             ranum = w.wcs.lat
             decnum = w.wcs.lng
+        elif w.wcs.lngtyp.strip() == '' and w.wcs.lattyp.strip() == '':
+            ranum = 0
+            decnum = 1
         else:
             raise ValueError("Lattype = %s and Lngtype = %s: can't get RA, DEC" % (w.wcs.lngtyp,w.wcs.lattyp))
         ra = w.wcs.crval[ranum]
