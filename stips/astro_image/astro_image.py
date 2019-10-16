@@ -1110,12 +1110,17 @@ class AstroImage(object):
         w.wcs.crval[ranum] = ra
         w.wcs.crval[decnum] = dec
         w.wcs.cdelt = [abs(scale[0])/3600., abs(scale[1])/3600.]
-        cd_11 = np.cos(np.radians(pa)) * (scale[0]/3600.)
-        cd_12 = -np.sin(np.radians(pa)) * (scale[1]/3600.)
-        cd_21 = np.sin(np.radians(pa)) * (scale[0]/3600.)
-        cd_22 = np.cos(np.radians(pa)) * (scale[1]/3600.)
-        w.wcs.cd = [[cd_11, cd_12], [cd_21, cd_22]]
-        w.wcs.cdelt = [abs(scale[0])/3600., abs(scale[1])/3600.]
+        # For whatever reason, astropy hates CD matrices, and if you give
+        #   astropy.wcs a CD matrix, it turns it into a PC matrix *without*
+        #   rescaling it, and sets the CDELT keywords to 1.0, which is not
+        #   actually a valid FITS WCS format. As such, in order to make
+        #   a WCS that astropy won't turn invalid, we need to make a PC matrix
+        #   rather than a CD matrix (as was previously done).
+        pc_11 = np.cos(np.radians(pa))
+        pc_12 = -np.sin(np.radians(pa))
+        pc_21 = np.sin(np.radians(pa))
+        pc_22 = np.cos(np.radians(pa))
+        w.wcs.pc = [[pc_11, pc_12], [pc_21, pc_22]]
         if sip is not None:
             w.wcs.ctype[ranum] = "RA---TAN-SIP"
             w.wcs.ctype[decnum] = "DEC--TAN-SIP"
