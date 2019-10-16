@@ -39,7 +39,6 @@ dependencies:
 
   # Major modules
   - webbpsf==0.8
-  - webbpsf-data==0.8
 
   # Minor modules
   - pyyaml
