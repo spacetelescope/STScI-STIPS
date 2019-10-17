@@ -4,18 +4,25 @@ MAINTAINER Space Telescope Science Institute <help@stsci.edu>
 # RUN "sh" "-c" "echo nameserver 8.8.8.8 >> /etc/resolv.conf"
 # RUN "sh" "-c" "echo forcing APT update"
 
+
+#########
+# Setup #
+#########
+
 ENV HOME /root
 WORKDIR $HOME
 
 # Place to store data and source
 RUN mkdir -p /opt
 
-COPY ./environment.yml /opt/.
+# We will copy STScI-STIPS later in the script
+RUN mkdir -p /opt/STScI-STIPS
 
 
 ##########################
 # Basic apt Requirements #
 ##########################
+
 WORKDIR $HOME
 
 RUN apt-get update
@@ -37,22 +44,6 @@ RUN apt-get install -y gfortran
 # Update pip
 RUN pip install -U pip
 RUN pip install -U setuptools
-
-
-####################################
-# Install Requirements from Source #
-####################################
-WORKDIR $HOME
-
-# Montage
-WORKDIR /opt
-RUN git clone https://github.com/Caltech-IPAC/Montage.git
-# ADD initdistdata.c ./Montage/lib/src/two_plane_v1.1/initdistdata.c
-WORKDIR /opt/Montage
-RUN make
-RUN pip install montage-wrapper
-ENV PATH /opt/Montage/bin:$PATH
-WORKDIR $HOME
 
 
 ##################
@@ -87,12 +78,48 @@ ENV PATH $HOME/bin:$PATH
 ENV LD_LIBRARY_PATH $HOME/lib:$LD_LIBRARY_PATH
 
 
-######################################
-# Install Conda and Pip Requirements #
-######################################
+########################################
+# Setup Conda and Install Requirements #
+########################################
 
 WORKDIR $HOME
-RUN conda env update --file /opt/environment.yml
+
+# Copy STScI-STIPS repo
+COPY . /opt/STScI-STIPS
+
+#RUN conda env update --file /opt/STScI-STIPS/environment.yml
+RUN conda env create -f /opt/STScI-STIPS/environment.yml
+ENV PATH /opt/conda/envs/stips/bin:$PATH
+RUN /bin/bash -c "source activate stips"
+ENV CONDA_DEFAULT_ENV stips
 
 # Prepare environment variables
 ENV WEBBPSF_SKIP_CHECK 1
+
+
+##############################
+# Install Other Requirements #
+##############################
+
+WORKDIR $HOME
+
+# Montage
+WORKDIR /opt
+RUN git clone https://github.com/Caltech-IPAC/Montage.git
+# ADD initdistdata.c ./Montage/lib/src/two_plane_v1.1/initdistdata.c
+WORKDIR /opt/Montage
+RUN make
+RUN pip install montage-wrapper
+ENV PATH /opt/Montage/bin:$PATH
+WORKDIR $HOME
+
+
+#################
+# Install STIPS #
+#################
+
+WORKDIR /opt/STScI-STIPS
+RUN python setup.py install
+
+
+WORKDIR $HOME
