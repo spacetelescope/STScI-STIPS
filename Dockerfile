@@ -15,9 +15,9 @@ WORKDIR $HOME
 # Place to store data and source
 RUN mkdir -p /opt
 
-# We will copy STScI-STIPS later in the script
-RUN mkdir -p /opt/STScI-STIPS
-
+# Clone STScI-STIPS
+RUN git clone https://github.com/spacetelescope/STScI-STIPS.git
+ENV STIPSDIR $HOME/STScI-STIPS
 
 ##########################
 # Basic apt Requirements #
@@ -84,13 +84,10 @@ ENV LD_LIBRARY_PATH $HOME/lib:$LD_LIBRARY_PATH
 
 WORKDIR $HOME
 
-# Copy STScI-STIPS repo
-COPY . /opt/STScI-STIPS
-
-#RUN conda env update --file /opt/STScI-STIPS/environment.yml
-RUN conda env create -f /opt/STScI-STIPS/environment.yml
+#RUN conda env update --file $STIPSDIR/environment.yml
+RUN conda env create -f $STIPSDIR/environment.yml
 ENV PATH /opt/conda/envs/stips/bin:$PATH
-RUN /bin/bash -c "source activate stips"
+RUN echo "conda activate stips" >> /root/.bashrc
 ENV CONDA_DEFAULT_ENV stips
 
 # Prepare environment variables
@@ -118,8 +115,8 @@ WORKDIR $HOME
 # Install STIPS #
 #################
 
-WORKDIR /opt/STScI-STIPS
-RUN python setup.py install
-
+WORKDIR $STIPSDIR
+RUN python setup.py develop
+ENV stips_data $STIPSDIR/stips/data
 
 WORKDIR $HOME
