@@ -46,7 +46,14 @@ class WFI(WfirstInstrument):
             if os.path.exists(os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("WFI", self.filter, self.oversample))):
                 with pyfits.open(os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("WFI", self.filter, self.oversample))) as psf:
                     if psf[0].header['VERSION'] >= webbpsf.__version__ and (self.psf_commands is None or self.psf_commands == ''):
-                        self.psf = AstroImage(data=psf[0].data, detname="WFI {} PSF".format(self.filter), logger=self.logger)
+                        psf_scale = [psf[0].header["PIXELSCL"], psf[0].header["PIXELSCL"]]
+                        self.psf = AstroImage(data=psf[0].data, 
+                                              scale=psf_scale,
+                                              ra=self.ra,
+                                              dec=self.dec,
+                                              pa=self.pa,
+                                              detname="WFI {} PSF".format(self.filter), 
+                                              logger=self.logger)
                         have_psf = True
         if not have_psf:
             base_state = self.getState()
