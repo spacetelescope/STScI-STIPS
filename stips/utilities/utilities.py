@@ -184,6 +184,8 @@ def GetStipsData(to_retrieve):
         sys.stderr.write("WARNING: stips_data environment variable not found. Falling back on local STIPS data.\n")
         sys.stderr.write("WARNING: STIPS local data may be older than data available via the stips_data environment variable.\n")
     stips_data_base = os.environ.get("stips_data", local_data_dir)
+    if stips_data_base == "internal":
+        stips_data_base = local_data_dir
     if not os.path.exists(stips_data_base):
         sys.stderr.write("ERROR: stips_data directory at {} not found. STIPS requires the stips_data directory to function correctly.\n".format(stips_data_base))
         sys.stderr.write("ERROR: Please make sure that the stips_data environment variable exists and points to the location of stips_data.\n")

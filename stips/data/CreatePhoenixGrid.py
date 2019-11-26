@@ -14,7 +14,7 @@ with open(pandeia_version_file, 'r') as inf:
     pandeia_version_info = inf.readline().strip()
 print("Pandeia Version: {}".format(pandeia_version_info))
 
-sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "..", "..", "stips")))
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "..", "..")))
 
 import numpy as np
 import pysynphot as ps
@@ -57,7 +57,7 @@ filters = {
                             },
             'miri':         {'imaging': ["f560w", "f770w", "f1000w", "f1130w", "f1280w", "f1500w", "f1800w", "f2100w", "f2550w"]},
             'wfc3ir':       {'imaging': ["f110w", "f160w"]},
-            'wfi':          {'imaging': ['z087', 'y106', 'w149', 'j129', 'h158', 'f184']}
+            'wfi':          {'imaging': ['f062', 'z087', 'y106', 'w149', 'j129', 'h158', 'f184']}
           }
 apertures = {
                 'nircamshort':  {'sw_imaging':  "sw"},
@@ -68,7 +68,7 @@ apertures = {
             }
 
 def get_grid_points():
-    grid_file = os.path.abspath(os.path.join(os.getcwd(), "..", "cdbs", "grid", "phoenix", "catalog.fits"))
+    grid_file = os.path.abspath(os.path.join(os.environ['PYSYN_CDBS'], "grid", "phoenix", "catalog.fits"))
     teff, Z, logg = np.array(()), np.array(()), np.array(())
     with pyfits.open(grid_file) as inf:
         indices = inf[1].data.field('INDEX')
@@ -88,13 +88,13 @@ result_arrays = {}
 instruments = InstrumentList()
 print("{}: Making Bandpasses...".format(time.ctime()))
 for instrument in instruments:
-    my_instrument = instruments[instrument]()
+    my_instrument = instruments[instrument](log_level="WARNING")
     bandpasses[instrument.lower()] = {}
     result_arrays[instrument.lower()] = {}
     for mode in modes[instrument.lower()]:
         for filter in filters[instrument.lower()][mode]:
             print("\t{}: {},{},{},{}".format(time.ctime(), instrument, mode, filter, apertures[instrument.lower()][mode]))
-            my_instrument.reset(0., 0., 0., filter.upper(), 0.)
+            my_instrument.reset(0., 0., 0., filter.upper(), 0., psf=False, detectors=False)
             bandpasses[instrument.lower()][filter] = my_instrument.bandpass
             result_arrays[instrument.lower()][filter] = np.empty((len(coords[0]), len(coords[1]), len(coords[2]), len(coords[3])))
 print("Done\n")
@@ -107,10 +107,13 @@ for i, Z in enumerate(coords[0]):
         print("\t{}: Starting log(g) = {}".format(time.ctime(), logg))
         for k, teff in enumerate(coords[2]):
             print("\t\t{}: Starting Teff = {}".format(time.ctime(), teff))
-            spec = ps.Icat('phoenix', teff, Z, logg)
-            counts = False
-            if sum(spec.flux) > 0:
-                counts = True
+            try:
+                spec = ps.Icat('phoenix', teff, Z, logg)
+                counts = False
+                if sum(spec.flux) > 0:
+                    counts = True
+            except ps.exceptions.ParameterOutOfBounds:
+                counts = False
             for l, mag in enumerate(coords[3]):
                 print("\t\t\t{} of {}: {}: Starting Z = {}, log(g) = {}, Teff = {}, Mabs = {:>4}".format(n+1, total, time.ctime(), Z, logg, teff, mag), end='')
                 if counts:
@@ -128,6 +131,7 @@ for i, Z in enumerate(coords[0]):
                                 print("x", end='')
                 print("")
                 n += 1
+                
 
 print("{}: Saving files...".format(time.ctime()), end='')
 with open(os.path.join(os.getcwd(), "grid", "VERSION.txt"), "wt") as outf:

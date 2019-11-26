@@ -135,12 +135,12 @@ class WFI(WfirstInstrument):
     DIST_BP =  [[   0.,             0.,             0.],
                 [   0.,             0.,             0.],
                 [   0.,             0.,             0.]]
-    FILTERS = ('R062', 'Z087', 'Y106', 'J129', 'H158', 'F184', 'W146', 'W149') #W149 needs to go away at some point.
+    FILTERS = ('F062', 'Z087', 'Y106', 'J129', 'H158', 'F184', 'W146', 'W149') #W149 needs to go away at some point.
     DEFAULT_FILTER = 'F184' #Assume for now
     FLATFILE = 'err_flat_wfi.fits' #Use for the moment
     DARKFILE = 'err_rdrk_wfi.fits' # IREF, IHB (use for the moment)
-    BACKGROUND = {  'none': {'R062': 0., 'Z087': 0.,'Y106': 0.,'J129': 0.,'H158': 0.,'F184': 0., 'W146': 0., 'W149': 0.},
-                    'avg':  {'R062': 1.401E+00, 'Z087': 1.401E+00, 'Y106': 1.401E+00, 'J129': 7.000E-01,
+    BACKGROUND = {  'none': {'F062': 0., 'Z087': 0.,'Y106': 0.,'J129': 0.,'H158': 0.,'F184': 0., 'W146': 0., 'W149': 0.},
+                    'avg':  {'F062': 1.401E+00, 'Z087': 1.401E+00, 'Y106': 1.401E+00, 'J129': 7.000E-01,
                              'H158': 7.521E-01, 'F184': 8.500E-01, 'W146': 7.000E-01, 'W149': 7.000E-01}
                  }
     BACKGROUNDS_V = ['none', 'avg', 'med', 'max', 'min']
@@ -150,10 +150,10 @@ class WFI(WfirstInstrument):
               'min': 'Minimum zodiacal background', 'custom': 'Custom thermal background rate'}
     #PHOTFNU has units of Jy
     #For now, just assuming similar PHOTFNU to WFC3IR.
-    PHOTFNU = {     'R062': 1.0e-8, 'Z087':1.0e-8, 'Y106':1.0e-8, 'J129':1.0e-8, 'H158':1.0e-8, 'F184':1.0e-8, 'W146':1.0e-8, 'W149':1.0e-8}
+    PHOTFNU = {     'F062': 1.0e-8, 'Z087':1.0e-8, 'Y106':1.0e-8, 'J129':1.0e-8, 'H158':1.0e-8, 'F184':1.0e-8, 'W146':1.0e-8, 'W149':1.0e-8}
     #PHOTPLAM has units of um
     #For now, just put them in the middle
-    PHOTPLAM = {'R062': 0.6700, 'Z087':0.8735, 'Y106':1.0595, 'J129':1.2925, 'H158':1.577, 'F184':1.5815, 'W146':1.4635, 'W149':1.4635}
+    PHOTPLAM = {'F062': 0.6700, 'Z087':0.8735, 'Y106':1.0595, 'J129':1.2925, 'H158':1.577, 'F184':1.5815, 'W146':1.4635, 'W149':1.4635}
     #For now, just put in HST-style dithers.
     DITHERS = ("SUBPIXEL ONLY","BOX-UVIS","BLOB") #Assume for now
     DITHER_POINTS = {
