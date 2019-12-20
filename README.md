@@ -123,7 +123,7 @@ equivalent method prior to running any of these example scripts.
   		from stips.observation_module import ObservationModule
   	
   		obs = {'instrument': 'WFI', 
-  		       'filters': ['J129'], 
+  		       'filters': ['F129'],
   		       'detectors': 1,
   			   'distortion': False,
   			   'oversample': 5,
