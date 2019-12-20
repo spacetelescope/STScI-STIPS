@@ -38,7 +38,7 @@ dependencies:
   - esutil
 
   # Major modules
-  - webbpsf==0.8
+  - webbpsf==0.9.0
 
   # Minor modules
   - pyyaml
