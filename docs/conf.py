@@ -50,6 +50,7 @@ try:
     from ConfigParser import ConfigParser
 except ImportError:
     from configparser import ConfigParser
+
 conf = ConfigParser()
 
 conf.read([os.path.join(os.path.dirname(__file__), '..', 'setup.cfg')])
@@ -59,8 +60,6 @@ setup_cfg = dict(conf.items('metadata'))
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('../'))
-sys.path.insert(0, os.path.abspath('../webbpsf/'))
-sys.path.insert(0, os.path.abspath('exts/'))
 
 extensions = [
     'numfig',
@@ -72,6 +71,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx_automodapi.automodapi',
     ]
+
 numpydoc_show_class_members = False
 
 # -- General configuration ----------------------------------------------------
@@ -99,17 +99,16 @@ intersphinx_mapping.update({
 # -- Project information ------------------------------------------------------
 
 # This does not *have* to match the package name, but typically does
-project = setup_cfg['package_name']
+project = setup_cfg['name']
 author = setup_cfg['author']
-copyright = '{0}, {1}'.format(
-    datetime.datetime.now().year, setup_cfg['author'])
+copyright = '{0}, {1}'.format(datetime.datetime.now().year, setup_cfg['author'])
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 
-__import__(setup_cfg['package_name'])
-package = sys.modules[setup_cfg['package_name']]
+__import__(setup_cfg['name'])
+package = sys.modules[setup_cfg['name']]
 
 # The short X.Y version.
 version = package.__version__.split('-', 1)[0]
