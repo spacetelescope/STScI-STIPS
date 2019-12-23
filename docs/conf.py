@@ -62,7 +62,6 @@ setup_cfg = dict(conf.items('metadata'))
 sys.path.insert(0, os.path.abspath('../'))
 
 extensions = [
-    'numfig',
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
