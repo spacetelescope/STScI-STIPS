@@ -8,7 +8,14 @@ channels:
 
 dependencies:
   - python>=3.7
+
+  - matplotlib>=3.1.1
   - astropy
+
+  - photutils
+  - healpy
+  - pysynphot
+  - esutil
 
   # Docs
   - sphinx
@@ -16,6 +23,14 @@ dependencies:
   - stsci_rtd_theme
 
   - pip:
+
+    - webbpsf
+    - pandeia.engine==1.5
+    - jwst_backgrounds
+
+
     # Docs
     - sphinx_astropy
     - automodinit
+
+
