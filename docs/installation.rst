@@ -11,22 +11,22 @@ STIPS Requirements
 
 * `Pandeia`: Exposure time calculator.
 * `WebbPSF`: James Webb and WFIRST PSF calculator.
-* `astropy`: STIPS uses astropy in order to
+* `astropy`: STIPS uses astropy in order to:
 
-	- Read and write FITS files
-	- Read and write ASCII tables (specifically in the IPAC format)
-	- Generate Sersic profile models (if any are in the generated scene)
+	- Read and write FITS files.
+	- Read and write ASCII tables (specifically in the IPAC format).
+	- Generate Sersic profile models (if any are in the generated scene).
 
-* `esutil`: Used for retrieving data from sqlite databases in the form of numpy arrays
+* `esutil`: Used for retrieving data from sqlite databases in the form of numpy arrays.
 * `montage_wrapper`: STIPS uses montage to generate mosaics. It is only imported if
   STIPS is asked to generate a multi-detector image.
-* `numpy`: STIPS uses numpy extensively for almost everything that it does
+* `numpy`: STIPS uses numpy extensively for almost everything that it does.
 * `photutils`: STIPS uses photutils to determine the flux inside the half-light radius
-  in generated Sersic profiles
+  in generated Sersic profiles.
 * `pysynphot`: STIPS uses pysynphot to generate bandpasses, count rates, and
   zero points. Note that pysynphot's data files (also known as the CDBS data tree) must also be
   installed and available as indicated in pysynphot's documentation.
-* `scipy`: STIPS uses scipy to manipulate its internal images (zoom and rotate)
+* `scipy`: STIPS uses scipy to manipulate its internal images (zoom and rotate).
 
 Finally, STIPS requires a set of data files whose location is marked by setting the environment
 variable `stips_data`. Currently these files are available as part of the STSCI-STIPS-UI GitHub
