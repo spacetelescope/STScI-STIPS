@@ -28,5 +28,5 @@ run reasonably quickly, and to make scene generation and observation as easy as 
   :maxdepth: 2
 
   index
-  requirements
+  installation
   examples
