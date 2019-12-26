@@ -27,6 +27,6 @@ run reasonably quickly, and to make scene generation and observation as easy as 
 .. toctree::
   :maxdepth: 2
 
-  stips/index.rst
-  stips/requirements.rst
-  stips/examples.rst
+  index
+  requirements
+  examples
