@@ -9,25 +9,22 @@ There are multiple options for installation and they are listed in this section 
 STIPS Requirements
 ##################
 
-* Pandeia: Exposure time calculator.
-* WebbPSF: James Webb and WFIRST PSF calculator.
-
-STIPS also uses the following (more general) python packages:
-
-* astropy: STIPS uses astropy in order to
+* `Pandeia`: Exposure time calculator.
+* `WebbPSF`: James Webb and WFIRST PSF calculator.
+* `astropy`: STIPS uses astropy in order to
 	* read and write FITS files
 	* read and write ASCII tables (specifically in the IPAC format)
 	* generate Sersic profile models (if any are in the generated scene)
-* esutil: Used for retrieving data from sqlite databases in the form of numpy arrays
-* montage_wrapper: STIPS uses montage to generate mosaics. It is only imported if
+* `esutil`: Used for retrieving data from sqlite databases in the form of numpy arrays
+* `montage_wrapper`: STIPS uses montage to generate mosaics. It is only imported if
   STIPS is asked to generate a multi-detector image.
-* numpy: STIPS uses numpy extensively for almost everything that it does
-* photutils: STIPS uses photutils to determine the flux inside the half-light radius
+* `numpy`: STIPS uses numpy extensively for almost everything that it does
+* `photutils`: STIPS uses photutils to determine the flux inside the half-light radius
   in generated Sersic profiles
-* pysynphot: STIPS uses pysynphot to generate bandpasses, count rates, and
+* `pysynphot`: STIPS uses pysynphot to generate bandpasses, count rates, and
   zero points. Note that pysynphot's data files (also known as the CDBS data tree) must also be
   installed and available as indicated in pysynphot's documentation.
-* scipy: STIPS uses scipy to manipulate its internal images (zoom and rotate)
+* `scipy`: STIPS uses scipy to manipulate its internal images (zoom and rotate)
 
 Finally, STIPS requires a set of data files whose location is marked by setting the environment
 variable `stips_data`. Currently these files are available as part of the STSCI-STIPS-UI GitHub
@@ -37,30 +34,31 @@ Installing Using Conda and Source
 ##################################
 
 STIPS can be installed using the source code and a Conda environment file.
-If you do not have anaconda or miniconda installed, please visit ___ for installation instructions.
+If you do not have anaconda or miniconda installed, please visit the ` astroconda docs <https://astroconda.readthedocs.io/en/latest/getting_started.html#getting-started-jump>`_ for installation instructions.
 We have included a Conda environment file for easily installing or updating Conda packages to meet STIPS requirements.
 Please follow the steps below to install STIPS:
 
 Installing
 **********
 
-1. You will need to clone the STIPS source code from the
-`spacetelescope/STScI-STIPS <https://github.com/spacetelescope/STScI-STIPS.git>`_ repository.
-`cd` into the directory you would like to store the source code and run::
+1. You will need to clone the STIPS source code from the `spacetelescope/STScI-STIPS <https://github.com/spacetelescope/STScI-STIPS.git>`_ repository.`cd` into the directory you would like to store the source code and run::
 
     git clone https://github.com/spacetelescope/STScI-STIPS.git
 
     cd STScI-STIPS
 
-2. To create a new Conda environment named `stips` run::
+2. The environment file can be used in two ways:
 
-    conda env create -f environment.yml
+    a. To create a new Conda environment named `stips` run::
 
-    conda activate stips
+        conda env create -f environment.yml
 
-To install to or update an existing (currently active) Conda environment::
+        conda activate stips
 
-    conda env update --file environment.yml
+
+    b. To install to or update an existing (currently active) Conda environment::
+
+        conda env update --file environment.yml
 
 
 3. You can now install STIPS using the cloned source code as follows::
@@ -78,7 +76,8 @@ You will need to download the data and add them to your environmental path
 
     wget
 
-If it is not (usually on Mac OS), it can be downloaded using Conda::
+    # If it is not installed (usually on Mac OS),
+    # it can be downloaded using Conda
 
     conda install wget
 
@@ -117,7 +116,6 @@ To test if all the required files have been installed, please import STIPS in py
 
     >>> import stips
 
-
- The following warning message can be ignored if it appears::
+The following warning message can be ignored if it appears::
 
     WARNING: stips_data environment variable not found. Falling back on local STIPS data.
