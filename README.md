@@ -118,12 +118,12 @@ equivalent method prior to running any of these example scripts.
   (showing the actual count rate and position of the sources observed) will be in the variables
   `output_stellar_catalogues` and `output_galaxy_catalogues`.
 * Creating a scene from an existing source catalogue `input_sources.txt`, and observing it with the
-  WFIRST WFI "J129" filter, offset by 0.5 degrees in RA, and rotated by 27 degrees:
+  WFIRST WFI "F129" filter, offset by 0.5 degrees in RA, and rotated by 27 degrees:
   
   		from stips.observation_module import ObservationModule
   	
   		obs = {'instrument': 'WFI', 
-  		       'filters': ['J129'], 
+  		       'filters': ['F129'],
   		       'detectors': 1,
   			   'distortion': False,
   			   'oversample': 5,
