@@ -121,3 +121,51 @@ To test if all the required files have been installed, please import STIPS in py
 The following warning message can be ignored if it appears::
 
     WARNING: stips_data environment variable not found. Falling back on local STIPS data.
+
+
+Installing Using Docker
+#######################
+
+Installing
+**********
+
+1. Start by installing the free [Docker Community Edition](https://www.docker.com/community-edition) locally.
+This will make the `docker` command available in your terminal. Note that after installing docker,
+you must open the application once for docker to be available from the command line.
+2. You will need to clone the STIPS source code from the `spacetelescope/STScI-STIPS <https://github.com/spacetelescope/STScI-STIPS.git>`_ repository.
+`cd` into the directory you would like to store the source code and run::
+
+    git clone https://github.com/spacetelescope/STScI-STIPS.git
+
+    cd STScI-STIPS
+
+3. Run the docker build command::
+
+    docker build -t stips .
+
+
+
+Testing Installation
+*********************
+
+To test if the Docker image was built correctly you can `exec` into the image and try to import STIPS::
+
+    # cd into STScI-STIPS
+
+    root$ docker build -t stips .
+
+    # Create Docker Image
+
+    root$ docker create -t -i stips bash
+
+        8293abe302b0c4f07a04282e811824d74681b77d0174148cc8af68078c098fa6
+
+    # Start Docker Image
+
+    root$ docker start -a -i 8293abe302b0c4f07a04282e811824d74681b77d0174148cc8af68078c098fa6
+
+    (stips) root@8293abe302b0:~# python
+    Python 3.7.3 | packaged by conda-forge | (default, Jul  1 2019, 21:52:21)
+    [GCC 7.3.0] :: Anaconda, Inc. on linux
+    Type "help", "copyright", "credits" or "license" for more information.
+    >>> import stips
