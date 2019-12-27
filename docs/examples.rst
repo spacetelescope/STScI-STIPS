@@ -1,6 +1,7 @@
 STIPS Examples
 ===============
 .. note::
+
     If you do not have environment variables pointing to the location of your Pandeia data,
     STIPS data, and Webbpsf data, you must set these environment variables using `os.environ` or other
     equivalent method prior to running any of these example scripts.
@@ -8,7 +9,8 @@ STIPS Examples
 * Creating a scene with a single stellar population and a single galaxy population, then observing
   it with NIRCam Short F115W:
 
-.. code-block:: language
+.. code-block:: python
+
     from stips.scene_module import SceneModule
     from stips.observation_module import ObservationModule
 
@@ -23,6 +25,7 @@ STIPS Examples
                'radius': 100.0, 'radius_units': 'pc',
                'distance_low': 20.0, 'distance_high': 20.0,
                'offset_ra': 0.0, 'offset_dec': 0.0}
+
     stellar_cat_file = scm.CreatePopulation(stellar)
 
     galaxy = {'n_gals': 1000,
@@ -32,6 +35,7 @@ STIPS Examples
               'distribution': 'uniform', 'clustered': False,
               'radius': 200.0, 'radius_units': 'arcsec',
               'offset_ra': 0.0, 'offset_dec': 0.0}
+
     galaxy_cat_file = scm.CreateGalaxies(galaxy)
 
     obs = {'instrument': 'NIRCamShort',
@@ -44,6 +48,7 @@ STIPS Examples
            'observations_id': 1,
            'exptime': 1000,
            'offsets': [{'offset_id': 1, 'offset_centre': False, 'offset_ra': 0.0, 'offset_dec': 0.0, 'offset_pa': 0.0}]}
+
     obm = ObservationModule(obs)
     obm.nextObservation()
     output_stellar_catalogues = obm.addCatalogue(stellar_cat_file)
@@ -57,13 +62,14 @@ In this case, the output FITS file will be in the variable `fits_file`, and the 
 `output_stellar_catalogues` and `output_galaxy_catalogues`.
 
 * Creating a scene from an existing source catalogue `input_sources.txt`, and observing it with the
-  WFIRST WFI "J129" filter, offset by 0.5 degrees in RA, and rotated by 27 degrees:
+  WFIRST WFI "F129" filter, offset by 0.5 degrees in RA, and rotated by 27 degrees:
 
-.. code-block:: language
+.. code-block:: python
+
     from stips.observation_module import ObservationModule
 
     obs = {'instrument': 'WFI',
-           'filters': ['J129'],
+           'filters': ['F129'],
            'detectors': 1,
            'distortion': False,
            'oversample': 5,
@@ -72,7 +78,9 @@ In this case, the output FITS file will be in the variable `fits_file`, and the 
            'observations_id': 1,
            'exptime': 1000,
            'offsets': [{'offset_id': 1, 'offset_centre': False, 'offset_ra': 0.5, 'offset_dec': 0.0, 'offset_pa': 27.0}]}
+
     scene_general = {'ra': 256.274799731, 'dec': 22.6899695529, 'pa': 0.0, 'seed': 1}
+
     obm = ObservationModule(obs, scene_general=scene_general)
     obm.nextObservation()
     source_count_catalogues = obm.addCatalogue('input_sources.txt')
