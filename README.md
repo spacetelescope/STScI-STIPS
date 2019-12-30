@@ -1,12 +1,11 @@
 # STScI-STIPS
 
+For documentation and installation instructions please visit https://stsci-stips.readthedocs.io
+
 ## Table of Contents
 
 * [Overview](#overview)
 * [Why use STIPS?](#why-use-stips)
-* [STIPS Python Requirements](#stips-python-requirements)
-* [STIPS Examples](#stips-examples)
-* [STIPS and Python 3](#stips-python-3-status)
 
 ## Overview
 
