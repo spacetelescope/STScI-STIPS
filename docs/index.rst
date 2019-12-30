@@ -23,10 +23,10 @@ If extremely good instrumental accuracy is needed, STIPS is not the ideal choice
 various instrument design teams have produced much more detailed simulators. STIPS is intended to
 run reasonably quickly, and to make scene generation and observation as easy as possible.
 
+.. image:: wfirst_figures/stips_demo.png
 
 .. toctree::
   :maxdepth: 2
 
-  index
   installation
   examples
