@@ -30,3 +30,5 @@ various instrument design teams have produced much more detailed simulators. STI
 run reasonably quickly, and to make scene generation and observation as easy as possible.
 
 ![Alt text](docs/wfirst_figures/stips_demo.png?raw=true "WFIRST Image of a Star Cluster and Background Galaxies")
+
+Developed by Brian York (@york-stsci) and Robel Geda (@robelgeda).
