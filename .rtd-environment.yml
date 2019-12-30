@@ -17,4 +17,5 @@ dependencies:
 
   - pip:
     # Docs
+    - astropy_helpers
     - sphinx_astropy

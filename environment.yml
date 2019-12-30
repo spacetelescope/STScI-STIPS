@@ -63,4 +63,5 @@ dependencies:
     - montage-wrapper
 
     # Docs
+    - astropy_helpers
     - sphinx_astropy
