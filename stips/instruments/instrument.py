@@ -46,8 +46,8 @@ class Instrument(object):
             self.logger = kwargs['logger']
         else:
             self.logger = logging.getLogger('__stips__')
-            self.logger.setLevel(logging.INFO)
-            if not len(logger.handlers):
+            self.logger.setLevel(getattr(logging, kwargs.get("log_level", "INFO")))
+            if not len(self.logger.handlers):
                 stream_handler = logging.StreamHandler(sys.stderr)
                 stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))# [in %(pathname)s:%(lineno)d]'))
                 self.logger.addHandler(stream_handler)
@@ -123,7 +123,7 @@ class Instrument(object):
         self._log("info","Finished initialization")
         return ins
     
-    def reset(self, ra, dec, pa, filter, obs_count, celery=None):
+    def reset(self, ra, dec, pa, filter, obs_count, psf=True, detectors=True, celery=None):
         """
         Reset instrument parameters.
         """
@@ -134,11 +134,13 @@ class Instrument(object):
         self.obs_count = obs_count
         if filter != self.filter:
             self.filter = filter
-            self.resetPSF()
+            if psf:
+                self.resetPSF()
             self.background = self.pixel_background
             self.photfnu = self.PHOTFNU[self.filter]
             self.photplam = self.PHOTPLAM[self.filter]
-        self.resetDetectors()
+        if detectors:
+            self.resetDetectors()
     
     def resetPSF(self):
         pass

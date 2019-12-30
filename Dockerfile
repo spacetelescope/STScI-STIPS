@@ -67,8 +67,8 @@ ENV pandeia_refdata /opt/pandeia_data-1.5_wfirst
 # Extract WebbPSF reference data
 # (note: version number env vars are declared close to where they are used
 # to prevent unnecessary rebuilds of the Docker image)
-ENV WEBBPSF_DATA_VERSION 0.8.0
-RUN wget -qO- http://www.stsci.edu/~mperrin/software/webbpsf/webbpsf-data-$WEBBPSF_DATA_VERSION.tar.gz | tar xvz
+ENV WEBBPSF_DATA_VERSION 0.9.0
+RUN wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz | tar xvz
 ENV WEBBPSF_PATH /opt/webbpsf-data
 
 # Prepare environment variables
