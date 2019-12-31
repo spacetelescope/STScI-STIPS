@@ -23,7 +23,7 @@ If extremely good instrumental accuracy is needed, STIPS is not the ideal choice
 various instrument design teams have produced much more detailed simulators. STIPS is intended to
 run reasonably quickly, and to make scene generation and observation as easy as possible.
 
-Developed by Brian York (`@york-stsci <https://github.com/york-stsci>`_ ) and
+Developed by Brian York (`@york-stsci <https://github.com/york-stsci>`_) and
 Robel Geda (`@robelgeda <https://github.com/robelgeda>`_).
 
 .. figure:: wfirst_figures/stips_demo.png
