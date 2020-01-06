@@ -29,14 +29,14 @@ STIPS Requirements
 * `scipy`: STIPS uses scipy to manipulate its internal images (zoom and rotate).
 
 Finally, STIPS requires a set of data files whose location is marked by setting the environment
-variable `stips_data`. Currently these files are available as part of the STSCI-STIPS-UI GitHub
-project, but they should eventually be made available as a (versioned) direct download.
+variable `stips_data`. The current best form of stips_data is actually kept (and versioned) inside
+the STIPS project itself.
 
 Installing Using Conda and Source
 ##################################
 
 STIPS can be installed using the source code and a Conda environment file.
-If you do not have anaconda or miniconda installed, please visit the ` astroconda docs <https://astroconda.readthedocs.io/en/latest/getting_started.html#getting-started-jump>`_ for installation instructions.
+If you do not have anaconda or miniconda installed, please visit the `astroconda docs <https://astroconda.readthedocs.io/en/latest/getting_started.html>`_ for installation instructions.
 We have included a Conda environment file for easily installing or updating Conda packages to meet STIPS requirements.
 Please follow the steps below to install STIPS:
 
@@ -105,6 +105,12 @@ You will need to download the data and add them to your environmental path
 
 Make sure that you have the correct version number for `pandeia_refdata` (replace the "x.x").
 
+.. note::
+    The URL we provide in this section and the suggested pandeia reference data directory name
+    are specifically for using STIPS with WFIRST. If you would like to use STIPS with JWST,
+    you need to download the regular pandeia reference data (and if you want to be able to use both,
+    you download both and either copy the 'wfirst' directory into the regular reference data, or the
+    'jwst' directory into the WFIRST reference data).
 
 Testing Installation
 *********************
@@ -129,7 +135,7 @@ Installing Using Docker
 Installing
 **********
 
-1. Start by installing the free [Docker Community Edition](https://www.docker.com/community-edition) locally.
+1. Start by installing the free `Docker Community Edition <https://www.docker.com/community-edition>`_ locally.
 This will make the `docker` command available in your terminal. Note that after installing docker,
 you must open the application once for docker to be available from the command line.
 
