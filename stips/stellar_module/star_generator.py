@@ -241,9 +241,9 @@ class StarGenerator(object):
     
     def make_cluster_rates(self,masses,instrument,filter,bandpass=None,refs=None):
         try:
-            coords = np.load(os.path.join(self.gridpath, 'input.npy'))
+            coords = np.load(os.path.join(self.gridpath, 'input.npy'), allow_pickle=True)
         except UnicodeError:
-            coords = np.load(os.path.join(self.gridpath, 'input.npy'), encoding='bytes')
+            coords = np.load(os.path.join(self.gridpath, 'input.npy'), allow_pickle=True, encoding='bytes')
         m, t, g, i = self.get_star_info()
         temps = np.interp(masses,m,t)
         gravs = np.interp(masses,m,g)
