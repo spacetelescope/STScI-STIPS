@@ -1,16 +1,21 @@
 name: stips
 
 channels:
-    - astropy
+  - conda-forge
+  - astropy
+  - http://ssb.stsci.edu/astroconda
+  - defaults
 
 dependencies:
-    - python>=3.7
-    - astropy
-    - Cython
-    - matplotlib
-    - numpy >= 1.13
-    - sphinx-astropy
-    - astropy-helpers
+  - python>=3.7
+  - astropy
 
-   - pip:
-       - stsci_rtd_theme
+  # Docs
+  - sphinx
+  - docutils
+  - stsci_rtd_theme
+
+  - pip:
+    # Docs
+    - astropy_helpers
+    - sphinx_astropy
