@@ -1,2 +1,0 @@
-Pandeia: 1.5
-STIPS: 1.0.7.dev

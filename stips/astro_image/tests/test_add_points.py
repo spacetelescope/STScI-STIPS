@@ -4,12 +4,11 @@ import numpy as np
 
 from astropy.wcs import WCS
 
-from ..astro_image import AstroImage
-
+from stips.astro_image import AstroImage
+from stips import stips_data_base
 
 def new_empty_astro_image():
-    this_dir = os.path.dirname(os.path.abspath(__file__))
-    fits_path = os.path.join(this_dir, "zero_image.fits")
+    fits_path = os.path.join(stips_data_base, "test", "astro_image", "zero_image.fits")
     return AstroImage.initFromFits(fits_path)
 
 

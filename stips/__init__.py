@@ -5,6 +5,12 @@ import automodinit, os
 automodinit.automodinit(__name__, __file__, globals())
 del automodinit
 
+
+try:
+    stips_data_base = os.environ["stips_data"]
+except KeyError:
+    stips_data_base = None
+
 # Local Definitions
 
 from .astro_image import AstroImage

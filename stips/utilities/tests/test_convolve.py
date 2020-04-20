@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from utilities import overlapadd2
+from stips.utilities import overlapadd2
 from scipy.signal import convolve2d
 
 
