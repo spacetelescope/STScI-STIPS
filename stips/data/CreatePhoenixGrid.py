@@ -142,5 +142,6 @@ for instrument in instruments:
     for mode in modes[instrument.lower()]:
         for filter in filters[instrument.lower()][mode]:
             np.save(os.path.join(os.getcwd(), 'grid', 'result_{}_{}.npy'.format(instrument.lower(), filter)),
-                    result_arrays[instrument.lower()][filter])
+                    result_arrays[instrument.lower()][filter],
+                    allow_pickle=True)
 print("done")

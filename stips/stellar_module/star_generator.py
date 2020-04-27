@@ -250,7 +250,7 @@ class StarGenerator(object):
         mags = np.interp(masses,m,i)
         metals = np.full_like(mags, self.metallicity)
         if os.path.exists(os.path.join(self.gridpath, 'result_{}_{}.npy'.format(instrument.lower(), filter.lower()))):
-            values = np.load(os.path.join(self.gridpath, 'result_{}_{}.npy'.format(instrument.lower(), filter.lower())))
+            values = np.load(os.path.join(self.gridpath, 'result_{}_{}.npy'.format(instrument.lower(), filter.lower())), allow_pickle=True)
             interpolation_function = RegularGridInterpolator(tuple([x for x in coords]), values)
             try:
                 countrates = interpolation_function(np.array((metals, gravs, temps, mags)).T)

@@ -17,6 +17,7 @@ from astropy.io import ascii
 from astropy.table import Table
 from jwst_backgrounds.jbt import background
 
+from stips.version import __version__ as __stips__version__
 
 #-----------
 class classproperty(object):
@@ -179,21 +180,31 @@ def GetStipsData(to_retrieve):
     Retrieve a file from the stips_data directory. Will also print out a warning if the directory
     can't be found.
     """
-    local_data_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "data"))
+    stips_version = __stips__version__.strip().replace(".", "")
+    if "dev" in stips_version:
+        stips_version = stips_version[:stips_version.find("dev")]
     if "stips_data" not in os.environ:
-        sys.stderr.write("WARNING: stips_data environment variable not found. Falling back on local STIPS data.\n")
-        sys.stderr.write("WARNING: STIPS local data may be older than data available via the stips_data environment variable.\n")
-    stips_data_base = os.environ.get("stips_data", local_data_dir)
-    if stips_data_base == "internal":
-        stips_data_base = local_data_dir
+        msg = "ERROR: stips_data environment variable not found. STIPS "
+        msg += "requires the data directory to function. Please download the "
+        msg += "STIPS data from <https://stsci.box.com/v/stips-data-{}> "
+        msg += "and set the stips_data environment variable to point to it.\n"
+        sys.stderr.write(msg.format(stips_version))
+        raise EnvironmentError("stips_data environment variable not found.")
+    stips_data_base = os.environ["stips_data"]
     if not os.path.exists(stips_data_base):
-        sys.stderr.write("ERROR: stips_data directory at {} not found. STIPS requires the stips_data directory to function correctly.\n".format(stips_data_base))
-        sys.stderr.write("ERROR: Please make sure that the stips_data environment variable exists and points to the location of stips_data.\n")
+        msg = "ERROR: stips_data directory at {} not ".format(stips_data_base)
+        msg += "found. STIPS requires the data directory to function. "
+        msg += "Please make sure that the STIPS data directory exists.\n"
+        sys.stderr.write(msg)
+        raise FileNotFoundError("${stips_data} does not exist.")
     retrieval_file = os.path.join(stips_data_base, to_retrieve)
     if not os.path.exists(retrieval_file):
-        sys.stderr.write("ERROR: STIPS data file {} not found. STIPS requires the stips_data directory to function correctly.\n".format(retrieval_file))
-        sys.stderr.write("ERROR: Please make sure that the stips_data environment variable exists and points to the location of stips_data.\n")
-        sys.stderr.write("ERROR: Please try downloading the stips_data directory again.\n")
+        msg = "ERROR: STIPS data file {} not found. ".format(retrieval_file)
+        msg += "STIPS requires the data directory to function. Please download "
+        msg += "a new copy of the STIPS data from "
+        msg += "<https://stsci.box.com/v/stips-data-{}>.\n"
+        sys.stderr.write(msg.format(stips_version))
+        raise FileNotFoundError("File {} does not exist.".format(retrieval_file))
     return retrieval_file
 
 #-----------
