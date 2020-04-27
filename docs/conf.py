@@ -50,6 +50,7 @@ try:
     from ConfigParser import ConfigParser
 except ImportError:
     from configparser import ConfigParser
+
 conf = ConfigParser()
 
 conf.read([os.path.join(os.path.dirname(__file__), '..', 'setup.cfg')])
@@ -59,11 +60,8 @@ setup_cfg = dict(conf.items('metadata'))
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('../'))
-sys.path.insert(0, os.path.abspath('../webbpsf/'))
-sys.path.insert(0, os.path.abspath('exts/'))
 
 extensions = [
-    'numfig',
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
@@ -72,6 +70,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx_automodapi.automodapi',
     ]
+
 numpydoc_show_class_members = False
 
 # -- General configuration ----------------------------------------------------
@@ -99,22 +98,18 @@ intersphinx_mapping.update({
 # -- Project information ------------------------------------------------------
 
 # This does not *have* to match the package name, but typically does
-project = setup_cfg['package_name']
+project = setup_cfg['name']
 author = setup_cfg['author']
-copyright = '{0}, {1}'.format(
-    datetime.datetime.now().year, setup_cfg['author'])
+copyright = '{0}, {1}'.format(datetime.datetime.now().year, setup_cfg['author'])
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 
-__import__(setup_cfg['package_name'])
-package = sys.modules[setup_cfg['package_name']]
-
 # The short X.Y version.
-version = package.__version__.split('-', 1)[0]
+version = setup_cfg['version'].split('-', 1)[0]
 # The full version, including alpha/beta/rc tags.
-release = package.__version__
+release = setup_cfg['version']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -178,7 +173,7 @@ man_pages = [('index', project.lower(), project + u' Documentation',
 if eval(setup_cfg.get('edit_on_github')):
     extensions += ['astropy_helpers.sphinx.ext.edit_on_github']
 
-    versionmod = __import__(setup_cfg['package_name'] + '.version')
+    versionmod = __import__(setup_cfg['name'] + '.version')
     edit_on_github_project = setup_cfg['github_project']
     if versionmod.version.release:
         edit_on_github_branch = "v" + versionmod.version.version
