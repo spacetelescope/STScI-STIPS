@@ -186,26 +186,25 @@ def GetStipsData(to_retrieve):
     if "stips_data" not in os.environ:
         msg = "ERROR: stips_data environment variable not found. STIPS "
         msg += "requires the data directory to function. Please download the "
-        msg += "STIPS data from <https://stsci.box.com/v/stips-data-{}.zip> "
+        msg += "STIPS data from <https://stsci.box.com/v/stips-data-{}> "
         msg += "and set the stips_data environment variable to point to it.\n"
         sys.stderr.write(msg.format(stips_version))
-        sys.exit(1)
+        raise EnvironmentError("stips_data environment variable not found.")
     stips_data_base = os.environ["stips_data"]
     if not os.path.exists(stips_data_base):
         msg = "ERROR: stips_data directory at {} not ".format(stips_data_base)
         msg += "found. STIPS requires the data directory to function. "
-        msg += "Please make sure that the stips_data environment variable "
-        msg += "exists and points to the STIPS data directory.\n"
+        msg += "Please make sure that the STIPS data directory exists.\n"
         sys.stderr.write(msg)
-        sys.exit(1)
+        raise FileNotFoundError("${stips_data} does not exist.")
     retrieval_file = os.path.join(stips_data_base, to_retrieve)
     if not os.path.exists(retrieval_file):
         msg = "ERROR: STIPS data file {} not found. ".format(retrieval_file)
         msg += "STIPS requires the data directory to function. Please download "
         msg += "a new copy of the STIPS data from "
-        msg += "<https://stsci.box.com/v/stips-data-{}.zip>.\n"
+        msg += "<https://stsci.box.com/v/stips-data-{}>.\n"
         sys.stderr.write(msg.format(stips_version))
-        sys.exit(1)
+        raise FileNotFoundError("File {} does not exist.".format(retrieval_file))
     return retrieval_file
 
 #-----------
