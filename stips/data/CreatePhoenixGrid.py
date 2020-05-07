@@ -57,7 +57,7 @@ filters = {
                             },
             'miri':         {'imaging': ["f560w", "f770w", "f1000w", "f1130w", "f1280w", "f1500w", "f1800w", "f2100w", "f2550w"]},
             'wfc3ir':       {'imaging': ["f110w", "f160w"]},
-            'wfi':          {'imaging': ['f062', 'f087', 'f106', 'f149', 'f129', 'f158', 'f184']}
+            'wfi':          {'imaging': ['f062', 'z087', 'y106', 'w149', 'j129', 'h158', 'f184']}
           }
 apertures = {
                 'nircamshort':  {'sw_imaging':  "sw"},
@@ -142,6 +142,5 @@ for instrument in instruments:
     for mode in modes[instrument.lower()]:
         for filter in filters[instrument.lower()][mode]:
             np.save(os.path.join(os.getcwd(), 'grid', 'result_{}_{}.npy'.format(instrument.lower(), filter)),
-                    result_arrays[instrument.lower()][filter],
-                    allow_pickle=True)
+                    result_arrays[instrument.lower()][filter])
 print("done")
