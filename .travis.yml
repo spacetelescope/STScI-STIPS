@@ -145,7 +145,7 @@ before_install:
     - tar -xzvf /tmp/synphot2.tar.gz -C $PWD/synphot/
     - tar -xzvf /tmp/synphot5.tar.gz -C $PWD/synphot/
 
-    - export PYSYN_CDBS=$PWD/synphot/
+    - export PYSYN_CDBS=$PWD/synphot/grp/hst/cdbs
 
     # download pandeia_data data
     - wget -qO- https://stsci.box.com/shared/static/5j506xzg9tem2l7ymaqzwqtxne7ts3sr.gz -O /tmp/pandeia_data-1.5_wfirst.gz
