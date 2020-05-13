@@ -47,22 +47,6 @@ html:
 	@echo " try this to examine it: "
 	@echo "        open  $(BUILDDIR)/html/index.html"
 
-
-htmlstsci:
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
-	rsync -av $(BUILDDIR)/html/ science1.stsci.edu:web/software/webbpsf/
-	@echo "Software built and copied to STScI"
-	@echo "try :"
-	@echo "   open http://www.stsci.edu/~mperrin/software/webbpsf/"
-
-htmlprerelease:
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
-	rsync -av $(BUILDDIR)/html/ science1.stsci.edu:web/software/webbpsf_prerelease/
-	@echo "Software built and copied to STScI prerelease"
-	@echo "try :"
-	@echo "   open http://www.stsci.edu/~mperrin/software/webbpsf_prerelease/"
-
-
 dirhtml:
 	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
 	@echo
