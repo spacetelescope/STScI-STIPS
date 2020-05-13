@@ -6,9 +6,6 @@ language: c
 os:
     - linux
 
-services:
-  - docker
-
 # The apt packages below are needed for sphinx builds. A full list of packages
 # that can be included can be found here:
 #
@@ -137,11 +134,63 @@ before_install:
     - tar -xzvf /tmp/stips_data_v1.0.8.tar.gz
     - export stips_data=$PWD/stips_data
 
-before_install:
-    - docker build -t stips .
-    - docker run -d -p 127.0.0.1:80:4567 stips /bin/sh -c "cd /root; bundle exec foreman start;"
-    - docker ps -a
-    - docker run stips /bin/sh -c "cd /root; bundle exec rake test"
+    # download synphot data
+    - mkdir synphot
+
+    - wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot1.tar.gz -O /tmp/synphot1.tar.gz
+    - wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot2.tar.gz -O /tmp/synphot2.tar.gz
+    - wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot5.tar.gz -O /tmp/synphot5.tar.gz
+
+    - tar -xzvf /tmp/synphot1.tar.gz -C $PWD/synphot/
+    - tar -xzvf /tmp/synphot2.tar.gz -C $PWD/synphot/
+    - tar -xzvf /tmp/synphot5.tar.gz -C $PWD/synphot/
+
+    - export PYSYN_CDBS=$PWD/synphot/
+
+    # download pandeia_data data
+    - wget -qO- https://stsci.box.com/shared/static/5j506xzg9tem2l7ymaqzwqtxne7ts3sr.gz -O /tmp/pandeia_data-1.5_wfirst.gz
+
+    - tar -xzvf /tmp/pandeia_data-1.5_wfirst.gz -C $PWD/
+    - export pandeia_refdata=$PWD/pandeia_data-1.5_wfirst
+
+    # download webbpsf data
+    - wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O /tmp/webbpsf_data.gz
+    - tar -xzvf /tmp/webbpsf_data.gz -C $PWD/
+    - export WEBBPSF_PATH=$PWD/webbpsf-data
+
+install:
+
+    # We now use the ci-helpers package to set up our testing environment.
+    # This is done by using Miniconda and then using conda and pip to install
+    # dependencies. Which dependencies are installed using conda and pip is
+    # determined by the CONDA_DEPENDENCIES and PIP_DEPENDENCIES variables,
+    # which should be space-delimited lists of package names. See the README
+    # in https://github.com/astropy/ci-helpers for information about the full
+    # list of environment variables that can be used to customize your
+    # environment. In some cases, ci-helpers may not offer enough flexibility
+    # in how to install a package, in which case you can have additional
+    # commands in the install: section below.
+
+    - git clone --depth 1 git://github.com/astropy/ci-helpers.git
+    - source ci-helpers/travis/setup_conda.sh
+
+    # As described above, using ci-helpers, you should be able to set up an
+    # environment with dependencies installed using conda and pip, but in some
+    # cases this may not provide enough flexibility in how to install a
+    # specific dependency (and it will not be able to install non-Python
+    # dependencies). Therefore, you can also include commands below (as
+    # well as at the start of the install section or in the before_install
+    # section if they are needed before setting up conda) to install any
+    # other dependencies.
+
+    # Here we download miniconda and install the dependencies
+    - conda env create -f environment.yml
+    - conda activate stips
 
 script:
-    - bundle exec rake test
+   - $MAIN_CMD $SETUP_CMD
+
+after_success:
+    # If coveralls.io is set up for this package, uncomment the line below.
+    # The coveragerc file may be customized as needed for your package.
+    # - if [[ $SETUP_CMD == *coverage* ]]; then coveralls --rcfile='stips/tests/coveragerc'; fi
