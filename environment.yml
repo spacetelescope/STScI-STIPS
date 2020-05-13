@@ -51,6 +51,9 @@ dependencies:
   - docutils
   - stsci_rtd_theme
 
+  # Testing
+  - pytest-astropy
+
   - pip:
     # Base dependencies
     - automodinit
