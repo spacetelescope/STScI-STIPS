@@ -1,5 +1,11 @@
 from __future__ import absolute_import
-__all__ = ['astro_image', 'errors', 'galaxy_module', 'instruments', 'observation_module', 'scene_module', 'stellar_module', 'utilities', 'version']
+
+# make use of astropy affiliate framework to set __version__, __githash__, and
+# add the test() helper function
+
+from ._astropy_init import *
+
+__all__ = ['astro_image', 'errors', 'galaxy_module', 'instruments', 'observation_module', 'scene_module', 'stellar_module', 'utilities', 'version', 'test']
 # Don't modify the line above, or this line!
 import automodinit, os
 automodinit.automodinit(__name__, __file__, globals())

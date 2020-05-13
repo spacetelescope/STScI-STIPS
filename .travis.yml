@@ -69,12 +69,10 @@ matrix:
         # Try MacOS X, usually enough only to run from cron as hardly there are
         # issues that are not picked up by a linux worker
         - os: osx
-          stage: Cron tests
           env: SETUP_CMD='test' EVENT_TYPE='cron'
 
         # Do a coverage test.
         #- os: linux
-        #  stage: Initial tests
         #  env: SETUP_CMD='test --coverage'
 
         # Check for sphinx doc build warnings - we do this first because it
@@ -116,12 +114,10 @@ matrix:
         # Do a PEP8 test with flake8
         # (do allow to fail unless your code completely compliant)
         # - os: linux
-        #   stage: Initial tests
         #   env: MAIN_CMD='flake8 stips --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
 
         # Do a PEP8 test with flake8
         - os: linux
-          stage: Initial tests
           env: MAIN_CMD='flake8 stips --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
 
 
