@@ -6,12 +6,10 @@ import pytest
 
 import numpy as np
 
-import astropy.io.fits as pyfits
-import astropy.wcs as wcs
-
 from stips import AstroImage
 from stips import stips_data_base
-from stips.utilities import ImageData
+from stips.utilities.testing import makeWCS, makeGaussian, verifyPoint, verifyParameters, verifyImage, verifyData
+
 
 currentdir = os.path.join(stips_data_base, "test", "astro_image")
 
