@@ -7,7 +7,7 @@ Version History and Change Log
 
 Version 1.0.8
 =============
-*2020 Date TBD*
+*2020 May 15*
 
 **STIPS Improvements**
 
