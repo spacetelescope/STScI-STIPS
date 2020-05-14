@@ -7,7 +7,8 @@ from astropy.wcs import WCS
 from stips.astro_image import AstroImage
 
 def new_empty_astro_image(data_base):
-    fits_path = os.path.join(data_base, "test", "astro_image", "zero_image.fits")
+    fits_path = os.path.join(data_base, "astro_image", "zero_image.fits")
+    print(fits_path)
     return AstroImage.initFromFits(fits_path)
 
 
