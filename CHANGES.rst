@@ -14,10 +14,12 @@ Version 1.0.8
 - Data files have been removed from the repo to allow STIPS to be uploaded to PyPi (pip). The data has been migrated to a STScI box folder. Users can now download the data and set their `stips_data` to allow access to the data that once lived in the repository. [:pr:`59`, :user:`york-stsci`]
 - Travis was setup to run and pass tests. Outdated tests have been removed to allow Travis to pass. [:pr:`65`, :user:`robelgeda`]
 - Test data has been moved to a STScI box folder. [:pr:`64`, :user:`robelgeda`]
+- `dev` folder added for any developer related tools. [:pr:`69`, :user:`robelgeda`]
+- Frozen environments saved at `dev/conda_envs`. [:pr:`69`, :user:`robelgeda`]
 
 Version 1.0.7
 =============
-*2019 January 8*
+*2020 January 8*
 
 **STIPS Improvements**
 
