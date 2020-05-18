@@ -16,6 +16,7 @@ from numpy.fft import fft2, ifft2
 from astropy.io import ascii
 from astropy.table import Table
 from jwst_backgrounds.jbt import background
+from photutils.psf.models import GriddedPSFModel
 
 from stips.version import __version__ as __stips__version__
 
@@ -345,9 +346,20 @@ class Percenter(object):
 
 
 
-def computation(arr, Hf, pos, Nfft, y, ys, adjust, lock, path):
+def computation(arr, Hf, pos, Nfft, y, ys, shape, lock, path):
     start_y, end_y, start_x, end_x, thisend_y, thisend_x = pos
-    conv = adjust(ifft2(Hf * fft2(arr, Nfft)))        
+    if isinstance(Hf, GriddedPSFModel):
+        # Generate PSF
+        y, x = np.mgrid[start_y:end_y, start_x:end_x]
+        y_0, x_0 = (start_y+end_y)//2, (start_x+end_x)//2
+        # Make a grid that's the size of the PSF fov_pix around its centre.
+        ys2, xs2 = shape[0]//2, shape[1]//2
+        y, x = np.mgrid[y_0-ys2:y_0+ys2, x_0-xs2:x_0+xs2]
+        psf = Hf.evaluate(x=x, y=y, flux=1, x_0=x_0, y_0=y_0)
+        fftHf = fft2(psf, Nfft)
+        conv = ifft2(fftHf * fft2(arr, Nfft))
+    else:
+        conv = ifft2(Hf * fft2(arr, Nfft))
     lock.acquire()
     with ImageData(y, ys) as dat:
         dat[start_y:thisend_y, start_x:thisend_x] += (conv[:(thisend_y-start_y), :(thisend_x-start_x)])
@@ -355,7 +367,10 @@ def computation(arr, Hf, pos, Nfft, y, ys, adjust, lock, path):
     return "[{}, {}]".format(start_y, start_x)
 
 
-def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state="", path=None, cores=None):
+def overlapaddparallel(Amat, amat_shape,
+                       Hmat, hmat_shape,
+                       L=None, Nfft=None, y=None, verbose=False, logger=None, 
+                       state_setter=None, base_state="", path=None, cores=None):
     """
     Fast two-dimensional linear convolution via the overlap-add method.
     The overlap-add method is well-suited to convolving a very large array,
@@ -409,10 +424,15 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
     
     import multiprocessing.dummy as multiprocessing
     
-    M = np.array(Hmat.shape)
-    Na = np.array(Amat.shape)
+    if amat_shape is None:
+        amat_shape = Amat.shape
+    if hmat_shape is None:
+        hmat_shape = Hmat.shape
     
-    ys = (Amat.shape[0]+Hmat.shape[0]-1, Amat.shape[1]+Hmat.shape[1]-1)
+    M = np.array(hmat_shape)
+    Na = np.array(amat_shape)
+    
+    ys = (amat_shape[0] + hmat_shape[0] - 1, amat_shape[1] + hmat_shape[1] - 1)
     
     if path is None:
         path = os.getcwd()
@@ -430,11 +450,17 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
     if not (np.all(L > 0) and L.size == 2):
         raise ValueError('L must have two positive elements')
     if not (np.all(Nfft >= L + M - 1) and Nfft.size == 2):
-        raise ValueError('Nfft must have two elements >= L + M - 1 where M = Hmat.shape')
-    if not (Amat.ndim <= 2 and Hmat.ndim <= 2):
-        raise ValueError('Amat and Hmat must be 2D arrays')
+        msg = 'Nfft must have two elements >= L + M - 1 where M = Hmat.shape'
+        raise ValueError(msg)
+    if not (Amat.ndim <= 2):
+        raise ValueError('Amat must be a 2D array')
+    if hasattr(Hmat, 'ndim') and not (Hmat.ndim <= 2):
+        raise ValueError('Hmat must be a 2D array')
 
-    Hf = fft2(Hmat, Nfft)
+    if isinstance(Hmat, GriddedPSFModel):
+        Hf = Hmat
+    else:
+        Hf = fft2(Hmat, Nfft)
     
     pool = multiprocessing.Pool(processes=cores)
     m = multiprocessing.Manager()
@@ -445,8 +471,6 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
         
     (XDIM, YDIM) = (1, 0)
     adjust = lambda x: x                           # no adjuster
-    if np.isrealobj(Amat) and np.isrealobj(Hmat):  # unless inputs are real
-        adjust = np.real                           # then ensure real
     start = [0, 0]
     endd = [0, 0]
 
@@ -483,7 +507,10 @@ def overlapaddparallel(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, log
 #         logger.info("Success: {}".format(result.successful()))
 
 
-def overlapadd2(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=None, state_setter=None, base_state=""):
+def overlapadd2(Amat, amat_shape, 
+                Hmat, hmat_shape,
+                L=None, Nfft=None, y=None, verbose=False, logger=None, 
+                state_setter=None, base_state=""):
     """
     Fast two-dimensional linear convolution via the overlap-add method.
     The overlap-add method is well-suited to convolving a very large array,
@@ -534,8 +561,13 @@ def overlapadd2(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=Non
     ----------
     Wikipedia is only semi-unhelpful on this topic: see "Overlap-add method".
     """
-    M = np.array(Hmat.shape)
-    Na = np.array(Amat.shape)
+    if amat_shape is None:
+        amat_shape = Amat.shape
+    if hmat_shape is None:
+        hmat_shape = Hmat.shape
+
+    M = np.array(hmat_shape)
+    Na = np.array(amat_shape)
 
     if y is None:
         y = np.zeros(M + Na - 1, dtype=Amat.dtype)
@@ -559,12 +591,12 @@ def overlapadd2(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=Non
     if not (Amat.ndim <= 2 and Hmat.ndim <= 2):
         raise ValueError('Amat and Hmat must be 2D arrays')
 
-    Hf = fft2(Hmat, Nfft)
+    if isinstance(Hmat, GriddedPSFModel):
+        Hf = Hmat
+    else:
+        Hf = fft2(Hmat, Nfft)
 
     (XDIM, YDIM) = (1, 0)
-    adjust = lambda x: x                           # no adjuster
-    if np.isrealobj(Amat) and np.isrealobj(Hmat):  # unless inputs are real
-        adjust = np.real                           # then ensure real
     start = [0, 0]
     endd = [0, 0]
     total_boxes = (Na[XDIM] // L[XDIM] + 1) * (Na[YDIM] // L[YDIM] + 1)
@@ -576,11 +608,27 @@ def overlapadd2(Amat, Hmat, L=None, Nfft=None, y=None, verbose=False, logger=Non
             if verbose and logger is not None:
                 logger.info("Starting box {}".format(start))
             if verbose and state_setter is not None:
-                state_setter(base_state + " {:.2f}% done".format((current_box/total_boxes)*100.))
+                new_state = base_state + " {:.2f}% done"
+                state_setter(new_state.format((current_box/total_boxes)*100.))
             endd[YDIM] = min(start[YDIM] + L[YDIM], Na[YDIM])
             thisend = np.minimum(Na + M - 1, start + Nfft)
-            yt = adjust(ifft2(Hf * fft2(Amat[start[YDIM] : endd[YDIM], start[XDIM] : endd[XDIM]], Nfft)))
-            y[start[YDIM] : thisend[YDIM], start[XDIM] : thisend[XDIM]] += (yt[:(thisend[YDIM] - start[YDIM]), :(thisend[XDIM] - start[XDIM])])
+            Asub = Amat[start[YDIM]:endd[YDIM], start[XDIM]:endd[XDIM]]
+            Af = fft2(Asub, Nfft)
+            
+            if isinstance(Hf, GriddedPSFModel):
+                # Generate PSF
+                yg, xg = np.mgrid[start[YDIM]:endd[YDIM],start[XDIM]:endd[XDIM]]
+                y_0 = (start[YDIM]+endd[YDIM])//2
+                x_0 = (start[XDIM]+endd[XDIM])//2
+                # Make a grid that's the size of the PSF fov_pix around its centre.
+                ys2, xs2 = hmat_shape[0]//2, hmat_shape[1]//2
+                yg, xg = np.mgrid[y_0-ys2:y_0+ys2, x_0-xs2:x_0+xs2]
+                psf = Hf.evaluate(x=xg, y=yg, flux=1, x_0=x_0, y_0=y_0)
+                yt = ifft2(fft2(psf, Nfft) * Af)
+            else:
+                yt = ifft2(Hf * Af)
+            ys = yt[:(thisend[YDIM]-start[YDIM]), :(thisend[XDIM]-start[XDIM])]
+            y[start[YDIM]:thisend[YDIM], start[XDIM]:thisend[XDIM]] += ys[:,:]
             start[YDIM] += L[YDIM]
             current_box += 1
         start[XDIM] += L[XDIM]

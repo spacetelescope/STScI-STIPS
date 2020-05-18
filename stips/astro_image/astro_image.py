@@ -7,9 +7,11 @@ import logging, os, shutil, sys, time, uuid
 import numpy as np
 
 from astropy import wcs
-from astropy.io import fits as pyfits
+from astropy.io import fits
 from astropy.table import Table, Column
+from copy import deepcopy
 from photutils import CircularAperture, aperture_photometry
+from photutils.psf.models import GriddedPSFModel
 
 from scipy.ndimage.interpolation import zoom, rotate
 
@@ -19,7 +21,14 @@ else:
     from cStringIO import StringIO
 
 #Local Modules
-from ..utilities import OffsetPosition, overlapadd2, overlapaddparallel, read_table, ImageData, Percenter, StipsDataTable
+from stips.version import __version__ as stips_version
+from ..utilities import OffsetPosition
+from ..utilities import overlapadd2
+from ..utilities import overlapaddparallel
+from ..utilities import read_table
+from ..utilities import ImageData
+from ..utilities import Percenter
+from ..utilities import StipsDataTable
 from ..errors import GetCrProbs, GetCrTemplate, MakeCosmicRay
 
 
@@ -41,41 +50,91 @@ class AstroImage(object):
         Astronomical image. The __init__ function creates an empty image with all other data values
         set to zero.
         """
-        
-        if 'logger' in kwargs:
-            self.logger = kwargs['logger']
+
+#             detector = AstroImage(background=self.background)
+
+        if 'parent' in kwargs:
+            self.parent = kwargs['parent']
+            self.logger = self.parent.logger
+            self.out_path = self.parent.out_path
+            self.oversample = self.parent.oversample
+            initial_shape = np.array(self.parent.DETECTOR_SIZE)*self.oversample
+            self._scale = np.array(self.parent.SCALE)/self.oversample
+            self.prefix = self.parent.prefix
+            self.cat_type = self.parent.cat_type
+            self.set_celery = self.parent.set_celery
+            self.get_celery = self.parent.get_celery
+            self.seed = self.parent.seed
+            small_subarray = self.parent.small_subarray
+            self.zeropoints = self.parent.zeropoints
+            self.photflam = self.parent.photflam
+            self.plotplam = self.parent.PHOTPLAM[self.filter]
+            background = self.parent.background
+            self.telescope = self.parent.TELESCOPE.lower()
+            self.instrument = self.parent.PSF_INSTRUMENT
+            self.filter = self.parent.filter
+            self.grid_size = self.parent.grid_size
+            self.psf_commands = self.parent.psf_commands
         else:
-            self.logger = logging.getLogger('__stips__')
-            self.logger.setLevel(logging.INFO)
-            if not len(logger.handlers):
-                stream_handler = logging.StreamHandler(sys.stderr)
-                stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))# [in %(pathname)s:%(lineno)d]'))
-                self.logger.addHandler(stream_handler)
-    
+            self.parent = None
+            if 'logger' in kwargs:
+                self.logger = kwargs['logger']
+            else:
+                self.logger = logging.getLogger('__stips__')
+                self.logger.setLevel(logging.INFO)
+                if not len(self.logger.handlers):
+                    stream_handler = logging.StreamHandler(sys.stderr)
+                    format = '%(asctime)s %(levelname)s: %(message)s'
+                    stream_handler.setFormatter(logging.Formatter(format))
+                    self.logger.addHandler(stream_handler)
+            self.out_path = kwargs.get('out_path', os.getcwd())
+            self.oversample = kwargs.get('oversample', 1)
+            initial_shape = kwargs.get('shape', (1, 1))
+            self._scale = kwargs.get('scale', np.array([0., 0.]))
+            self.prefix = kwargs.get('prefix', '')
+            self.cat_type = kwargs.get('cat_type', 'fits')
+            self.set_celery = kwargs.get('set_celery', None)
+            self.get_celery = kwargs.get('get_celery', None)
+            self.seed = kwargs.get('seed', 1234)
+            small_subarray = kwargs.get('small_subarray', False)
+            self.zeropoint = kwargs.get('zeropoint', 0.)
+            self.photflam = kwargs.get('photflam', 0.)
+            self.photplam = kwargs.get('photplam', 0.)
+            background = kwargs.get('background', 0.)
+            self.telescope = kwargs.get('telescope', 'wfirst')
+            self.instrument = kwargs.get('instrument', 'WFI')
+            self.filter = kwargs.get('filter', 'F062')
+            self.grid_size = kwargs.get('grid_size', 5)
+            self.psf_commands = kwargs.get('psf_commands', '')
+
         #Set unique ID and figure out where the numpy memmap will be stored
-        self.out_path = kwargs.get('out_path', os.getcwd())
-        self.prefix = kwargs.get('prefix', '')
-        self.cat_type = kwargs.get('cat_type', 'fits')
         self.name = kwargs.get('detname', "")
-        self.fname = os.path.join(self.out_path, self.prefix+"_"+uuid.uuid4().hex+"_"+self.name+".tmp")
-        self.set_celery = kwargs.get('set_celery', None)
-        self.get_celery = kwargs.get('get_celery', None)
-        self.seed = kwargs.get('seed', 1234)
+        self.detector = self.name
+        fname = self.prefix+"_"+uuid.uuid4().hex+"_"+self.name+".tmp"
+        self.fname = os.path.join(self.out_path, fname)
         
-        self.oversample = kwargs.get('oversample', 1)
-        psf_shape = kwargs.get('psf_shape', (0, 0))
+        if self.psf_commands is None:
+            self.psf_commands = ''
+        psf = kwargs.get('psf', True)
+        if psf:
+            self.make_psf()
+        
         data = kwargs.get('data', None)
         if data is not None:
             base_shape = data.shape
         else:
-            if kwargs.get('small_subarray', False): #restrict data size to PSF size
-                base_shape = psf_shape
+            #restrict data size to PSF size
+            if small_subarray:
+                if not hasattr(self, 'psf'):
+                    msg = "{}: Unable to set image size to PSF size when image "
+                    msg += "has no valid PSF."
+                    raise ValueError(msg.format(self.name))
+                base_shape = self.psf_shape
             else:
-                base_shape = kwargs.get('shape', (1, 1))
-        self._init_dat(base_shape, psf_shape, data)
+                base_shape = initial_shape
+        self._init_dat(base_shape, self.psf_shape, data)
         
         #Get WCS values if present, or set up a default
-        self._scale = kwargs.get('scale', [0., 0.])
         self.wcs = self._getWcs(**kwargs)
         self._prepRaDec()
         
@@ -95,11 +154,8 @@ class AstroImage(object):
         
         #Special values for Sersic profile generation
         self.profile_multiplier = kwargs.get('profile_multiplier', 100.)
-        self.noise_floor = max(kwargs.get('background', 0.), kwargs.get('noise_floor', 1.))
-        
-        #Zero Point. Necessary for output catalogues.
-        self.zeropoint = kwargs.get('zeropoint', 0.)
-        self.photflam = kwargs.get('photflam', 0.)
+        self.noise_floor = max(background, kwargs.get('noise_floor', 1.))        
+
     
     def __del__(self):
         if os.path.exists(self.fname):
@@ -128,12 +184,12 @@ class AstroImage(object):
         img = cls(**kwargs)
         if file != '':
             try:
-                with pyfits.open(file) as fits:
+                with fits.open(file) as inf:
                     ext = kwargs.get('ext', 0)
-                    dat = fits[ext].data
+                    dat = inf[ext].data
                     img._init_dat(base_shape=dat.shape, data=dat)
-                    my_wcs = wcs.WCS(fits[ext].header)
-                    for k,v in fits[ext].header.items():
+                    my_wcs = wcs.WCS(inf[ext].header)
+                    for k,v in inf[ext].header.items():
                         if k != '' and k not in my_wcs.wcs.to_header():
                             img.header[k] = v
                 img.wcs = img._normalizeWCS(my_wcs)
@@ -155,9 +211,9 @@ class AstroImage(object):
         img = cls(**kwargs)
         if file != '':
             try:
-                with pyfits.open(file) as fits:
+                with fits.open(file) as inf:
                     ext = kwargs.get('ext', 0)
-                    dat = fits[ext].data
+                    dat = inf[ext].data
                     img._init_dat(base_shape=dat.shape, data=dat)
                 img.wcs = img._getWcs(**kwargs)
                 img._prepRaDec()
@@ -206,7 +262,7 @@ class AstroImage(object):
     def xsize(self, size, offset=0):
         """Change the horizontal size. The offset will be applied to the new image before adding"""
         self.crop(size, self.ysize, offset, 0)
-        self.shape = (self.ysize, size)
+        self.shape = np.array((self.ysize, size))
     
     @property
     def ysize(self):
@@ -216,7 +272,7 @@ class AstroImage(object):
     def ysize(self, size, offset=0):
         """Change the vertical size. The offset will be applied to the new image before adding"""
         self.crop(self.xsize, size, 0, offset)
-        self.shape = (size, self.xsize)
+        self.shape = np.array((size, self.xsize))
     
     @property
     def xscale(self):
@@ -293,12 +349,25 @@ class AstroImage(object):
         spa = np.sin(np.radians(pa%360.))
         self.wcs.wcs.pc = np.array([[cpa, -spa], [spa, cpa]])
         self.addHistory("Set PA to %f" % (pa))
+
+    
+    @property
+    def celery_state(self):
+        if self.get_celery is not None:
+            return self.get_celery()
+        return ""
+    
+    @celery_state.setter
+    def celery_state(self, state):
+        if self.set_celery is not None:
+            self.set_celery(state)
+
     
     @property
     def hdu(self):
         """Output AstroImage as a FITS Primary HDU"""
         with ImageData(self.fname, self.shape, mode='r+') as dat:
-            hdu = pyfits.PrimaryHDU(dat, header=self.wcs.to_header(relax=True))
+            hdu = fits.PrimaryHDU(dat, header=self.wcs.to_header(relax=True))
         hdu.header['CDELT1'] = self.scale[0]/3600.
         hdu.header['CDELT2'] = self.scale[0]/3600.
         if sys.version_info[0] >= 3:
@@ -319,7 +388,7 @@ class AstroImage(object):
         """Output AstroImage as a FITS Extension HDU"""
         self._log("info","Creating Extension HDU from AstroImage %s" % (self.name))
         with ImageData(self.fname, self.shape, mode='r+') as dat:
-            hdu = pyfits.ImageHDU(dat, header=self.wcs.to_header(relax=True), name=self.name)
+            hdu = fits.ImageHDU(dat, header=self.wcs.to_header(relax=True), name=self.name)
         if sys.version_info[0] >= 3:
             for k,v in self.header.items():
                 hdu.header[k] = v
@@ -330,11 +399,24 @@ class AstroImage(object):
             hdu.header.add_history(item)
         self._log("info","Created Extension HDU from AstroImage %s" % (self.name))
         return hdu
+
+    @property
+    def psf_constructor(self):
+        import webbpsf
+        return getattr(getattr(webbpsf, self.telescope), self.instrument)()
+    
+    
+    @property
+    def psf_shape(self):
+        if hasattr(self, 'psf'):
+            return self.psf.shape
+        return (0, 0)
+
     
     def toFits(self, outFile):
         """Create a FITS file from the current state of the AstroImage data."""
         self._log("info","Writing AstroImage %s to FITS" % (self.name))
-        hdulist = pyfits.HDUList([self.hdu])
+        hdulist = fits.HDUList([self.hdu])
         hdulist.writeto(outFile, overwrite=True)
     
     def updateHeader(self,k,v):
@@ -565,71 +647,224 @@ class AstroImage(object):
         self._addArrayWithOffset(img, offset_x, offset_y)
         return central_flux
 
-    def convolve(self, other, max=4095, do_convolution=True, parallel=False, cores=None, state_setter=None, base_state=""):
-        """Convolves the AstroImage with another (provided) AstroImage, e.g. for PSF convolution."""
-        self.addHistory("Convolving with file %s" % (other.name))
-        self._log("info","Convolving AstroImage %s with %s" % (self.name,other.name))
-        f, g = os.path.join(self.out_path, uuid.uuid4().hex+"_convolve_01.tmp"), os.path.join(self.out_path, uuid.uuid4().hex+"_convolve_02.tmp")
-        try:
-            sub_shape = (min(max - other.shape[0], self.shape[0] + other.shape[0] - 1), min(max - other.shape[1], self.shape[1] + other.shape[1] - 1))
-            with ImageData(self.fname, self.shape, mode='r') as dat, ImageData(other.fname, other.shape, mode='r') as psf:
-                fp_result = np.memmap(f, dtype='float32', mode='w+', shape=(self.shape[0]+psf.shape[0]-1, self.shape[1]+psf.shape[1]-1))
-                centre = (fp_result.shape[0]//2, fp_result.shape[1]//2)
-                if do_convolution:
-                    sub_shape = (min(max - psf.shape[0], self.shape[0] + psf.shape[0] - 1), min(max - psf.shape[1], self.shape[1] + psf.shape[1] - 1))
-                    self._log('info', "PSF Shape: {}; Current Shape: {}".format(psf.shape, self.shape))
-                    self._log('info', "Choosing between {}-{}={} and {}+{}-1={}".format(max, psf.shape, max-psf.shape[0], psf.shape, self.shape, psf.shape[0]+self.shape[0]-1))
-                    self._log('info', "Using overlapping arrays of size {}".format(sub_shape))
-                    self._log('info', "Starting Convolution at {}".format(time.ctime()))
-                    if parallel:
-                        self._log('info', 'Convolving in parallel')
-                        del fp_result
-                        overlapaddparallel(dat, psf, sub_shape, y=f, verbose=True, logger=self.logger, base_state=base_state, state_setter=state_setter, path=self.out_path, cores=cores)
-                        fp_result = np.memmap(f, dtype='float32', mode='r+', shape=(self.shape[0]+psf.shape[0]-1, self.shape[1]+psf.shape[1]-1))
-                    else:
-                        overlapadd2(dat, psf, sub_shape, y=fp_result, verbose=True, logger=self.logger, base_state=base_state, state_setter=state_setter)
-                    self._log('info', "Finished Convolution at {}".format(time.ctime()))
-                else:
-                    bordered_half = self.shape[0]//2, self.shape[1]//2
-                    ly, hy, lx, hx = centre[0]-bordered_half[0], centre[0]+bordered_half[0], centre[1]-bordered_half[1], centre[1]+bordered_half[1]
-                    if hx-lx < self.shape[1]:
-                        hx += 1
-                    elif hx-lx > self.shape[1]:
-                        hx -= 1
-                    if hy-ly < self.shape[0]:
-                        hy += 1
-                    elif hy-ly > self.shape[0]:
-                        hy -= 1
-                    fp_result[ly:hy, lx:hx] += dat[:,:]
-            self._log('info', "Cropping convolved image down to detector size")
-            half = (self.base_shape[0]//2, self.base_shape[1]//2)
-            self._log('info', "Image Centre: {}; Image Half-size: {}".format(centre, half))
-            ly, hy, lx, hx = centre[0]-half[0], centre[0]+half[0], centre[1]-half[1], centre[1]+half[1]
-            if hx-lx < self.base_shape[1]:
-                hx += 1
-            elif hx-lx > self.base_shape[1]:
-                hx -= 1
-            if hy-ly < self.base_shape[0]:
-                hy += 1
-            elif hy-ly > self.base_shape[0]:
-                hy -= 1
-            self._log('info', "Taking [{}:{}, {}:{}]".format(ly, hy, lx, hx))
-            fp_crop = np.memmap(g, dtype='float32', mode='w+', shape=self.base_shape)
-            fp_crop[:,:] = fp_result[ly:hy, lx:hx]
-            crpix = [half[0], half[1]]
-            if self.wcs.sip is not None:
-                sip = wcs.Sip(self.wcs.sip.a, self.wcs.sip.b, None, None, crpix)
+    def make_psf(self):
+        from webbpsf import __version__ as psf_version
+        have_psf = False
+        psf_name = "psf_{}_{}_{}_{}_{}_{}.fits".format(self.instrument,
+                                                       stips_version, 
+                                                       self.filter,
+                                                       self.oversample,
+                                                       self.grid_size,
+                                                       self.detector)
+        if os.path.exists(os.path.join(self.out_path, "psf_cache")):
+            psf_file = os.path.join(self.out_path, "psf_cache", psf_name)
+            if os.path.exists(psf_file):
+                from webbpsf.utils import to_griddedpsfmodel
+                if (self.psf_commands is None or self.psf_commands == ''):
+                    self.psf = to_griddedpsfmodel(psf_file)
+                    have_psf = True
+        if not have_psf:
+            base_state = self.celery_state
+            update_state = "<br /><span class='indented'>Generating PSF</span>"
+            self.celery_state = base_state + update_state
+            ins = self.psf_constructor
+            if self.psf_commands != '':
+                for attribute,value in self.psf_commands.iteritems():
+                    setattr(ins,attribute,value)
+            ins.filter = self.filter
+            ins.detector = self.detector
+
+            scale = self.scale[0]
+            safe_size = int(floor(30. * self.photplam / (2 * self.scale[0])))
+            if safe_size == 0:
+                safe_size = max(self.xsize, self.ysize)
+            ins_size = max(self.xsize, self.ysize) * self.oversample
+            conv_size = int(np.floor(2048 / self.oversample))
+            msg = "PSF choosing between {}, {}, and {}"
+            self._log("info", msg.format(safe_size, ins_size, conv_size))
+            fov_pix = min(safe_size, ins_size, conv_size)
+            if fov_pix%2 != 0:
+                fov_pix += 1
+            num_psfs = self.grid_size*self.grid_size
+            if os.path.exists(os.path.join(self.out_path, "psf_cache")):
+                save = True
+                overwrite = True
+                psf_dir = os.path.join(self.out_path, "psf_cache")
+                psf_file = "psf_{}_{}_{}_{}_{}".format(self.instrument,
+                                                       stips_version, 
+                                                       self.filter,
+                                                       self.oversample,
+                                                       self.grid_size)
             else:
-                sip = None
-            self.wcs = self._wcs(self.ra, self.dec, self.pa, self.scale, crpix=crpix, sip=sip)
-            del fp_result
-            del fp_crop
-            if os.path.exists(self.fname):
-                os.remove(self.fname)
+                save = False
+                overwrite = False
+                psf_dir = None
+                psf_file = None
+            
+            self.psf = ins.psf_grid(all_detectors=False, num_psfs=num_psfs,
+                                    fov_pixels=fov_pix, normalize='last',
+                                    oversample=self.oversample, save=save,
+                                    outdir=psf_dir, outfile=psf_file,
+                                    overwrite=overwrite)
+            self.celery_state = base_state
+    
+    def convolve_psf(self, max_size=4095, parallel=False, cores=None):
+        """
+        Convolve the current AstroImage state with the generated PSF (if there
+        is a generated PSF). Otherwise, do nothing.
+        
+        Parameters
+        ----------
+        max_size : int, default=4095
+            The maximum size chunk to use in convolution chunks.
+        parallel : bool, default=False
+            Whether to perform convolution chunks in parallel
+        cores : int, default=None
+            How many CPU cores to use for parallel computation (used only if
+            parallel=True)
+        """
+        if hasattr(self, 'psf'):
+            self.convolve(self.psf, max_size=max_size, parallel=parallel,
+                          cores=cores, crop=True)
+
+
+    def convolve(self, other, max_size=4095, parallel=False, cores=None,
+                 crop=True):
+        """
+        Convolve the AstroImage with another image. This image can be
+            - another AstroImage
+            - a numpy NDData array
+            - a FITS file
+            - a webbpsf PSF grid
+        
+        Parameters
+        ----------
+        other : object
+            The other image to convolve. See above for possible formats.
+        max_size : int, default=4095
+            The maximum size chunk to use in convolution chunks.
+        parallel : bool, default=False
+            Whether to perform convolution chunks in parallel
+        cores : int, default=None
+            How many CPU cores to use for parallel computation (used only if
+            parallel=True)
+        crop : bool, default=True
+            After convolving, should the AstroImage be cropped down to no
+            longer include the PSF overlap region.
+        """
+        self.addHistory("Convolving {} with {}".format(self.name, other))
+        self._log("info", "Convolving {} with {}".format(self.name, other))
+        
+        other_type = ""
+        if isinstance(other, AstroImage):
+            other_type = "astro_image"
+            other_img = ImageData(other.fname, other.shape, mode='r')
+            other_shape = other_img.shape
+        elif isinstance(other, np.ndarray):
+            other_type = "ndarray"
+            other_img = other
+            other_shape = other_img.shape
+        elif isinstance(other, GriddedPSFModel):
+            other_type = "psfgrid"
+            other_img = other
+            other_shape = self.psf_shape
+        else:
+            # There are so darn many fits HDU classes that I can't
+            #   figure out how to do this with them, so FITS file is now
+            #   a diagnosis of last resort.
+            other_type = 'fits_file'
+            if 'primary' in other:
+                other_img = other['primary'].data
+            elif len(other) > 1:
+                other_img = other[1].data
+            elif hasattr(other, 'data'):
+                other_img = other.data
+            else:
+                other_img = other[0].data
+            other_shape = other_img.shape
+        
+        f = os.path.join(self.out_path, uuid.uuid4().hex+"_convolve_01.tmp")
+        g = os.path.join(self.out_path, uuid.uuid4().hex+"_convolve_02.tmp")
+        try:
+            self_y, self_x = self.shape
+            other_y, other_x = other_shape
+            max_y = min(max_size - other_y, self_y + other_y - 1)
+            max_x = min(max_size - other_x, self_x + other_x - 1)
+            sub_shape = (max_y, max_x)
+            with ImageData(self.fname, self.shape, mode='r') as dat:
+                shape = (self_y + other_y - 1, self_x + other_x - 1)
+                fp_res = np.memmap(f, dtype='float32', mode='w+', shape=shape)
+                centre = (fp_res.shape[0]//2, fp_res.shape[1]//2)
+                max_y = min(max_size - other_y, self_y + other_y - 1)
+                max_x = min(max_size - other_x, self_x + other_x - 1)
+                sub_shape = (max_y, max_x)
+                msg = "PSF Shape: {}; Current Shape: {}"
+                self._log('info', msg.format(other_img.shape, self.shape))
+                msg = "Choosing between {}-{}={} and {}+{}-1={}"
+                self._log('info', msg.format(max_size, other_shape, 
+                                             max_size-other_y, other_shape, 
+                                             self.shape, other_y+self_y-1))
+                msg = "Using overlapping arrays of size {}"
+                self._log('info', msg.format(sub_shape))
+                msg = "Starting Convolution at {}"
+                self._log('info', msg.format(time.ctime()))
+                if parallel:
+                    self._log('info', 'Convolving in parallel')
+                    del fp_res
+                    overlapaddparallel(dat, dat.shape, other_img, other_shape, 
+                                       sub_shape, y=f, verbose=True, 
+                                       logger=self.logger, 
+                                       base_state=self.get_celery(), 
+                                       state_setter=self.set_celery, 
+                                       path=self.out_path, cores=cores)
+                    fp_res = np.memmap(f, dtype='float32', mode='r+', 
+                                       shape=shape)
+                else:
+                    overlapadd2(dat, dat.shape, other_img, other_shape, 
+                                sub_shape, y=fp_res, verbose=True, 
+                                logger=self.logger, 
+                                base_state=self.get_celery(), 
+                                state_setter=self.set_celery)
+                msg = "Finished Convolution at {}"
+                self._log('info', msg.format(time.ctime()))
+
+            if crop:
+                msg = "Cropping convolved image down to detector size"
+                self._log('info', msg)
+                half = (self.base_shape[0]//2, self.base_shape[1]//2)
+                msg = "Image Centre: {}; Image Half-size: {}"
+                self._log('info', msg.format(centre, half))
+                ly, hy = centre[0]-half[0], centre[0]+half[0]
+                lx, hx = centre[1]-half[1], centre[1]+half[1]
+                if hx-lx < self.base_shape[1]:
+                    hx += 1
+                elif hx-lx > self.base_shape[1]:
+                    hx -= 1
+                if hy-ly < self.base_shape[0]:
+                    hy += 1
+                elif hy-ly > self.base_shape[0]:
+                    hy -= 1
+                msg = "Taking [{}:{}, {}:{}]"
+                self._log('info', msg.format(ly, hy, lx, hx))
+                fp_crop = np.memmap(g, dtype='float32', mode='w+', 
+                                    shape=self.base_shape)
+                fp_crop[:,:] = fp_res[ly:hy, lx:hx]
+                crpix = [half[0], half[1]]
+                if self.wcs.sip is not None:
+                    sip = wcs.Sip(self.wcs.sip.a, self.wcs.sip.b, None, None, 
+                                  crpix)
+                else:
+                    sip = None
+                self.wcs = self._wcs(self.ra, self.dec, self.pa, self.scale, 
+                                     crpix=crpix, sip=sip)
+                del fp_res
+                del fp_crop
+                if os.path.exists(self.fname):
+                    os.remove(self.fname)
+                self.fname = g
+                self.shape = self.base_shape
             if os.path.exists(f):
                 os.remove(f)
-            self.fname = g
-            self.shape = self.base_shape
         except Exception as e:
             if os.path.exists(f):
                 os.remove(f)
@@ -792,7 +1027,7 @@ class AstroImage(object):
         try:
             shape_x = int(round(self.shape[1] * self.scale[0] / scale[0]))
             shape_y = int(round(self.shape[0] * self.scale[1] / scale[1]))
-            new_shape = (shape_y, shape_x)
+            new_shape = np.array((shape_y, shape_x))
             self._log("info","New shape will be {}".format(new_shape))
             fp_result = np.memmap(f, dtype='float32', mode='w+', shape=new_shape)
             with ImageData(self.fname, self.shape, mode='r+') as dat:
@@ -842,7 +1077,7 @@ class AstroImage(object):
             if os.path.exists(self.fname):
                 os.remove(self.fname)
             self.fname = f
-            self.shape = (shape_y, shape_x)
+            self.shape = np.array((shape_y, shape_x))
         except Exception as e:
             if os.path.exists(f):
                 os.remove(f)
@@ -1068,20 +1303,20 @@ class AstroImage(object):
             wcs = self._normalizeWCS(wcs)
         else:
             #get pixel scale (if available)
-            scale = kwargs.get('scale', [1., 1.])
+            scale = self._scale
             ra = kwargs.get('ra', 0.)
             offset_ra = kwargs.get('offset_ra', 0.)
             dec = kwargs.get('dec', 0.)
             offset_dec = kwargs.get('offset_dec', 0.)
-            ra,dec = OffsetPosition(ra,dec,offset_ra,offset_dec)
+            ra,dec = OffsetPosition(ra, dec, offset_ra, offset_dec)
             pa = kwargs.get('pa', 0.)
-            wcs = self._wcs(ra,dec,pa,scale,sip=sip)
+            wcs = self._wcs(ra, dec, pa, scale, sip=sip)
         return wcs
        
-    def _sip(self,da,db,dap,dbp):
+    def _sip(self, da, db, dap, dbp):
         """Create a SIP distortion model from the distortion arrays"""
-        crpix = [int(np.floor(self.xsize/2.)),int(np.floor(self.ysize/2.))]
-        sip = wcs.Sip(da,db,dap,dbp,crpix)
+        crpix = [self.xsize//2, self.ysize//2]
+        sip = wcs.Sip(da, db, dap, dbp, crpix)
         return sip
     
     def _wcs(self, ra, dec, pa, scale, crpix=None, sip=None, ranum=0, decnum=1):
@@ -1090,10 +1325,12 @@ class AstroImage(object):
         
         ra is right ascension in decimal degrees
         dec is declination in decimal degrees
-        pa is the angle between north and east on the tangent plane, with the quadrant between north
-           and east being positive
-        scale is the pixel scale in arcseconds/pixel, for the (x, y) axes of the image
-        crpix is the (x, y) location on the image of the reference pixel (default is centre)
+        pa is the angle between north and east on the tangent plane, with the
+            quadrant between northand east being positive
+        scale is the pixel scale in arcseconds/pixel, for the (x, y) axes of the 
+            image
+        crpix is the (x, y) location on the image of the reference pixel 
+            (default is centre)
         sip is the simple imaging polynomial distortion object (if present)
         ranum indicates which image axis represents RA (default 0)
         decnum indicates which image axis represents DEC (default 1)
@@ -1103,7 +1340,7 @@ class AstroImage(object):
         w.wcs.ctype[ranum] = "RA---TAN"
         w.wcs.ctype[decnum] = "DEC--TAN"
         if crpix is None:
-            w.wcs.crpix = [int(np.floor(self.xsize/2.)),int(np.floor(self.ysize/2.))]
+            w.wcs.crpix = [self.xsize//2, self.ysize//2]
         else:
             w.wcs.crpix = crpix
         w.wcs.crval = [0.,0.]
@@ -1126,8 +1363,10 @@ class AstroImage(object):
             w.wcs.ctype[decnum] = "DEC--TAN-SIP"
             w.sip = sip
         self._scale = scale
-        message = "{}: (RA, DEC, PA) := ({}, {}, {}), detected as ({}, {}, {})"
-        self._log("info", message.format(self.name, ra, dec, pa, w.wcs.crval[ranum], w.wcs.crval[decnum], self._getPA(w, scale, decnum)))
+        msg = "{}: (RA, DEC, PA) := ({}, {}, {}), detected as ({}, {}, {})"
+        msg = msg.format(self.name, ra, dec, pa, w.wcs.crval[ranum], 
+                         w.wcs.crval[decnum], self._getPA(w, scale, decnum))
+        self._log("info", msg)
         return w
     
     def _normalizeWCS(self,w):
@@ -1245,25 +1484,20 @@ class AstroImage(object):
         if os.path.exists(self.fname):
             os.remove(self.fname)
         self.base_shape = base_shape
-        self.shape = tuple(np.array(base_shape) + np.array(psf_shape))
+        self.shape = np.array(base_shape) + np.array(psf_shape)
         fp = np.memmap(self.fname, dtype='float32', mode='w+', shape=self.shape)
         fp.fill(0.)
         if data is not None:
-            centre = tuple(np.array(self.shape)//2)
-            half = tuple(np.array(base_shape)//2)
+            centre = self.shape//2
+            half = base_shape//2
             fp[centre[0]-half[0]:centre[0]+self.base_shape[0]-half[0],centre[1]-half[1]:centre[1]+self.base_shape[1]-half[1]] = data
         del fp
     
     def _remap(self, xs, ys):
         # Step 1 -- compensate for PSF adjustments
-        adj_x = (self.shape[1] - self.base_shape[1]) // 2
-        adj_y = (self.shape[0] - self.base_shape[0]) // 2
-        x_outs = xs - adj_x
-        y_outs = ys - adj_y
-        # Step 2 -- handle oversample
-        x_outs /= self.oversample
-        y_outs /= self.oversample
-        return x_outs, y_outs
+        adj = (self.shape - self.base_shape)//2
+        outs = (np.array((ys,xs)) - adj)/self.oversample
+        return outs[1], outs[0]
 
     def updateState(self, state):
         if self.set_celery is not None:

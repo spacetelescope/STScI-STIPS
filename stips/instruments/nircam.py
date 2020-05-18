@@ -47,39 +47,6 @@ class NIRCamBase(JwstInstrument):
         self.CENTRAL_OFFSET = self.N_OFFSET[n_detectors]
         self._log('info', "{} with {} detectors. Central offset {}".format(self.DETECTOR, n_detectors, self.CENTRAL_OFFSET))
 
-    def resetPSF(self):
-        import webbpsf
-        if self.filter not in self.FILTERS:
-            raise ValueError("Filter %s is not a valid %s filter" % (self.filter,self.classname))
-        have_psf = False
-        if os.path.exists(os.path.join(self.out_path, "psf_cache")):
-            if os.path.exists(os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("NIRCam", self.filter, self.oversample))):
-                with pyfits.open(os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("NIRCam", self.filter, self.oversample))) as psf:
-                    if psf[0].header['VERSION'] >= webbpsf.__version__ and (self.psf_commands is None or self.psf_commands == ''):
-                        self.psf = AstroImage(data=psf[0].data, detname="NIRCam {} PSF".format(self.filter), logger=self.logger)
-                        have_psf = True
-        if not have_psf:
-            base_state = self.getState()
-            self.updateState(base_state+"<br /><span class='indented'>Generating PSF</span>")
-            ins = webbpsf.NIRCam()
-            if self.psf_commands is not None and self.psf_commands != '':
-                for attribute,value in self.psf_commands.iteritems():
-                    setattr(ins,attribute,value)
-            ins.filter = self.filter
-            max_safe_size = int(np.floor(30. * self.PHOTPLAM[self.filter] / (2. * self.SCALE[0])))
-            max_ins_size = max(self.DETECTOR_SIZE) * self.oversample
-            max_conv_size = int(np.floor(2048 / self.oversample))
-            self._log("info", "PSF choosing between {}, {}, and {}".format(max_safe_size, max_ins_size, max_conv_size))
-            if hasattr(ins, 'calc_psf'):
-                ins.calcPSF = ins.calc_psf
-            psf = ins.calcPSF(oversample=self.oversample, fov_pixels=min(max_safe_size, max_ins_size, max_conv_size), normalize='last')
-            psf[0].header['VERSION'] = webbpsf.__version__
-            if os.path.exists(os.path.join(self.out_path, "psf_cache")):
-                dest = os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("NIRCam", self.filter, self.oversample))
-                pyfits.writeto(dest, psf[0].data, header=psf[0].header, overwrite=True)
-            self.psf = AstroImage(data=psf[0].data,detname="NIRCam %s PSF" % (self.filter),logger=self.logger)
-            self.updateState(base_state)
-    
     def generateReadnoise(self):
         """
         Readnoise formula that is similar to JWST ETC.
@@ -126,6 +93,12 @@ class NIRCamBase(JwstInstrument):
     # Offsets are in (arcseconds_ra,arcseconds_dec,degrees_angle)
     DETECTOR_SIZE = (2040,2040) #pixels
     PIXEL_SIZE = 18.0 #um
+    
+    # Simulation Values
+    OVERSAMPLE_DEFAULT = 1 # by default sample at detector size.
+    PSF_GRID_SIZE_DEFAULT = 5 # 5X5 grid = 25 PSFs
+    PSF_INSTRUMENT = "NIRCam"
+    
     DISTORTION = {
                     'A1': { 'DIST_A': [[0.,             0.,             0.,             0.,             0.,             0.],
                                        [3.11450E-2,     0.,             0.,             0.,             0.,             0.],

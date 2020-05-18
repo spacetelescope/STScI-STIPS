@@ -77,6 +77,12 @@ class Instrument(object):
         self.set_celery = kwargs.get('set_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
         self.use_local_cache = kwargs.get('use_local_cache', False)
+
+        #Set oversampling
+        self.oversample = kwargs.get('oversample', self.OVERSAMPLE_DEFAULT)
+        
+        #Set PSF grid points
+        self.grid_size = kwargs.get('grid_size', self.PSF_GRID_SIZE_DEFAULT)
     
     @classmethod
     def initFromImage(cls, image, **kwargs):
@@ -133,50 +139,112 @@ class Instrument(object):
         self.pa = pa
         self.obs_count = obs_count
         if filter != self.filter:
+            if filter not in self.FILTERS:
+                msg = "Filter {} is not a valid {} filter"
+                raise ValueError(msg.format(filter, self.instrument))
             self.filter = filter
-            if psf:
-                self.resetPSF()
             self.background = self.pixel_background
             self.photfnu = self.PHOTFNU[self.filter]
             self.photplam = self.PHOTPLAM[self.filter]
         if detectors:
-            self.resetDetectors()
+            self.resetDetectors(psf=psf)
     
-    def resetPSF(self):
-        pass
+
+#     @property
+#     def psf_constructor(self):
+#         import webbpsf
+#         instrument = getattr(webbpsf, self.TELESCOPE.lower())
+#         return getattr(instrument, self.PSF_INSTRUMENT)()
+
+
+#     def resetPSF(self):
+#         import webbpsf
+#         from webbpsf import __version__ as psf_version
+#         from webbpsf import wfirst
+#         if self.filter not in self.FILTERS:
+#             msg = "Filter {} is not a valid WFI filter"
+#             raise ValueError(msg.format(self.filter))
+#         have_psf = False
+#         psf_name = "psf_{}_{}_{}_{}_{}_{}.fits".format(self.INSTRUMENT,
+#                                                        stips_version, 
+#                                                        self.filter,
+#                                                        self.oversample,
+#                                                        self.grid_size,
+#                                                        self.detector)
+#         if os.path.exists(os.path.join(self.out_path, "psf_cache")):
+#             psf_file = os.path.join(self.out_path, "psf_cache", psf_name)
+#             if os.path.exists(psf_file):
+#                 from webbpsf.utils import to_griddedpsfmodel
+#                 if (self.psf_commands is None or self.psf_commands == ''):
+#                     self.psf = to_griddedpsfmodel(psf_file)
+#                     have_psf = True
+#         if not have_psf:
+#             base_state = self.getState()
+#             update_state = "<br /><span class='indented'>Generating PSF</span>"
+#             self.updateState(base_state+update_state)
+#             ins = self.psf_constructor
+#             if self.psf_commands is not None and self.psf_commands != '':
+#                 for attribute,value in self.psf_commands.iteritems():
+#                     setattr(ins,attribute,value)
+#             ins.filter = self.filter
+#             plotplam = self.PHOTPLAM[self.filter]
+#             scale = self.SCALE[0]
+#             safe_size = int(np.floor(30. * photplam / (2. * scale)))
+#             ins_size = max(self.DETECTOR_SIZE) * self.oversample
+#             conv_size = int(np.floor(2048 / self.oversample))
+#             msg = "PSF choosing between {}, {}, and {}"
+#             self._log("info", msg.format(safe_size, ins_size, conv_size))
+#             fov_pix = min(safe_size, ins_size, conv_size)
+#             num_psfs = self.grid_size*self.grid_size
+#             if os.path.exists(os.path.join(self.out_path, "psf_cache")):
+#                 save = True
+#                 overwrite = True
+#                 psf_dir = os.path.join(self.out_path, "psf_cache")
+#                 psf_file = "psf_{}_{}_{}_{}_{}".format(self.INSTRUMENT,
+#                                                        stips_version, 
+#                                                        self.filter,
+#                                                        self.oversample,
+#                                                        self.grid_size)
+#             else:
+#                 save = False
+#                 overwrite = False
+#                 psf_dir = None
+#                 psf_file = None
+#             
+#             self.psf = ins.psf_grid(all_detectors=True, num_psfs=num_psfs,
+#                                     fov_pixels=fov_pix, normalize='last',
+#                                     oversample=self.oversample, save=True,
+#                                     outdir=psf_dir, outfile=psf_file,
+#                                     overwrite=overwrite)
+#             self.updateState(base_state)
+        
     
-    def resetDetectors(self):
+    def resetDetectors(self, psf=True):
         if self.detectors is not None:
             del self.detectors
         #Create Detectors
         self.detectors = []
-        for offset,name in zip(self.DETECTOR_OFFSETS,self.OFFSET_NAMES):
+        for offset, name in zip(self.DETECTOR_OFFSETS, self.OFFSET_NAMES):
             distortion = None
             if self.distortion:
                 distortion = self.DISTORTION[name]
-            (delta_ra,delta_dec,delta_pa) = offset
-            delta_ra -= self.CENTRAL_OFFSET[0]
-            delta_dec -= self.CENTRAL_OFFSET[1]
-            delta_pa -= self.CENTRAL_OFFSET[2]
-            ra,dec = OffsetPosition(self.ra,self.dec,delta_ra/3600.,delta_dec/3600.)
+            (delta_ra, delta_dec, delta_pa) = offset
+            delta_ra = (delta_ra - self.CENTRAL_OFFSET[0])/3600.
+            delta_dec = (delta_dec - self.CENTRAL_OFFSET[1])/3600.
+            delta_pa = delta_pa - self.CENTRAL_OFFSET[2]
+            ra,dec = OffsetPosition(self.ra, self.dec, delta_ra, delta_dec)
             pa = (self.pa + delta_pa)%360.
-            hdr = {"DETECTOR":name,"FILTER":self.filter}
-            hist = ["Initialized %s Detector %s, filter %s" % (self.instrument,name,self.filter)]
-            xsize = self.DETECTOR_SIZE[0]*self.oversample
-            ysize = self.DETECTOR_SIZE[1]*self.oversample
-            scale = [self.SCALE[0]/self.oversample,self.SCALE[1]/self.oversample]
-            self._log("info","Creating Detector with (RA,DEC,PA) = (%f,%f,%f)" % (ra,dec,pa))
-            self._log("info","Creating Detector with pixel offset ({},{})".format(delta_ra/scale[0], delta_dec/scale[1]))
-            detector = AstroImage(out_path=self.out_path, shape=(ysize, xsize), scale=scale, ra=ra, 
-                                  dec=dec, pa=pa, exptime=1., header=hdr, history=hist, 
-                                  psf_shape=self.psf.shape, zeropoint=self.zeropoint, 
-                                  background=self.background, noise_floor=1./self.exptime, 
-                                  photflam=self.photflam, detname=name, logger=self.logger, 
-                                  oversample=self.oversample, small_subarray=self.small_subarray, 
-                                  distortion=distortion, prefix=self.prefix, seed=self.seed,
-                                  set_celery=self.set_celery, get_celery=self.get_celery,
-                                  cat_type=self.cat_type)
-            self._log("info", "Detector created")
+            hdr = {"DETECTOR":name, "FILTER":self.filter}
+            msg = "Initialized {} Detector {} with filter {}"
+            hist = [msg.format(self.instrument, name, self.filter)]
+            msg = "Creating Detector {} with (RA,DEC,PA) = ({},{},{})"
+            self._log("info", msg.format(name, ra, dec, pa))
+            msg = "Creating Detector {} with offset ({},{})"
+            self._log("info", msg.format(name, delta_ra, delta_dec))
+            detector = AstroImage(parent=self, ra=ra, dec=dec, pa=pa, psf=psf,
+                                  header=hdr, history=hist, detname=name,
+                                  distortion=distortion)
+            self._log("info", "Detector {} created".format(name))
             self.detectors.append(detector)
         
     def toFits(self,outfile):
@@ -993,4 +1061,15 @@ class Instrument(object):
         if self.get_celery is not None:
             return self.get_celery()
         return ""
+    
+    # Simulation defaults
+    
+    # Default detector oversample.
+    #   - it is not actually recommended to use this for real simulations.
+    #   - an oversample of at least 5 is preferable, 10 is recommended.
+    #   - that said, it's a balance between size, speed, and accuracy.
+    OVERSAMPLE_DEFAULT = 1
+    
+    # Size of the side of the grid. e.g. 5 = 5X5 grid = 25 PSFs.
+    PSF_GRID_SIZE_DEFAULT = 5
 
