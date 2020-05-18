@@ -22,3 +22,8 @@ from .utilities import GetStipsData, internet, CachedJbtBackground, __grid__
 
 __grid__pandeia__version__ = __grid__.__pandeia__version__
 __grid__stips__version__ = __grid__.__stips__version__
+
+try:
+     stips_data_base = os.environ["stips_data"]
+except KeyError:
+     stips_data_base = None
