@@ -73,25 +73,30 @@ matrix:
         - stage: Initial tests
           env: PYTHON_VERSION=3.7 SETUP_CMD='egg_info'
 
-        # Test python 2.7
-        - python: 2.7
-
-        # Try MacOS X, usually enough only to run from cron as hardly there are
-        # issues that are not picked up by a linux worker
-        - os: osx
-          env: SETUP_CMD='test' EVENT_TYPE='cron'
-
-
         # Check for sphinx doc build warnings - we do this first because it
         # may run for a long time
         - os: linux
           env: SETUP_CMD='build_docs -w'
                CONDA_DEPENDENCIES=$CONDA_DEPENDENCIES_DOC
 
+        # Main test
+        # ---------
+        - os: linux
+        # ---------
+
+        # Test python 2.7
+        - python: 2.7
+
         # Now try Astropy dev with the latest Python
         - os: linux
           env: ASTROPY_VERSION=development
                EVENT_TYPE='pull_request push cron'
+
+        # Try MacOS X, usually enough only to run from cron as hardly there are
+        # issues that are not picked up by a linux worker
+        - os: osx
+          env: SETUP_CMD='test' EVENT_TYPE='cron'
+
 
         # Add a job that runs from cron only and tests against astropy dev and
         # numpy dev to give a change for early discovery of issues and feedback
