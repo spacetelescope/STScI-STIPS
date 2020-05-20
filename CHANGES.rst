@@ -11,8 +11,8 @@ Version 1.0.8
 
 **STIPS Improvements**
 
-- PSFs generated with `webbpsf` are now PSF grids. [:pr:``, :user:`york-stsci`]
-- STIPS has the option to keep all data in memory. [:pr:``, :user:`york-stsci`]
+- PSFs generated with `webbpsf` are now PSF grids. [:pr:`77`, :user:`york-stsci`]
+- STIPS has the option to keep all data in memory. [:pr:`77`, :user:`york-stsci`]
 - STIPS now has a working test infrastructure. [:pr:`67`, :user:`robelgeds`]
 
 Version 1.0.7
