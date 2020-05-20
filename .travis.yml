@@ -62,7 +62,7 @@ env:
 matrix:
 
     # Don't wait for allowed failures
-    # fast_finish: true
+    fast_finish: true
 
     include:
         # Make sure that egg_info works without dependencies
