@@ -97,12 +97,6 @@ matrix:
         # numpy dev to give a change for early discovery of issues and feedback
         # for both developer teams.
 
-        # Now try Astropy dev with the latest Python
-        - name: "ASTROPY Dev"
-          os: linux
-          env: ASTROPY_VERSION=development
-               EVENT_TYPE='pull_request push cron'
-
         - name: "ASTROPY and NUMPY_VERSION Dev"
           os: linux
           env: ASTROPY_VERSION=development NUMPY_VERSION=development
@@ -114,26 +108,7 @@ matrix:
           os: linux
           env: SETUP_CMD='test' VERYSLOW=true
 
-        # Do a PEP8 test with flake8
-        - name: "flake8 [PEP8]"
-          os: linux
-          env: MAIN_CMD='flake8 stips --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
-
-        # Do a coverage test.
-        - name: "Coverage Test"
-          os: linux
-          env: SETUP_CMD='test --coverage'
-
-
     allow_failures:
-
-        # Do a PEP8 test with flake8
-        - os: linux
-          env: MAIN_CMD='flake8 stips --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
-
-        # Do a coverage test.
-        - os: linux
-          env: SETUP_CMD='test --coverage'
 
         - name: "veryslow"
 
