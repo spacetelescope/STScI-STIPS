@@ -45,14 +45,26 @@ class __grid__(object):
 
 #-----------
 class ImageData(object):
-    def __init__(self, fname, shape, mode='r+'):
-        self.fp = np.memmap(fname, dtype='float32', mode=mode, shape=shape)
+    def __init__(self, fname, shape, mode='r+', memmap=True):
+        self.shape = tuple(shape)
+        if memmap:
+            self.fp = np.memmap(fname, dtype='float32', mode=mode, 
+                                shape=self.shape)
+        else:
+            if isinstance(fname, np.ndarray):
+                self.fp = fname
+            else:
+                self.fp = np.ndarray(self.shape, dtype='float32')
     
     def __enter__(self):
         return self.fp
     
     def __exit__(self, exc_type, exc_value, traceback):
         del self.fp
+    
+    @property
+    def data(self):
+        return self.fp
 
 #-----------
 class CachedJbtBackground(background, object):
@@ -346,7 +358,7 @@ class Percenter(object):
 
 
 
-def computation(arr, Hf, pos, Nfft, y, ys, shape, lock, path):
+def computation(arr, Hf, pos, Nfft, y, ys, shape, lock, path, memmap):
     start_y, end_y, start_x, end_x, thisend_y, thisend_x = pos
     if isinstance(Hf, GriddedPSFModel):
         # Generate PSF
@@ -357,11 +369,11 @@ def computation(arr, Hf, pos, Nfft, y, ys, shape, lock, path):
         y, x = np.mgrid[y_0-ys2:y_0+ys2, x_0-xs2:x_0+xs2]
         psf = Hf.evaluate(x=x, y=y, flux=1, x_0=x_0, y_0=y_0)
         fftHf = fft2(psf, Nfft)
-        conv = ifft2(fftHf * fft2(arr, Nfft))
+        conv = np.real(ifft2(fftHf * fft2(arr, Nfft)))
     else:
-        conv = ifft2(Hf * fft2(arr, Nfft))
+        conv = np.real(ifft2(Hf * fft2(arr, Nfft)))
     lock.acquire()
-    with ImageData(y, ys) as dat:
+    with ImageData(y, ys, memmap=memmap) as dat:
         dat[start_y:thisend_y, start_x:thisend_x] += (conv[:(thisend_y-start_y), :(thisend_x-start_x)])
     lock.release()
     return "[{}, {}]".format(start_y, start_x)
@@ -370,7 +382,8 @@ def computation(arr, Hf, pos, Nfft, y, ys, shape, lock, path):
 def overlapaddparallel(Amat, amat_shape,
                        Hmat, hmat_shape,
                        L=None, Nfft=None, y=None, verbose=False, logger=None, 
-                       state_setter=None, base_state="", path=None, cores=None):
+                       state_setter=None, base_state="", path=None, cores=None,
+                       memmap=True):
     """
     Fast two-dimensional linear convolution via the overlap-add method.
     The overlap-add method is well-suited to convolving a very large array,
@@ -496,7 +509,7 @@ def overlapaddparallel(Amat, amat_shape,
             pos = (start[YDIM], endd[YDIM], start[XDIM], endd[XDIM], thisend[YDIM], thisend[XDIM])
             sub_arr = np.empty_like(Amat[start[YDIM]:endd[YDIM], start[XDIM]:endd[XDIM]])
             sub_arr[:,:] = Amat[start[YDIM]:endd[YDIM], start[XDIM]:endd[XDIM]]
-            res = pool.apply_async(computation, args=(sub_arr, Hf, pos, Nfft, y, ys, adjust, lock, path), callback=closing_log)
+            res = pool.apply_async(computation, args=(sub_arr, Hf, pos, Nfft, y, ys, adjust, lock, path, memmap), callback=closing_log)
             results.append(res)
             start[YDIM] += L[YDIM]
         start[XDIM] += L[XDIM]
@@ -588,8 +601,10 @@ def overlapadd2(Amat, amat_shape,
         raise ValueError('L must have two positive elements')
     if not (np.all(Nfft >= L + M - 1) and Nfft.size == 2):
         raise ValueError('Nfft must have two elements >= L + M - 1 where M = Hmat.shape')
-    if not (Amat.ndim <= 2 and Hmat.ndim <= 2):
-        raise ValueError('Amat and Hmat must be 2D arrays')
+    if not (Amat.ndim <= 2):
+        raise ValueError('Amat must be a 2D array')
+    if hasattr(Hmat, 'ndim') and not (Hmat.ndim <= 2):
+        raise ValueError('Hmat must be a 2D array')
 
     if isinstance(Hmat, GriddedPSFModel):
         Hf = Hmat
@@ -624,9 +639,9 @@ def overlapadd2(Amat, amat_shape,
                 ys2, xs2 = hmat_shape[0]//2, hmat_shape[1]//2
                 yg, xg = np.mgrid[y_0-ys2:y_0+ys2, x_0-xs2:x_0+xs2]
                 psf = Hf.evaluate(x=xg, y=yg, flux=1, x_0=x_0, y_0=y_0)
-                yt = ifft2(fft2(psf, Nfft) * Af)
+                yt = np.real(ifft2(fft2(psf, Nfft) * Af))
             else:
-                yt = ifft2(Hf * Af)
+                yt = np.real(ifft2(Hf * Af))
             ys = yt[:(thisend[YDIM]-start[YDIM]), :(thisend[XDIM]-start[XDIM])]
             y[start[YDIM]:thisend[YDIM], start[XDIM]:thisend[XDIM]] += ys[:,:]
             start[YDIM] += L[YDIM]

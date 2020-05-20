@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 # External modules
-import logging, os, sys
+import glob, logging, os, sys
 
 # Local modules
 from ..utilities import GetStipsData, InstrumentList, OffsetPosition, StipsDataTable
@@ -70,7 +70,7 @@ class ObservationModule(object):
         self.cat_path = kwargs.get('cat_path', os.getcwd())
         self.out_path = kwargs.get('out_path', os.getcwd())
         self.cat_type = kwargs.get('cat_type', 'fits')
-        self.convolve_size = kwargs.get('convolve_size', 4096)
+        self.convolve_size = kwargs.get('convolve_size', 8192)
         self.parallel = kwargs.get('parallel', False)
         self.cores = kwargs.get('cores', None)
         
@@ -101,6 +101,7 @@ class ObservationModule(object):
             self.poisson = kwargs.get('poisson', True)
             self.readnoise = kwargs.get('readnoise', True)
         self.version = kwargs.get('version', '0.0')
+        self.memmap = kwargs.get('memmap', True)
         self.set_celery = kwargs.get('set_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
 
@@ -277,16 +278,20 @@ class ObservationModule(object):
         self: obj
             Class instance.
         """
-        psf_name = "%s_%d_psf.fits" % (self.imgbase, self.obs_count)
-        self.instrument.psf.toFits(psf_name)
+        psf_names = []
+        psf_path = os.path.join(self.out_path, "psf_cache")
+        if os.path.exists(psf_path):
+            psf_names = glob.glob(os.path.join(psf_path, "*.fits"))
         self._log("info","Adding Error")
         if 'parallel' not in kwargs:
             kwargs['parallel'] = self.parallel
         if 'cores' not in kwargs:
             kwargs['cores'] = self.cores
-        self.instrument.addError(poisson=self.poisson, readnoise=self.readnoise, flat=self.flat, dark=self.dark, cosmic=self.cosmic, *args, **kwargs)
+        self.instrument.addError(poisson=self.poisson, readnoise=self.readnoise, 
+                                 flat=self.flat, dark=self.dark, 
+                                 cosmic=self.cosmic, *args, **kwargs)
         self._log("info","Finished Adding Error")
-        return psf_name
+        return psf_names
         
     #-----------
     def finalize(self, mosaic=True, *args, **kwargs):

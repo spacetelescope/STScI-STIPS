@@ -19,33 +19,6 @@ class NIRCamBase(JwstInstrument):
     Base class with data common to NIRCam in all instances. Uses NIRCamShort dither patterns.
     """
 
-    def __init__(self, **kwargs):
-        """
-        Init does the following:
-            - super().__init__()
-            - looks for self.oversample (if present)
-            - finds filter and verifies that it is a valid filter
-            - finds target co-ordinates and PA (if present)
-            - looks for input and output paths
-            - sets flat residual reference file
-            - sets dark residual reference file
-            - determines instrument/filter zeropoint
-            - creates PSF
-            - creates detectors and specifies their relative offset
-        """
-        self.classname = self.__class__.__name__
-        #Initialize superclass
-        super(NIRCamBase,self).__init__(**kwargs)
-
-        #Set oversampling
-        self.oversample = kwargs.get('oversample', 1)
-
-        #Adjust # of detectors based on keyword:
-        n_detectors = int(kwargs.get('detectors', len(self.DETECTOR_OFFSETS)))
-        self.DETECTOR_OFFSETS = self.DETECTOR_OFFSETS[:n_detectors]
-        self.OFFSET_NAMES = self.OFFSET_NAMES[:n_detectors]
-        self.CENTRAL_OFFSET = self.N_OFFSET[n_detectors]
-        self._log('info', "{} with {} detectors. Central offset {}".format(self.DETECTOR, n_detectors, self.CENTRAL_OFFSET))
 
     def generateReadnoise(self):
         """

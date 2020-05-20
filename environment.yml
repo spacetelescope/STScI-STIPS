@@ -54,6 +54,7 @@ dependencies:
 
   # Testing
   - pytest-astropy
+  - pytest-optional-tests
 
   - pip:
     # Base dependencies

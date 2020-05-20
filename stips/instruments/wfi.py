@@ -81,6 +81,12 @@ class WFI(WfirstInstrument):
     OFFSET_NAMES = ("SCA01", "SCA02", "SCA03", "SCA04", "SCA05", "SCA06", 
                     "SCA07", "SCA08", "SCA09", "SCA10", "SCA11", "SCA12", 
                     "SCA13", "SCA14", "SCA15", "SCA16", "SCA17", "SCA18")
+    N_OFFSET = {1: (0., 0., 0.), 2: (0., 0., 0.), 8: (0., 0., 0.),
+                4: (0., 0., 0.), 5: (0., 0., 0.), 6: (0., 0., 0.),
+                7: (0., 0., 0.), 8: (0., 0., 0.), 9: (0., 0., 0.), 
+                10: (0., 0., 0.), 11: (0., 0., 0.), 12: (0., 0., 0.), 
+                13: (0., 0., 0.), 14: (0., 0., 0.), 15: (0., 0., 0.), 
+                16: (0., 0., 0.), 17: (0., 0., 0.), 18: (0., 0., 0.)}
 
     # N_DETECTORS is a set of options on how many of the instrument's detectors you want to use    
     N_DETECTORS = [1]
@@ -91,9 +97,6 @@ class WFI(WfirstInstrument):
     FILTERS = ('F062', 'F087', 'F106', 'F129', 'F158', 'F184', 'F146', 'F149') #W149 needs to go away at some point.
     DEFAULT_FILTER = 'F184' #Assume for now
     
-    # Simulation Values
-    OVERSAMPLE_DEFAULT = 1 # by default sample at detector size.
-    PSF_GRID_SIZE_DEFAULT = 5 # 5X5 grid = 25 PSFs
     PSF_INSTRUMENT = "WFI"
     
     # Reference Files

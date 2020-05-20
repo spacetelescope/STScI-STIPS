@@ -28,7 +28,8 @@ def makeWCS(coords=[0.,0.],coord_types=["RA---TAN","DEC--TAN"],xsize=1,ysize=1,p
 
 
 def verifyData(dat1,dat2):
-    assert dat1.shape == dat2.shape
+    assert dat1.shape[0] == dat2.shape[0]
+    assert dat1.shape[1] == dat2.shape[1]
 #     np.testing.assert_allclose(dat1,dat2,atol=1e-3)
     for y in range(dat1.shape[0]):
         for x in range(dat1.shape[1]):

@@ -73,16 +73,27 @@ class Instrument(object):
         self.background_value = kwargs.get('background', 'none')
         self.custom_background = kwargs.get('custom_background', 0.)
         self.CENTRAL_OFFSET = (0., 0., 0.)
-        self.convolve_size = kwargs.get('convolve_size', 4096)
+        self.convolve_size = kwargs.get('convolve_size', 8192)
         self.set_celery = kwargs.get('set_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
         self.use_local_cache = kwargs.get('use_local_cache', False)
+        self.memmap = kwargs.get('memmap', True)
+
+        #Adjust # of detectors based on keyword:
+        n_detectors = int(kwargs.get('detectors', len(self.DETECTOR_OFFSETS)))
+        self.DETECTOR_OFFSETS = self.DETECTOR_OFFSETS[:n_detectors]
+        self.OFFSET_NAMES = self.OFFSET_NAMES[:n_detectors]
+        self.CENTRAL_OFFSET = self.N_OFFSET[n_detectors]
+        msg = "{} with {} detectors. Central offset {}"
+        self._log('info', msg.format(self.DETECTOR, n_detectors, 
+                                     self.CENTRAL_OFFSET))
 
         #Set oversampling
         self.oversample = kwargs.get('oversample', self.OVERSAMPLE_DEFAULT)
         
         #Set PSF grid points
-        self.grid_size = kwargs.get('grid_size', self.PSF_GRID_SIZE_DEFAULT)
+        self.psf_grid_size = kwargs.get('psf_grid_size', 
+                                        self.PSF_GRID_SIZE_DEFAULT)
     
     @classmethod
     def initFromImage(cls, image, **kwargs):
@@ -849,7 +860,7 @@ class Instrument(object):
             self._log("info","Convolving with PSF")
             convolve_state = base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name)
             self.updateState(convolve_state)
-            detector.convolve(self.psf, max=self.convolve_size-1, do_convolution=convolve, parallel=parallel, cores=cores, state_setter=self.updateState, base_state=convolve_state)
+            detector.convolve_psf(max_size=self.convolve_size-1, parallel=parallel, cores=cores)
             if 'convolve' in snapshots or 'all' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_convolve.fits".format(self.obs_count, detector.name))
             if self.oversample != 1:
@@ -1071,5 +1082,6 @@ class Instrument(object):
     OVERSAMPLE_DEFAULT = 1
     
     # Size of the side of the grid. e.g. 5 = 5X5 grid = 25 PSFs.
-    PSF_GRID_SIZE_DEFAULT = 5
+    #   - using the current default will result in a non-varying PSF.
+    PSF_GRID_SIZE_DEFAULT = 1
 
