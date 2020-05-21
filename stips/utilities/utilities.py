@@ -18,7 +18,7 @@ from astropy.table import Table
 from jwst_backgrounds.jbt import background
 from photutils.psf.models import GriddedPSFModel
 
-from stips.version import __version__ as __stips__version__
+from .. import __version__ as __stips__version__
 
 #-----------
 class classproperty(object):

@@ -19,7 +19,7 @@ sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "..", "..")))
 import numpy as np
 import pysynphot as ps
 from stips.utilities import InstrumentList
-from stips import __version__ as stips_version_info
+from .. import __version__ as stips_version_info
 from astropy.io import fits as pyfits
 
 print("STIPS Version: {}".format(stips_version_info))

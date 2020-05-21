@@ -37,7 +37,7 @@ Downloading STIPS Data
 STIPS needs data for reference and calibration. The latest version of the STIPS data can be downloaded as follows::
 
     # Use wget ot curl to download the data
-    $ wget https://stsci.box.com/shared/static/d4repaci5st9mp0qstlynt67q6qwpig0.gz -O stips_data.tar.gz
+    $ wget https://stsci.box.com/shared/static/iufbhsiu0lts16wmdsi12cun25888nrb.gz -O stips_data.tar.gz
 
     # Unpack the data
     $ tar -xzvf stips_data.tar.gz
