@@ -148,7 +148,7 @@ before_install:
     - |
      if [[ $VERYSLOW == 'false' &&  $SETUP_CMD == 'test' ]]; then
             echo "Testing functions without veryslow marker"
-            extra_args=(-a " -m \'veryslow\' ");
+            extra_args=(-a " -m \'not veryslow\' ");
      else
             extra_args=();
      fi
