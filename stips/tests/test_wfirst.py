@@ -75,7 +75,7 @@ def test_wfirst_observation():
     fits_file, mosaic_file, params = obm.finalize(mosaic=False)
 
 
-@pytest.mark.slow
+@pytest.mark.veryslow
 def test_wfirst_observation_deluxe():
 
     stellar_cat_file, galaxy_cat_file = create_catalogues()
@@ -95,12 +95,12 @@ def test_wfirst_observation_deluxe():
 obs_data = [
     (
         {
-            'psf_grid_size': 4,
+            'psf_grid_size': 3,
         },
     ),
     (
         {
-            'oversample': 5,
+            'oversample': 3,
         },
     ),
     (
