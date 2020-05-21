@@ -1,4 +1,4 @@
-import os
+import os, pytest
 
 import numpy as np
 
@@ -6,6 +6,7 @@ from astropy.wcs import WCS
 
 from stips.astro_image import AstroImage
 
+@pytest.mark.veryslow
 def test_astro_image_rotation(data_base):
     fits_path = os.path.join(data_base, "test", "wcs_test.fits")
 

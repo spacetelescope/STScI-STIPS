@@ -73,10 +73,27 @@ class Instrument(object):
         self.background_value = kwargs.get('background', 'none')
         self.custom_background = kwargs.get('custom_background', 0.)
         self.CENTRAL_OFFSET = (0., 0., 0.)
-        self.convolve_size = kwargs.get('convolve_size', 4096)
+        self.convolve_size = kwargs.get('convolve_size', 8192)
         self.set_celery = kwargs.get('set_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
         self.use_local_cache = kwargs.get('use_local_cache', False)
+        self.memmap = kwargs.get('memmap', True)
+
+        #Adjust # of detectors based on keyword:
+        n_detectors = int(kwargs.get('detectors', len(self.DETECTOR_OFFSETS)))
+        self.DETECTOR_OFFSETS = self.DETECTOR_OFFSETS[:n_detectors]
+        self.OFFSET_NAMES = self.OFFSET_NAMES[:n_detectors]
+        self.CENTRAL_OFFSET = self.N_OFFSET[n_detectors]
+        msg = "{} with {} detectors. Central offset {}"
+        self._log('info', msg.format(self.DETECTOR, n_detectors, 
+                                     self.CENTRAL_OFFSET))
+
+        #Set oversampling
+        self.oversample = kwargs.get('oversample', self.OVERSAMPLE_DEFAULT)
+        
+        #Set PSF grid points
+        self.psf_grid_size = kwargs.get('psf_grid_size', 
+                                        self.PSF_GRID_SIZE_DEFAULT)
     
     @classmethod
     def initFromImage(cls, image, **kwargs):
@@ -133,50 +150,45 @@ class Instrument(object):
         self.pa = pa
         self.obs_count = obs_count
         if filter != self.filter:
+            if filter not in self.FILTERS:
+                msg = "Filter {} is not a valid {} filter"
+                raise ValueError(msg.format(filter, self.instrument))
             self.filter = filter
-            if psf:
-                self.resetPSF()
             self.background = self.pixel_background
             self.photfnu = self.PHOTFNU[self.filter]
             self.photplam = self.PHOTPLAM[self.filter]
+            if hasattr(self, "_bp"):
+                del self._bp
         if detectors:
-            self.resetDetectors()
+            self.resetDetectors(psf=psf)
     
-    def resetPSF(self):
-        pass
-    
-    def resetDetectors(self):
+
+    def resetDetectors(self, psf=True):
         if self.detectors is not None:
             del self.detectors
         #Create Detectors
         self.detectors = []
-        for offset,name in zip(self.DETECTOR_OFFSETS,self.OFFSET_NAMES):
+        for offset, name in zip(self.DETECTOR_OFFSETS, self.OFFSET_NAMES):
             distortion = None
             if self.distortion:
                 distortion = self.DISTORTION[name]
-            (delta_ra,delta_dec,delta_pa) = offset
-            delta_ra -= self.CENTRAL_OFFSET[0]
-            delta_dec -= self.CENTRAL_OFFSET[1]
-            delta_pa -= self.CENTRAL_OFFSET[2]
-            ra,dec = OffsetPosition(self.ra,self.dec,delta_ra/3600.,delta_dec/3600.)
+            (delta_ra, delta_dec, delta_pa) = offset
+            delta_ra = (delta_ra - self.CENTRAL_OFFSET[0])/3600.
+            delta_dec = (delta_dec - self.CENTRAL_OFFSET[1])/3600.
+            delta_pa = delta_pa - self.CENTRAL_OFFSET[2]
+            ra,dec = OffsetPosition(self.ra, self.dec, delta_ra, delta_dec)
             pa = (self.pa + delta_pa)%360.
-            hdr = {"DETECTOR":name,"FILTER":self.filter}
-            hist = ["Initialized %s Detector %s, filter %s" % (self.instrument,name,self.filter)]
-            xsize = self.DETECTOR_SIZE[0]*self.oversample
-            ysize = self.DETECTOR_SIZE[1]*self.oversample
-            scale = [self.SCALE[0]/self.oversample,self.SCALE[1]/self.oversample]
-            self._log("info","Creating Detector with (RA,DEC,PA) = (%f,%f,%f)" % (ra,dec,pa))
-            self._log("info","Creating Detector with pixel offset ({},{})".format(delta_ra/scale[0], delta_dec/scale[1]))
-            detector = AstroImage(out_path=self.out_path, shape=(ysize, xsize), scale=scale, ra=ra, 
-                                  dec=dec, pa=pa, exptime=1., header=hdr, history=hist, 
-                                  psf_shape=self.psf.shape, zeropoint=self.zeropoint, 
-                                  background=self.background, noise_floor=1./self.exptime, 
-                                  photflam=self.photflam, detname=name, logger=self.logger, 
-                                  oversample=self.oversample, small_subarray=self.small_subarray, 
-                                  distortion=distortion, prefix=self.prefix, seed=self.seed,
-                                  set_celery=self.set_celery, get_celery=self.get_celery,
-                                  cat_type=self.cat_type)
-            self._log("info", "Detector created")
+            hdr = {"DETECTOR":name, "FILTER":self.filter}
+            msg = "Initialized {} Detector {} with filter {}"
+            hist = [msg.format(self.instrument, name, self.filter)]
+            msg = "Creating Detector {} with (RA,DEC,PA) = ({},{},{})"
+            self._log("info", msg.format(name, ra, dec, pa))
+            msg = "Creating Detector {} with offset ({},{})"
+            self._log("info", msg.format(name, delta_ra, delta_dec))
+            detector = AstroImage(parent=self, ra=ra, dec=dec, pa=pa, psf=psf,
+                                  header=hdr, history=hist, detname=name,
+                                  distortion=distortion)
+            self._log("info", "Detector {} created".format(name))
             self.detectors.append(detector)
         
     def toFits(self,outfile):
@@ -781,7 +793,7 @@ class Instrument(object):
             self._log("info","Convolving with PSF")
             convolve_state = base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name)
             self.updateState(convolve_state)
-            detector.convolve(self.psf, max=self.convolve_size-1, do_convolution=convolve, parallel=parallel, cores=cores, state_setter=self.updateState, base_state=convolve_state)
+            detector.convolve_psf(max_size=self.convolve_size-1, parallel=parallel, cores=cores)
             if 'convolve' in snapshots or 'all' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_convolve.fits".format(self.obs_count, detector.name))
             if self.oversample != 1:
@@ -993,4 +1005,16 @@ class Instrument(object):
         if self.get_celery is not None:
             return self.get_celery()
         return ""
+    
+    # Simulation defaults
+    
+    # Default detector oversample.
+    #   - it is not actually recommended to use this for real simulations.
+    #   - an oversample of at least 5 is preferable, 10 is recommended.
+    #   - that said, it's a balance between size, speed, and accuracy.
+    OVERSAMPLE_DEFAULT = 1
+    
+    # Size of the side of the grid. e.g. 5 = 5X5 grid = 25 PSFs.
+    #   - using the current default will result in a non-varying PSF.
+    PSF_GRID_SIZE_DEFAULT = 1
 

@@ -269,7 +269,8 @@ class StarGenerator(object):
                 countrates[np.where(mags < mags_min)] = countrates_min[np.where(mags < mags_min)]
                 countrates[np.where(mags > mags_max)] = countrates_max[np.where(mags > mags_max)]
         else:
-            self.log('warning', 'Could not find result file "result_{}_{}.npy"'.format(instrument.lower(), filter.lower()))
+            self.log('warning', 'Could not find result file "result_{}_{}.npy" from {}'.format(instrument.lower(), filter.lower(), self.gridpath))
+#             raise FileNotFoundError('Could not find result file "result_{}_{}.npy" from {}'.format(instrument.lower(), filter.lower(), self.gridpath))
             import pysynphot as ps
             countrates = np.array(())
             ps.setref(**refs)
