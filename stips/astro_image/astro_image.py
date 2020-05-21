@@ -686,16 +686,17 @@ class AstroImage(object):
             ins.filter = self.filter
             ins.detector = self.detector
             scale = self.scale[0]
-#             safe_size = int(np.floor(30. * self.photplam / (2 * self.scale[0])))
-#             if safe_size == 0:
-#                 safe_size = max(self.xsize, self.ysize)
             # First limit -- PSF no larger than detector
             ins_size = max(self.xsize, self.ysize) * self.oversample
             # Second limit -- PSF no larger than half of max convolution area.
             conv_size = self.convolve_size // (2*self.oversample)
-            msg = "PSF choosing between {}, and {}"
-            self._log("info", msg.format(ins_size, conv_size))
-            fov_pix = min(ins_size, conv_size)
+            # Third limit -- prevent aliasing
+            safe_size = int(np.floor(30. * self.photplam / (2 * self.scale[0])))
+            if safe_size <= 0:
+                safe_size = max(self.xsize, self.ysize)
+            msg = "PSF choosing between {}, {} and {}"
+            self._log("info", msg.format(ins_size, conv_size, safe_size))
+            fov_pix = min(ins_size, conv_size, safe_size)
             if fov_pix%2 != 0:
                 fov_pix += 1
             num_psfs = self.psf_grid_size*self.psf_grid_size
