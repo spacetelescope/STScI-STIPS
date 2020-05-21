@@ -76,6 +76,11 @@ matrix:
           env: SETUP_CMD='build_docs -w'
                CONDA_DEPENDENCIES=$CONDA_DEPENDENCIES_DOC
 
+        - name: "Crazy Idea"
+          os: linux
+          env: MAIN_CMD='pytest'
+               SETUP_CMD=$TRAVIS_BUILD_DIR/STScI-STIPS/stips/astro_image/tests/test_add_points.py
+
         # Main test
         # ---------------------------
         - name: "Main Test"
