@@ -16,11 +16,6 @@ addons:
         packages:
             - graphviz
 
-
-stages:
-   # Do the style check and a single test job, don't proceed if it fails
-   - name: Initial tests
-
 env:
     global:
         # The following versions are the 'default' for tests, unless
@@ -31,6 +26,7 @@ env:
         - ASTROPY_VERSION=stable
         - MAIN_CMD='python setup.py'
         - SETUP_CMD='test'
+        - VERYSLOW='false'
         - EVENT_TYPE='pull_request push'
 
 
@@ -70,55 +66,51 @@ matrix:
 
     include:
         # Make sure that egg_info works without dependencies
-        - stage: Initial tests
+        - name: "Simple Install"
           env: PYTHON_VERSION=3.7 SETUP_CMD='egg_info'
 
         # Check for sphinx doc build warnings - we do this first because it
         # may run for a long time
-        - os: linux
+        - name: "Doc Build Test"
+          os: linux
           env: SETUP_CMD='build_docs -w'
                CONDA_DEPENDENCIES=$CONDA_DEPENDENCIES_DOC
 
         # Main test
-        # ---------
-        - os: linux
-        # ---------
+        # ---------------------------
+        - name: "Main Test"
+          os: linux
 
         # Test python 2.7
-        - python: 2.7
-
-        # Now try Astropy dev with the latest Python
-        - os: linux
-          env: ASTROPY_VERSION=development
-               EVENT_TYPE='pull_request push cron'
+        - name: "Main Test [Python 2.7]"
+          python: 2.7
+        # ---------------------------
 
         # Try MacOS X, usually enough only to run from cron as hardly there are
         # issues that are not picked up by a linux worker
-        - os: osx
-          env: SETUP_CMD='test' EVENT_TYPE='cron'
+        - name: "MacOS X"
+          os: osx
+          env: EVENT_TYPE='cron'
 
 
         # Add a job that runs from cron only and tests against astropy dev and
         # numpy dev to give a change for early discovery of issues and feedback
         # for both developer teams.
-        - os: linux
+
+        - name: "ASTROPY and NUMPY_VERSION Dev"
+          os: linux
           env: ASTROPY_VERSION=development NUMPY_VERSION=development
                EVENT_TYPE='cron'
 
+        # Tests Allowed to Fail
+        # ---------------------
+        - name: "veryslow"
+          os: linux
+          env: SETUP_CMD='test' VERYSLOW=true
 
     allow_failures:
-        # Do a PEP8 test with flake8
-        # (do allow to fail unless your code completely compliant)
-        # - os: linux
-        #   env: MAIN_CMD='flake8 stips --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
 
-        # Do a PEP8 test with flake8
-        - os: linux
-          env: MAIN_CMD='flake8 stips --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
-
-        # Do a coverage test.
-        - os: linux
-          env: SETUP_CMD='test --coverage'
+        - name: "veryslow"
 
 
 before_install:
@@ -152,6 +144,15 @@ before_install:
     - tar -xzvf /tmp/webbpsf_data.gz -C $PWD/
     - export WEBBPSF_PATH=$PWD/webbpsf-data
 
+
+    - |
+     if [[ $VERYSLOW == 'false' &&  $SETUP_CMD == 'test' ]]; then
+            echo "Testing functions without veryslow marker"
+            extra_args=(-a " -m \'veryslow\' ");
+     else
+            extra_args=();
+     fi
+
 install:
 
     # We now use the ci-helpers package to set up our testing environment.
@@ -181,7 +182,7 @@ install:
     #- conda activate stips
 
 script:
-   - $MAIN_CMD $SETUP_CMD
+   - $MAIN_CMD $SETUP_CMD "${extra_args[@]}"
 
 after_success:
     # If coveralls.io is set up for this package, uncomment the line below.
