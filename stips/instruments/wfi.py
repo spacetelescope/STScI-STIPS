@@ -15,6 +15,8 @@ from .instrument import Instrument
 from .wfirst_instrument import WfirstInstrument
 from ..utilities import OffsetPosition
 
+from stips.version import __version__ as stips_version
+
 class WFI(WfirstInstrument):
     __classtype__ = "detector"
     """
@@ -32,60 +34,15 @@ class WFI(WfirstInstrument):
         """
         self.classname = self.__class__.__name__
         #Initialize superclass
-        super(WFI,self).__init__(**kwargs)
+        super(WFI, self).__init__(**kwargs)
         
         #Set oversampling
-        self.oversample = kwargs.get('oversample', 1)
-
-    def resetPSF(self):
-        import webbpsf
-        if self.filter not in self.FILTERS:
-            raise ValueError("Filter %s is not a valid WFI filter" % (self.filter))
-        have_psf = False
-        if os.path.exists(os.path.join(self.out_path, "psf_cache")):
-            if os.path.exists(os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("WFI", self.filter, self.oversample))):
-                with pyfits.open(os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("WFI", self.filter, self.oversample))) as psf:
-                    if psf[0].header['VERSION'] >= webbpsf.__version__ and (self.psf_commands is None or self.psf_commands == ''):
-                        psf_scale = [psf[0].header["PIXELSCL"], psf[0].header["PIXELSCL"]]
-                        self.psf = AstroImage(data=psf[0].data, 
-                                              scale=psf_scale,
-                                              ra=self.ra,
-                                              dec=self.dec,
-                                              pa=self.pa,
-                                              detname="WFI {} PSF".format(self.filter), 
-                                              logger=self.logger)
-                        have_psf = True
-        if not have_psf:
-            base_state = self.getState()
-            self.updateState(base_state+"<br /><span class='indented'>Generating PSF</span>")
-            from webbpsf import wfirst
-            ins = wfirst.WFI()
-            if self.psf_commands is not None and self.psf_commands != '':
-                for attribute,value in self.psf_commands.iteritems():
-                    setattr(ins,attribute,value)
-            ins.filter = self.filter
-            max_safe_size = int(np.floor(30. * self.PHOTPLAM[self.filter] / (2. * self.SCALE[0])))
-            max_ins_size = max(self.DETECTOR_SIZE) * self.oversample
-            max_conv_size = int(np.floor(2048 / self.oversample))
-            self._log("info", "PSF choosing between {}, {}, and {}".format(max_safe_size, max_ins_size, max_conv_size))
-            if hasattr(ins, 'calc_psf'):
-                ins.calcPSF = ins.calc_psf
-            psf = ins.calcPSF(oversample=self.oversample, fov_pixels=min(max_safe_size, max_ins_size, max_conv_size), normalize='last')
-            self._log("info", "PSF Total Flux: {}".format(np.sum(psf[0].data)))
-            psf[0].header['VERSION'] = webbpsf.__version__
-            if os.path.exists(os.path.join(self.out_path, "psf_cache")):
-                dest = os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("WFI", self.filter, self.oversample))
-                pyfits.writeto(dest, psf[0].data, header=psf[0].header, overwrite=True)
-            psf_scale = [psf[0].header["PIXELSCL"], psf[0].header["PIXELSCL"]]
-            self.psf = AstroImage(data=psf[0].data, 
-                                  scale=psf_scale, 
-                                  ra=self.ra, 
-                                  dec=self.dec, 
-                                  pa=self.pa, 
-                                  detname="WFI %s PSF" % (self.filter), 
-                                  logger=self.logger)
-            self.updateState(base_state)
+        self.oversample = kwargs.get('oversample', self.OVERSAMPLE_DEFAULT)
         
+        #Set PSF grid points
+        self.grid_size = kwargs.get('grid_size', self.PSF_GRID_SIZE_DEFAULT)
+
+
     def generateReadnoise(self):
         """
         Readnoise formula that is similar to HST ETC.
@@ -114,31 +71,39 @@ class WFI(WfirstInstrument):
     
     INSTRUMENT = "WFI"
     DETECTOR = "WFI"
+
     # Offsets are in (arcseconds_ra,arcseconds_dec,degrees_angle)
-    DETECTOR_OFFSETS = ((0.,0.,0.),) #There will be 18, but simulate as single
-    OFFSET_NAMES = (("WFIRST-WFI"),)
-    # N_DETECTORS is a set of options on how many of the instrument's detectors you want to use
+    DETECTOR_OFFSETS = ((0.,0.,0.), (0.,0.,0.), (0.,0.,0.), (0.,0.,0.), 
+                        (0.,0.,0.), (0.,0.,0.), (0.,0.,0.), (0.,0.,0.), 
+                        (0.,0.,0.), (0.,0.,0.), (0.,0.,0.), (0.,0.,0.), 
+                        (0.,0.,0.), (0.,0.,0.), (0.,0.,0.), (0.,0.,0.), 
+                        (0.,0.,0.), (0.,0.,0.))
+    OFFSET_NAMES = ("SCA01", "SCA02", "SCA03", "SCA04", "SCA05", "SCA06", 
+                    "SCA07", "SCA08", "SCA09", "SCA10", "SCA11", "SCA12", 
+                    "SCA13", "SCA14", "SCA15", "SCA16", "SCA17", "SCA18")
+    N_OFFSET = {1: (0., 0., 0.), 2: (0., 0., 0.), 8: (0., 0., 0.),
+                4: (0., 0., 0.), 5: (0., 0., 0.), 6: (0., 0., 0.),
+                7: (0., 0., 0.), 8: (0., 0., 0.), 9: (0., 0., 0.), 
+                10: (0., 0., 0.), 11: (0., 0., 0.), 12: (0., 0., 0.), 
+                13: (0., 0., 0.), 14: (0., 0., 0.), 15: (0., 0., 0.), 
+                16: (0., 0., 0.), 17: (0., 0., 0.), 18: (0., 0., 0.)}
+
+    # N_DETECTORS is a set of options on how many of the instrument's detectors you want to use    
     N_DETECTORS = [1]
     INSTRUMENT_OFFSET = (0.,0.,0.) #Presumably there is one, but not determined
     DETECTOR_SIZE = (4096,4096) #pixels
     PIXEL_SIZE = 18.0 #um (Assume for now)
     SCALE = [0.11,0.11] #Assume for now
-    DIST_A =   [[   0.,             0.,             0.],
-                [   0.,             0.,             0.],
-                [   0.,             0.,             0.]]
-    DIST_B =   [[   0.,             0.,             0.],
-                [   0.,             0.,             0.],
-                [   0.,             0.,             0.]]
-    DIST_AP =  [[   0.,             0.,             0.],
-                [   0.,             0.,             0.],
-                [   0.,             0.,             0.]]
-    DIST_BP =  [[   0.,             0.,             0.],
-                [   0.,             0.,             0.],
-                [   0.,             0.,             0.]]
     FILTERS = ('F062', 'F087', 'F106', 'F129', 'F158', 'F184', 'F146', 'F149') #W149 needs to go away at some point.
     DEFAULT_FILTER = 'F184' #Assume for now
+    
+    PSF_INSTRUMENT = "WFI"
+    
+    # Reference Files
     FLATFILE = 'err_flat_wfi.fits' #Use for the moment
     DARKFILE = 'err_rdrk_wfi.fits' # IREF, IHB (use for the moment)
+
+    # Background Values
     BACKGROUND = {  'none': {'F062': 0., 'F087': 0.,'F106': 0.,'F129': 0.,'F158': 0.,'F184': 0., 'F146': 0., 'F149': 0.},
                     'avg':  {'F062': 1.401E+00, 'F087': 1.401E+00, 'F106': 1.401E+00, 'F129': 7.000E-01,
                              'F158': 7.521E-01, 'F184': 8.500E-01, 'F146': 7.000E-01, 'F149': 7.000E-01}

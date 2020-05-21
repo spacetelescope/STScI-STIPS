@@ -38,44 +38,7 @@ class MIRI(JwstInstrument):
         self.k = self.K[kwargs.get('miri_mods', 'fast')]
         self.a = self.A[kwargs.get('miri_mods', 'fast')]
 
-    def resetPSF(self):
-        import webbpsf
-        if self.filter not in self.FILTERS:
-            raise ValueError("Filter %s is not a valid MIRI filter" % (self.filter))
-        have_psf = False
-        if os.path.exists(os.path.join(self.out_path, "psf_cache")):
-            if os.path.exists(os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("MIRI", self.filter, self.oversample))):
-                with pyfits.open(os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("MIRI", self.filter, self.oversample))) as psf:
-                    if psf[0].header['VERSION'] >= webbpsf.__version__ and (self.psf_commands is None or self.psf_commands == ''):
-                        self.psf = AstroImage(data=psf[0].data, detname="MIRI {} PSF".format(self.filter), logger=self.logger)
-                        have_psf = True
-        if not have_psf:
-            base_state = self.getState()
-            self.updateState(base_state+"<br /><span class='indented'>Generating PSF</span>")
-            self._log("info", "Creating PSF")
-            ins = webbpsf.MIRI()
-            self._log("info", "Setting PSF attributes")
-            if self.psf_commands is not None and self.psf_commands != '':
-                for attribute,value in self.psf_commands.iteritems():
-                    self._log("info", "Setting PSF attribute {} to {}".format(attribute, value))
-                    setattr(ins,attribute,value)
-            self._log("info", "Setting PSF filter to '{}'".format(self.filter))
-            ins.filter = self.filter
-            max_safe_size = int(np.floor(30. * self.PHOTPLAM[self.filter] / (2. * self.SCALE[0])))
-            max_ins_size = max(self.DETECTOR_SIZE) * self.oversample
-            max_conv_size = int(np.floor(self.convolve_size / (2*self.oversample)))
-            psf_size = min(max_safe_size, max_ins_size, max_conv_size)
-            self._log("info", "PSF choosing between {}, {}, and {}, chose {}".format(max_safe_size, max_ins_size, max_conv_size, psf_size))
-            if hasattr(ins, 'calc_psf'):
-                ins.calcPSF = ins.calc_psf
-            psf = ins.calcPSF(oversample=self.oversample, fov_pixels=psf_size, normalize='last')
-            psf[0].header['VERSION'] = webbpsf.__version__
-            if os.path.exists(os.path.join(self.out_path, "psf_cache")):
-                dest = os.path.join(self.out_path, "psf_cache", "psf_{}_{}_{}.fits".format("MIRI", self.filter, self.oversample))
-                pyfits.writeto(dest, psf[0].data, header=psf[0].header, overwrite=True)
-            self.psf = AstroImage(data=psf[0].data,detname="MIRI %s PSF" % (self.filter),logger=self.logger)
-            self.updateState(base_state)
-        
+
     def generateReadnoise(self):
         """
         Readnoise formula that is similar to JWST ETC.
@@ -151,6 +114,12 @@ class MIRI(JwstInstrument):
                     }
     FILTERS = ('F560W','F770W','F1000W','F1130W','F1280W','F1500W','F1800W','F2100W','F2550W')
     DEFAULT_FILTER = 'F1000W'
+    
+    # Simulation Values
+    OVERSAMPLE_DEFAULT = 1 # by default sample at detector size.
+    PSF_GRID_SIZE_DEFAULT = 5 # 5X5 grid = 25 PSFs
+    PSF_INSTRUMENT = "MIRI"
+    
     FLATFILE = 'err_flat_test.fits'
     DARKFILE = 'err_rdrk_miri_im.fits'  # ETC short
     BACKGROUND = {  'none': {  'F560W': 0., 'F770W': 0., 'F1000W' :0., 'F1130W': 0., 'F1280W': 0., 'F1500W': 0., 'F1800W':0., 

@@ -132,7 +132,12 @@ rotate_data =   [
 ]
 @pytest.mark.parametrize(("input","angle","output"), rotate_data)
 def test_rotate(input,angle,output):
-    image = AstroImage(data=input)
+    # If psf=True, then the image will create a default PSF, and pad its
+    #   borders (and thus increase its size) sufficiently to include off-image
+    #   regions of half the PSF width on each side. That will, in turn, result
+    #   in the image sizes not matching the pre-made output arrays. Because this
+    #   test is not related to PSFs in any way, no PSF is created.
+    image = AstroImage(data=input, psf=False)
     image.rotate(angle)
     verifyData(image.hdu.data,output)
 
@@ -146,6 +151,11 @@ bin_data = [
 ]
 @pytest.mark.parametrize(("input","bin","result"), bin_data)
 def test_bin(input,bin,result):
-    im1 = AstroImage(data=input)
+    # If psf=True, then the image will create a default PSF, and pad its
+    #   borders (and thus increase its size) sufficiently to include off-image
+    #   regions of half the PSF width on each side. That will, in turn, result
+    #   in the image sizes not matching the pre-made output arrays. Because this
+    #   test is not related to PSFs in any way, no PSF is created.
+    im1 = AstroImage(data=input, psf=False)
     im1.bin(bin[0],bin[1])
     verifyData(im1.hdu.data,result)
