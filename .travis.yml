@@ -131,21 +131,21 @@ before_install:
     - wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot2.tar.gz -O $TEST_DATA_PATH/synphot2.tar.gz
     - wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot5.tar.gz -O $TEST_DATA_PATH/synphot5.tar.gz
 
-    - tar -xzvf /tmp/synphot1.tar.gz -C $TEST_DATA_PATH/synphot/
-    - tar -xzvf /tmp/synphot2.tar.gz -C $TEST_DATA_PATH/synphot/
-    - tar -xzvf /tmp/synphot5.tar.gz -C $TEST_DATA_PATH/synphot/
+    - tar -xzvf $TEST_DATA_PATH/synphot1.tar.gz -C $TEST_DATA_PATH/synphot/
+    - tar -xzvf $TEST_DATA_PATH/synphot2.tar.gz -C $TEST_DATA_PATH/synphot/
+    - tar -xzvf $TEST_DATA_PATH/synphot5.tar.gz -C $TEST_DATA_PATH/synphot/
 
     - export PYSYN_CDBS=$TEST_DATA_PATH/synphot/grp/hst/cdbs
 
     # download pandeia_data data
     - wget -qO- https://stsci.box.com/shared/static/5j506xzg9tem2l7ymaqzwqtxne7ts3sr.gz -O $TEST_DATA_PATH/pandeia_data-1.5_wfirst.gz
 
-    - tar -xzvf /tmp/pandeia_data-1.5_wfirst.gz -C $TEST_DATA_PATH/
+    - tar -xzvf $TEST_DATA_PATH/pandeia_data-1.5_wfirst.gz -C $TEST_DATA_PATH/
     - export pandeia_refdata=$TEST_DATA_PATH/pandeia_data-1.5_wfirst
 
     # download webbpsf data
     - wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O $TEST_DATA_PATH/webbpsf_data.gz
-    - tar -xzvf /tmp/webbpsf_data.gz -C $TEST_DATA_PATH/
+    - tar -xzvf $TEST_DATA_PATH/webbpsf_data.gz -C $TEST_DATA_PATH/
     - export WEBBPSF_PATH=$TEST_DATA_PATH/webbpsf-data
 
     # If VERYSLOW is set to false for a test, add args to pytest
