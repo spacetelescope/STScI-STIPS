@@ -120,7 +120,7 @@ obs_data = [
     )
 ]
 
-@pytest.mark.slow
+@pytest.mark.veryslow
 @pytest.mark.parametrize(("obs_changes"), obs_data)
 def test_obs_parameters(obs_changes):
     
