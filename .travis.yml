@@ -115,36 +115,42 @@ matrix:
 
 before_install:
 
+    # Make data dir
+    - mkdir $TRAVIS_BUILD_DIR/test_data
+    - TEST_DATA_PATH=$TRAVIS_BUILD_DIR/test_data
+
     # Download stips data
-    - wget https://stsci.box.com/shared/static/d4repaci5st9mp0qstlynt67q6qwpig0.gz -O /tmp/stips_data_v1.0.8.tar.gz
-    - tar -xzvf /tmp/stips_data_v1.0.8.tar.gz
-    - export stips_data=$PWD/stips_data
+    - wget https://stsci.box.com/shared/static/iufbhsiu0lts16wmdsi12cun25888nrb.gz -O $TEST_DATA_PATH/stips_data_current.tar.gz
+    - tar -xzvf $TEST_DATA_PATH/stips_data_current.tar.gz -C $TEST_DATA_PATH/
+    - export stips_data=$TEST_DATA_PATH/stips_data
 
     # download synphot data
-    - mkdir synphot
+    - mkdir $TEST_DATA_PATH/synphot
 
-    - wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot1.tar.gz -O /tmp/synphot1.tar.gz
-    - wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot2.tar.gz -O /tmp/synphot2.tar.gz
-    - wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot5.tar.gz -O /tmp/synphot5.tar.gz
+    - wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot1.tar.gz -O $TEST_DATA_PATH/synphot1.tar.gz
+    - wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot2.tar.gz -O $TEST_DATA_PATH/synphot2.tar.gz
+    - wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot5.tar.gz -O $TEST_DATA_PATH/synphot5.tar.gz
 
-    - tar -xzvf /tmp/synphot1.tar.gz -C $PWD/synphot/
-    - tar -xzvf /tmp/synphot2.tar.gz -C $PWD/synphot/
-    - tar -xzvf /tmp/synphot5.tar.gz -C $PWD/synphot/
+    - tar -xzvf $TEST_DATA_PATH/synphot1.tar.gz -C $TEST_DATA_PATH/synphot/
+    - tar -xzvf $TEST_DATA_PATH/synphot2.tar.gz -C $TEST_DATA_PATH/synphot/
+    - tar -xzvf $TEST_DATA_PATH/synphot5.tar.gz -C $TEST_DATA_PATH/synphot/
 
-    - export PYSYN_CDBS=$PWD/synphot/grp/hst/cdbs
+    - export PYSYN_CDBS=$TEST_DATA_PATH/synphot/grp/hst/cdbs
 
     # download pandeia_data data
-    - wget -qO- https://stsci.box.com/shared/static/5j506xzg9tem2l7ymaqzwqtxne7ts3sr.gz -O /tmp/pandeia_data-1.5_wfirst.gz
+    - wget -qO- https://stsci.box.com/shared/static/5j506xzg9tem2l7ymaqzwqtxne7ts3sr.gz -O $TEST_DATA_PATH/pandeia_data-1.5_wfirst.gz
 
-    - tar -xzvf /tmp/pandeia_data-1.5_wfirst.gz -C $PWD/
-    - export pandeia_refdata=$PWD/pandeia_data-1.5_wfirst
+    - tar -xzvf $TEST_DATA_PATH/pandeia_data-1.5_wfirst.gz -C $TEST_DATA_PATH/
+    - export pandeia_refdata=$TEST_DATA_PATH/pandeia_data-1.5_wfirst
 
     # download webbpsf data
-    - wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O /tmp/webbpsf_data.gz
-    - tar -xzvf /tmp/webbpsf_data.gz -C $PWD/
-    - export WEBBPSF_PATH=$PWD/webbpsf-data
+    - wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O $TEST_DATA_PATH/webbpsf_data.gz
+    - tar -xzvf $TEST_DATA_PATH/webbpsf_data.gz -C $TEST_DATA_PATH/
+    - export WEBBPSF_PATH=$TEST_DATA_PATH/webbpsf-data
 
-
+    # If VERYSLOW is set to false for a test, add args to pytest
+    # The format (... "..") is because there are multiple quotation marks in bash
+    # They variable will be constructed into a command via "${extra_args[@]}"
     - |
      if [[ $VERYSLOW == 'false' &&  $SETUP_CMD == 'test' ]]; then
             echo "Testing functions without veryslow marker"
