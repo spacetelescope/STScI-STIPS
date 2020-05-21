@@ -91,9 +91,6 @@ exclude_patterns.append('_templates')
 rst_epilog += """
 """
 
-intersphinx_mapping.update({
-    'poppy': ('http://poppy-optics.readthedocs.io/', None),
-})
 
 # -- Project information ------------------------------------------------------
 

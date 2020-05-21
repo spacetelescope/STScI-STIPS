@@ -4,12 +4,10 @@ import numpy as np
 
 from astropy.wcs import WCS
 
-from ..astro_image import AstroImage
+from stips.astro_image import AstroImage
 
-
-def test_astro_image_wcs():
-    this_dir = os.path.dirname(os.path.abspath(__file__))
-    fits_path = os.path.join(this_dir, "wcs_test.fits")
+def test_astro_image_rotation(data_base):
+    fits_path = os.path.join(data_base, "test", "wcs_test.fits")
 
     # Test 90 degree rotation
     ai = AstroImage.initFromFits(fits_path)
@@ -36,30 +34,3 @@ def test_astro_image_wcs():
             if not np.isclose(default_value, rotated_value):
                 print("Failed Values: ", default_value, rotated_value)
             assert np.isclose(default_value, rotated_value)
-
-    # Test rescale
-    ai = AstroImage.initFromFits(fits_path)
-    default_wcs = WCS(ai.hdu)
-
-    ai.rescale((ai.scale[0] * 2, ai.scale[0] * 2))
-    rescale_wcs = WCS(ai.hdu)
-
-    default_world = default_wcs.all_pix2world([[0, 0]], 0)
-    rescale_world = rescale_wcs.all_pix2world([[0, 0]], 0)
-
-    assert np.allclose(default_world, rescale_world)
-
-    # Test crop
-    ai = AstroImage.initFromFits(fits_path)
-    default_wcs = WCS(ai.hdu)
-
-    ai.crop(0, 0, 10, 10)
-    crop_wcs = WCS(ai.hdu)
-
-    default_world = default_wcs.all_pix2world([[5, 5]], 0)
-    crop_world = crop_wcs.all_pix2world([[5, 5]], 0)
-
-    assert np.allclose(default_world, crop_world)
-
-
-

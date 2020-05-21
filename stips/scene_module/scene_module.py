@@ -40,7 +40,7 @@ class SceneModule(object):
 
         Examples
         --------
-        >>> import SceneModule
+        >>> from stips import SceneModule
 
 
         Parameters

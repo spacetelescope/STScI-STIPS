@@ -29,8 +29,22 @@ STIPS Requirements
 * `scipy`: STIPS uses scipy to manipulate its internal images (zoom and rotate).
 
 Finally, STIPS requires a set of data files whose location is marked by setting the environment
-variable `stips_data`. The current best form of stips_data is actually kept (and versioned) inside
-the STIPS project itself.
+variable `stips_data`. The current version of the STIPS data is located on box and can be downloaded via the link below.
+
+Downloading STIPS Data
+#######################
+
+STIPS needs data for reference and calibration. The latest version of the STIPS data can be downloaded as follows::
+
+    # Use wget ot curl to download the data
+    $ wget https://stsci.box.com/shared/static/d4repaci5st9mp0qstlynt67q6qwpig0.gz -O stips_data.tar.gz
+
+    # Unpack the data
+    $ tar -xzvf stips_data.tar.gz
+
+    # Point the stips environment variable in your bash profile or in terminal
+    $ export stips_data=<absolute_path_to_this_folder>/stips_data
+
 
 Installing Using Conda and Source
 ##################################

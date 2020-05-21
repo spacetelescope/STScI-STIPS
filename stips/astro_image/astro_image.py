@@ -47,7 +47,7 @@ class AstroImage(object):
         else:
             self.logger = logging.getLogger('__stips__')
             self.logger.setLevel(logging.INFO)
-            if not len(logger.handlers):
+            if not len(self.logger.handlers):
                 stream_handler = logging.StreamHandler(sys.stderr)
                 stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))# [in %(pathname)s:%(lineno)d]'))
                 self.logger.addHandler(stream_handler)

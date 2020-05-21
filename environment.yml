@@ -49,7 +49,11 @@ dependencies:
   # Docs
   - sphinx
   - docutils
+  - sphinx_rtd_theme
   - stsci_rtd_theme
+
+  # Testing
+  - pytest-astropy
 
   - pip:
     # Base dependencies
