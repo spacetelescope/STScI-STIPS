@@ -116,8 +116,8 @@ matrix:
 before_install:
 
     # Download stips data
-    - wget https://stsci.box.com/shared/static/d4repaci5st9mp0qstlynt67q6qwpig0.gz -O /tmp/stips_data_v1.0.8.tar.gz
-    - tar -xzvf /tmp/stips_data_v1.0.8.tar.gz
+    - wget https://stsci.box.com/shared/static/iufbhsiu0lts16wmdsi12cun25888nrb.gz -O /tmp/stips_data_current.tar.gz
+    - tar -xzvf /tmp/stips_data_current.tar.gz
     - export stips_data=$PWD/stips_data
 
     # download synphot data
