@@ -157,6 +157,8 @@ class Instrument(object):
             self.background = self.pixel_background
             self.photfnu = self.PHOTFNU[self.filter]
             self.photplam = self.PHOTPLAM[self.filter]
+            if hasattr(self, "_bp"):
+                del self._bp
         if detectors:
             self.resetDetectors(psf=psf)
     

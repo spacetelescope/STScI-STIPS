@@ -6,14 +6,14 @@ import pytest
 
 def create_catalogues():
     star_data = {
-                    'n_stars': 1000,
+                    'n_stars': 100,
                     'age_low': 1.0e12, 'age_high': 1.0e12,
                     'z_low': -2.0, 'z_high': -2.0,
                     'imf': 'salpeter', 'alpha': -2.35,
                     'binary_fraction': 0.1,
                     'distribution': 'invpow', 'clustered': True,
                     'radius': 100.0, 'radius_units': 'pc',
-                    'distance_low': 20.0, 'distance_high': 20.0,
+                    'distance_low': 10.0, 'distance_high': 10.0,
                     'offset_ra': 0.0, 'offset_dec': 0.0
                 }
 
