@@ -160,9 +160,20 @@ class ObservationModule(object):
         imname = img['current_filename']
         imscale = float(img['scale'])
         if img['wcs']:
-            self.images[imname] = AstroImage.initFromFits(imname,ext=img['ext'],logger=self.logger)
+            self.images[imname] = AstroImage.initFromFits(imname, 
+                                                          ext=img['ext'], 
+                                                          psf=False, 
+                                                          logger=self.logger)
         else:
-            self.images[imname] = AstroImage.initDataFromFits(imname,ext=img['ext'],ra=self.ra,dec=self.dec,pa=self.pa,scale=[imscale,imscale],logger=self.logger)
+            scale = [imscale, imscale]
+            self.images[imname] = AstroImage.initDataFromFits(imname, 
+                                                              ext=img['ext'], 
+                                                              psf=False, 
+                                                              ra=self.ra, 
+                                                              dec=self.dec, 
+                                                              pa=self.pa, 
+                                                              scale=scale, 
+                                                              logger=self.logger)
     
     #-----------
     def nextObservation(self):

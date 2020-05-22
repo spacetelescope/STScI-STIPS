@@ -11,7 +11,7 @@ def test_astro_image_rotation(data_base):
     fits_path = os.path.join(data_base, "test", "wcs_test.fits")
 
     # Test 90 degree rotation
-    ai = AstroImage.initFromFits(fits_path)
+    ai = AstroImage.initFromFits(fits_path, psf=False)
     default_wcs = ai._getWcs()  # WCS(ai.hdu)
     default_data = ai.hdu.data[:]
 
@@ -23,6 +23,7 @@ def test_astro_image_rotation(data_base):
     arr_size_y = ai.hdu.shape[1]
 
     for x in range(arr_size_x):
+        print("Starting Iteration {} of {}".format(x, arr_size_x))
         for y in range(arr_size_y):
             wcs_location = default_wcs.all_pix2world([[y, x]], 0)
             default_value = default_data[y][x]

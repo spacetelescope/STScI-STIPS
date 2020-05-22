@@ -21,7 +21,7 @@ testRA_data = [
 @pytest.mark.parametrize(("coords","coord_types","ra","dec","new_ra","out_ra"), testRA_data)
 def test_RA(coords,coord_types,ra,dec,new_ra,out_ra):
     my_wcs = makeWCS(coords=coords,coord_types=coord_types)
-    image = AstroImage(wcs=my_wcs)
+    image = AstroImage(wcs=my_wcs, psf=False)
     assert image.ra == ra
     assert image.dec == dec
     image.ra = new_ra
@@ -35,7 +35,7 @@ testDEC_data = [
 @pytest.mark.parametrize(("coords","coord_types","ra","dec","new_dec","out_dec"), testDEC_data)
 def test_DEC(coords,coord_types,ra,dec,new_dec,out_dec):
     my_wcs = makeWCS(coords=coords,coord_types=coord_types)
-    image = AstroImage(wcs=my_wcs)
+    image = AstroImage(wcs=my_wcs, psf=False)
     assert image.ra == ra
     assert image.dec == dec
     image.dec = new_dec
@@ -48,7 +48,7 @@ testPA_data = [
 ]
 @pytest.mark.parametrize(("pa_in","pa","scale","new_pa","pa_out"), testPA_data)
 def test_PA(pa_in,pa,scale,new_pa,pa_out):
-    image = AstroImage(pa=pa_in,scale=scale)
+    image = AstroImage(pa=pa_in, scale=scale, psf=False)
     assert abs(image.pa - pa) < 1.e-4
     assert abs(image.xscale - scale[0]*3600) < 1.e-4
     assert abs(image.yscale - scale[1]*3600) < 1.e-4
@@ -66,7 +66,7 @@ updateHeader_data = [
 ]
 @pytest.mark.parametrize(("header_in","header_out"), updateHeader_data)
 def test_updateHeader(header_in,header_out):
-    image = AstroImage()
+    image = AstroImage(psf=False)
     for k,v in header_in:
         image.updateHeader(k,v)
     for k,v in header_out:
@@ -79,7 +79,7 @@ addHistory_data = [
 ]
 @pytest.mark.parametrize(("history"), addHistory_data)
 def test_addHistory(history):
-    image = AstroImage()
+    image = AstroImage(psf=False)
     for item in history:
         image.addHistory(item)
     for item in history:
@@ -102,8 +102,8 @@ convolve_data = [
 ]
 @pytest.mark.parametrize(("input","kernel","result"), convolve_data)
 def test_convolve(input,kernel,result):
-    input_image = AstroImage(data=input)
-    kernel_image = AstroImage(data=kernel)
+    input_image = AstroImage(data=input, psf=False)
+    kernel_image = AstroImage(data=kernel, psf=False)
     input_image.convolve(kernel_image)
     verifyData(input_image.hdu.data,result)
 

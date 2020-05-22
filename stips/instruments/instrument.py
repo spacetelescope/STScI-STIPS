@@ -769,9 +769,9 @@ class Instrument(object):
         cores = kwargs.get('cores', None)
         base_state = self.getState()
         if flat:
-            flat = AstroImage.initDataFromFits(self.flatfile,ext='COMPRESSED_IMAGE',logger=self.logger)
+            flat = AstroImage.initDataFromFits(self.flatfile,ext='COMPRESSED_IMAGE', psf=False, logger=self.logger)
         if dark:
-            dark = AstroImage.initDataFromFits(self.darkfile,ext='COMPRESSED_IMAGE',logger=self.logger)
+            dark = AstroImage.initDataFromFits(self.darkfile,ext='COMPRESSED_IMAGE', psf=False, logger=self.logger)
             dark *= self.exptime
         if readnoise:
             rn = self.generateReadnoise()
