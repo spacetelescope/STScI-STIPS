@@ -37,7 +37,7 @@ def create_catalogues():
 def get_default_obs():
     obs = {
             'instrument': 'WFI',
-            'filters': ['F129'],
+            'filters': ['F158'],
             'detectors': 1,
             'distortion': False,
             'oversample': 1,
