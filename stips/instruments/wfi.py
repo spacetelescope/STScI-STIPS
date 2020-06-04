@@ -15,7 +15,7 @@ from .instrument import Instrument
 from .wfirst_instrument import WfirstInstrument
 from ..utilities import OffsetPosition
 
-from stips.version import __version__ as stips_version
+from .. import __version__ as stips_version
 
 class WFI(WfirstInstrument):
     __classtype__ = "detector"

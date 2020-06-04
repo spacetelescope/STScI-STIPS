@@ -21,7 +21,7 @@ else:
     from cStringIO import StringIO
 
 #Local Modules
-from stips.version import __version__ as stips_version
+from .. import __version__ as stips_version
 from ..utilities import OffsetPosition
 from ..utilities import overlapadd2
 from ..utilities import overlapaddparallel

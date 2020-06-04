@@ -54,6 +54,10 @@ RUN pip install -U setuptools
 
 WORKDIR /opt
 
+# Extract STIPS reference data
+RUN wget -qO- https://stsci.box.com/shared/static/iufbhsiu0lts16wmdsi12cun25888nrb.gz| tar xvz
+ENV stips_data /opt/stips_data
+
 # Extract PySynphot reference data
 RUN wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot1.tar.gz | tar xvz
 RUN wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot2.tar.gz | tar xvz
@@ -117,6 +121,5 @@ WORKDIR $HOME
 
 WORKDIR $STIPSDIR
 RUN python setup.py develop
-ENV stips_data $STIPSDIR/stips/data
 
 WORKDIR $HOME
