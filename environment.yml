@@ -39,6 +39,7 @@ dependencies:
 
   # Major modules
   - webbpsf>=0.9.0
+  - pysiaf
 
   # Minor modules
   - pyyaml

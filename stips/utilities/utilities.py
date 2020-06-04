@@ -27,21 +27,134 @@ class classproperty(object):
     def __get__(self, *a):
         return self.f.__get__(*a)()
 #-----------
-class __grid__(object):
-    @classproperty
-    def __pandeia__version__(self):
-        with open(GetStipsData(os.path.join("grid", "VERSION.txt")), "r") as inf:
-            line = inf.readline()
-            items = line.strip().split()
-            return items[1]
-    
+class StipsEnvironment(object):
     @classproperty
     def __stips__version__(self):
-        with open(GetStipsData(os.path.join("grid", "VERSION.txt")), "r") as inf:
-            line = inf.readline()
-            line = inf.readline()
-            items = line.strip().split()
-            return items[1]
+        return __stips__version__
+    
+    @classproperty
+    def __stips__data__location__(self):
+        if 'stips_data' in os.environ:
+            return os.environ['stips_data']
+        return 'UNSET'
+
+    @classproperty
+    def __stips__data__version__(self):
+        if 'stips_data' in os.environ:
+            fname = os.path.join(os.environ['stips_data'], 'VERSION.txt')
+            if os.path.isfile(fname):
+                with open(fname, 'r') as inf:
+                    line = inf.readline()
+                    while len(line.strip()) == 0:
+                        line = inf.readline()
+                    return line.strip()
+            return 'stips_data HAS NO VERSION FILE'
+        return 'NO REFERENCE DATA SET'
+    
+    @classproperty
+    def __stips__grid__version__(self):
+        if 'stips_data' in os.environ:
+            fname = os.path.join(os.environ['stips_data'], 'grid', 'VERSION.txt')
+            if os.path.isfile(fname):
+                with open(fname, 'r') as inf:
+                    line = inf.readline()
+                    line = inf.readline()
+                    items = line.strip().split()
+                    return items[1]
+            return 'stips_data GRID HAS NO VERSION FILE'
+        return 'NO REFERENCE DATA SET'
+    
+
+    @classproperty
+    def __pandeia__version__(self):
+        import pandeia.engine
+        if hasattr(pandeia.engine, '__version__'):
+            return pandeia.engine.__version__
+        return 'UNKNOWN'
+    
+    @classproperty
+    def __pandeia__data__location__(self):
+        if 'pandeia_refdata' in os.environ:
+            return os.environ["pandeia_refdata"]
+        return 'UNSET'
+    
+    @classproperty
+    def __pandeia__data__version__(self):
+        if 'pandeia_refdata' in os.environ:
+            fname = os.path.join(os.environ['pandeia_refdata'], 'VERSION_PSF')
+            if os.path.isfile(fname):
+                with open(fname, 'r') as inf:
+                    line = inf.readline()
+                    while len(line.strip()) == 0:
+                        line = inf.readline()
+                    return line.strip()
+            return 'NO VERSION_PSF FILE FOUND'
+        return 'NO REFERENCE DATA SET'
+    
+    
+    @classproperty
+    def __webbpsf__version__(self):
+        import webbpsf
+        if hasattr(webbpsf, '__version__'):
+            return webbpsf.__version__
+        return 'UNKNOWN'
+    
+    @classproperty
+    def __webbpsf__data__location__(self):
+        if 'WEBBPSF_PATH' in os.environ:
+            return os.environ['WEBBPSF_PATH']
+        return 'UNSET'
+
+    @classproperty
+    def __webbpsf__data__version__(self):
+        if 'WEBBPSF_PATH' in os.environ:
+            fname = os.path.join(os.environ['WEBBPSF_PATH'], 'version.txt')
+            if os.path.isfile(fname):
+                with open(fname, 'r') as inf:
+                    line = inf.readline()
+                    while len(line.strip()) == 0:
+                        line = inf.readline()
+                    return line.strip()
+            return 'WEBBPSF_PATH HAS NO version.txt FILE'
+        return 'NO REFERENCE DATA SET'
+    
+    
+    @classproperty
+    def __stips__environment__dict__(self):
+        env = StipsEnvironment
+        import astropy
+        import photutils
+        env_dict = {
+                    'stips_version': env.__stips__version__,
+                    'stips_data_location': env.__stips__data__location__,
+                    'stips_data_version': env.__stips__data__version__,
+                    'stips_grid_version': env.__stips__grid__version__,
+                    'pandeia_version': env.__pandeia__version__,
+                    'pandeia_data_location': env.__pandeia__data__location__,
+                    'pandeia_data_version': env.__pandeia__data__version__,
+                    'webbpsf_version': env.__webbpsf__version__,
+                    'webbpsf_data_location': env.__webbpsf__data__location__,
+                    'webbpsf_data_version': env.__webbpsf__data__version__,
+                    'astropy_version': astropy.__version__,
+                    'photutils_version': photutils.__version__
+                   }
+        return env_dict
+    
+    @classproperty
+    def __stips__environment__report__(self):
+        env = StipsEnvironment.__stips__environment__report__pretty__
+        return env.replace("\n", " ").replace("\t", " ")
+    
+    @classproperty
+    def __stips__environment__report__pretty__(self):
+        env = StipsEnvironment.__stips__environment__dict__
+        report = ""
+        report += "STIPS Version {} with Data Version {} at {}.\n".format(env['stips_version'], env['stips_data_version'], env['stips_data_location'])
+        report += "\tSTIPS Grid Generated with {}\n".format(env['stips_grid_version'])
+        report += "Pandeia Version {} with Data Version {} at {}.\n".format(env['pandeia_version'], env['pandeia_data_version'], env['pandeia_data_location'])
+        report += "Webbpsf Version {} with Data Version {} at {}.\n".format(env['webbpsf_version'], env['webbpsf_data_version'], env['webbpsf_data_location'])
+        return report
+
 
 #-----------
 class ImageData(object):

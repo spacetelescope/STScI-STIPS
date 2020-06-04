@@ -5,5 +5,5 @@ import automodinit
 automodinit.automodinit(__name__, __file__, globals())
 del automodinit
 # Local Definitions
-from .utilities import ImageData, internet, CachedJbtBackground, GetStipsData, InstrumentList, OffsetPosition, overlapadd2, overlapaddparallel, read_metadata, read_table, __grid__, Percenter
+from .utilities import ImageData, internet, CachedJbtBackground, GetStipsData, InstrumentList, OffsetPosition, overlapadd2, overlapaddparallel, read_metadata, read_table, StipsEnvironment, Percenter
 from .DataTable import StipsDataTable

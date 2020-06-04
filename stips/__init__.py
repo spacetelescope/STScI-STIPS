@@ -18,10 +18,12 @@ from .instruments import Instrument
 from .observation_module import ObservationModule
 from .scene_module import SceneModule
 from .version import __version__
-from .utilities import GetStipsData, internet, CachedJbtBackground, __grid__
+from .utilities import GetStipsData, internet, CachedJbtBackground, StipsEnvironment
 
-__grid__pandeia__version__ = __grid__.__pandeia__version__
-__grid__stips__version__ = __grid__.__stips__version__
+__grid__pandeia__version__ = StipsEnvironment.__pandeia__version__
+__grid__stips__version__ = StipsEnvironment.__stips__grid__version__
+__env__report__ = StipsEnvironment.__stips__environment__report__pretty__
+__env__dict__ = StipsEnvironment.__stips__environment__dict__
 
 try:
      stips_data_base = os.environ["stips_data"]
