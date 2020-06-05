@@ -23,7 +23,6 @@ from .astro_image import AstroImage
 from .instruments import Instrument
 from .observation_module import ObservationModule
 from .scene_module import SceneModule
-from .version import __version__
 from .utilities import GetStipsData, internet, CachedJbtBackground, StipsEnvironment
 
 __grid__pandeia__version__ = StipsEnvironment.__pandeia__version__
