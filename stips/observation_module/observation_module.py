@@ -73,6 +73,8 @@ class ObservationModule(object):
         self.convolve_size = kwargs.get('convolve_size', 8192)
         self.parallel = kwargs.get('parallel', False)
         self.cores = kwargs.get('cores', None)
+        if 'psf_grid_size' in kwargs:
+            self.psf_grid_size = kwargs['psf_grid_size']
         
         if 'scene_general' in kwargs:
             self.ra = kwargs['scene_general'].get('ra', 0.0)
