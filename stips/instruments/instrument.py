@@ -33,7 +33,7 @@ else:
 class Instrument(object):
     """
     The Instrument class represents a virtual base class which will be implemented as a variety of
-        JWST, HST, and WFIRST actual instruments. The Instrument class contains:
+        JWST, HST, and Roman actual instruments. The Instrument class contains:
         
         detectors : array of detectors, each an AstroImage, and each with its own RA/DEC
         filter    : string, what filter of the instrument is being observed

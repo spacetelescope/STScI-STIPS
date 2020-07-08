@@ -389,7 +389,7 @@ def SelectParameter(name, override_dict=None, config_file=None):
                     }
     
     if override_dict is not None and name in override_dict:
-        return overrides[name]
+        return override_dict[name]
     value = GetParameter(name, config_file)
     if value is not None:
         return value
@@ -426,8 +426,10 @@ def GetParameter(param, config_file=None):
     conf_file = None
     stips_data_dir = GetStipsDataDir()
     local_dir = os.path.basename(__file__)
-    local_data_dir = os.path.join(local_dir, "..", "data", "stips_config.yaml")
-    local_config = os.path.abspath(local_data_dir)
+    local_data_dir = os.path.join(local_dir, "..", "stips", "data")
+    local_config_file = os.path.join(local_data_dir, "stips_config.yaml")
+    local_config = os.path.abspath(local_config_file)
+    print("Config file at {}".format(local_config))
     
     if config_file is not None and os.path.isfile(config_file):
         conf_file = config_file
@@ -443,8 +445,10 @@ def GetParameter(param, config_file=None):
         conf_file = local_config
     
     if conf_file is not None:
-        with open(config_file, 'r') as config:
+        with open(conf_file, 'r') as config:
             settings = yaml.safe_load(config)
+    
+    print("Config is {}".format(settings))
     
     if settings is not None and param in settings:
         return TranslateParameter(param, settings[param])

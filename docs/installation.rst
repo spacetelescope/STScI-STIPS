@@ -10,7 +10,7 @@ STIPS Requirements
 ##################
 
 * `Pandeia`: Exposure time calculator.
-* `WebbPSF`: James Webb and WFIRST PSF calculator.
+* `WebbPSF`: James Webb and Roman PSF calculator.
 * `astropy`: STIPS uses astropy in order to:
 
 	- Read and write FITS files.
@@ -121,10 +121,10 @@ Make sure that you have the correct version number for `pandeia_refdata` (replac
 
 .. note::
     The URL we provide in this section and the suggested pandeia reference data directory name
-    are specifically for using STIPS with WFIRST. If you would like to use STIPS with JWST,
+    are specifically for using STIPS with Roman. If you would like to use STIPS with JWST,
     you need to download the regular pandeia reference data (and if you want to be able to use both,
     you download both and either copy the 'wfirst' directory into the regular reference data, or the
-    'jwst' directory into the WFIRST reference data).
+    'jwst' directory into the Roman reference data).
 
 Testing Installation
 *********************

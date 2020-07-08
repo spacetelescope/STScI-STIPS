@@ -63,6 +63,7 @@ class SceneModule(object):
         else:
             self.logger = logging.getLogger('__stips__')
             log_level = SelectParameter('log_level', kwargs)
+            print("Log level: {}".format(log_level))
             self.logger.setLevel(getattr(logging, log_level))
             if not len(self.logger.handlers):
                 stream_handler = logging.StreamHandler(sys.stderr)

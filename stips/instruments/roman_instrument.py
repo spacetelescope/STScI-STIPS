@@ -16,7 +16,7 @@ class RomanInstrument(Instrument):
         """
         Still only a base class. Init is super init.
         """
-        super(WfirstInstrument,self).__init__(**kwargs)
+        super(RomanInstrument,self).__init__(**kwargs)
         self.REFS = {   'comptable': self.COMPFILES[-1],
                         'graphtable': self.GRAPHFILES[-1],
                         'thermtable': self.THERMFILES[-1],
@@ -24,7 +24,7 @@ class RomanInstrument(Instrument):
                         'waveset': (500,26000,10000.,'log')
                     }
     
-    TELESCOPE = 'WFIRST'
+    TELESCOPE = 'ROMAN'
     AREA = 45238.93416
     DBNAME = "IsochroneGrid.db"
     MODE = 'imaging'
