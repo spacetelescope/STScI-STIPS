@@ -4,15 +4,12 @@ __filetype__ = "base"
 #Local Modules
 from .instrument import Instrument
 
-class WfirstInstrument(Instrument):
+class RomanInstrument(Instrument):
     """
-    The JwstInstrument class contains the necessary constants and modifications specific to JWST
-        but independent of any specific instrument. This class is also not intended to be 
-        implemented directly, but rather through its children (e.g. NirCamShort, Miri, NirCamLong).
-        It contains the following constants and the following new variables:
-        
-        detectors : array of detectors, each an AstroImage, and each with its own RA/DEC
-        filter    : string, what filter of the instrument is being observed
+    The RomanInstrument class contains the necessary constants and modifications 
+    specific to the Roman Space Telescope (Roman) but independent of any 
+    specific instrument. This class is also not intended to be implemented 
+    directly, but rather through its children (e.g. WFI).
     """
 
     def __init__(self, **kwargs):

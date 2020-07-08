@@ -22,6 +22,7 @@ else:
 
 #Local Modules
 from .. import __version__ as stips_version
+from ..utilities import SelectParameter
 from ..utilities import OffsetPosition
 from ..utilities import overlapadd2
 from ..utilities import overlapaddparallel
@@ -82,35 +83,35 @@ class AstroImage(object):
                 self.logger = kwargs['logger']
             else:
                 self.logger = logging.getLogger('__stips__')
-                self.logger.setLevel(logging.INFO)
+                log_level = SelectParameter('log_level')
+                self.logger.setLevel(getattr('logging', log_level))
                 if not len(self.logger.handlers):
                     stream_handler = logging.StreamHandler(sys.stderr)
                     format = '%(asctime)s %(levelname)s: %(message)s'
                     stream_handler.setFormatter(logging.Formatter(format))
                     self.logger.addHandler(stream_handler)
-            self.out_path = kwargs.get('out_path', os.getcwd())
-            self.oversample = kwargs.get('oversample', default['oversample'])
-            self.shape = kwargs.get('shape', default['shape'])
-            self.shape = np.array(self.shape) * self.oversample
+            self.out_path = SelectParameter('out_path', kwargs)
+            self.oversample = SelectParameter('oversample', kwargs)
+            detector_shape = kwargs.get('shape', default['shape'])
+            self.shape = np.array(detector_shape) * self.oversample
             self._scale = kwargs.get('scale', np.array(default['scale']))
             self.prefix = kwargs.get('prefix', '')
-            self.cat_type = kwargs.get('cat_type', 'fits')
+            self.cat_type = SelectParameter('cat_type', kwargs)
             self.set_celery = kwargs.get('set_celery', None)
             self.get_celery = kwargs.get('get_celery', None)
-            self.seed = kwargs.get('seed', 1234)
+            self.seed = SelectParameter('seed', kwargs)
             small_subarray = kwargs.get('small_subarray', False)
             self.zeropoint = kwargs.get('zeropoint', default['zeropoint'])
             self.photflam = kwargs.get('photflam', default['photflam'])
             self.photplam = kwargs.get('photplam', default['photplam'])
-            background = kwargs.get('background', default['background'])
+            background = SelectParameter('background', kwargs)
             self.telescope = kwargs.get('telescope', default['telescope'])
             self.instrument = kwargs.get('instrument', default['instrument'])
             self.filter = kwargs.get('filter', default['filter'])
-            self.psf_grid_size = kwargs.get('psf_grid_size', 
-                                            default['psf_grid_size'])
+            self.psf_grid_size = SelectParameter('psf_grid_size', kwargs)
             self.psf_commands = kwargs.get('psf_commands', '')
-            self.convolve_size = kwargs.get('convolve_size', 8192)
-            self.memmap = kwargs.get('memmap', True)
+            self.convolve_size = SelectParameter('convolve_size', kwargs)
+            self.memmap = SelectParameter('memmap', kwargs)
         
         if self.get_celery is None:
             self.get_celery = lambda: ""

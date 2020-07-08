@@ -1,0 +1,103 @@
+####
+# General Configuration
+####
+
+# Input Location: location of input catalogues and other data files.
+#   - $CWD for run directory.
+input_location : "$CWD"
+
+# Output Location: location where output data should be written.
+#   - $CWD for run directory.
+output_location : "$CWD"
+
+# Catalogue type: type of catalogues to generate. 'ASCII' or 'FITS'
+catalogue_type : 'FITS'
+
+# Logging Level: string input to python logging module.
+#   CRITICAL/ERROR/WARNING/INFO/DEBUG are valid strings.
+log_level : 'INFO'
+
+# Random Seed.
+#   -1 means use current date/time.
+random_seed : 1234
+
+####
+# Parallel Processing Configuration
+####
+
+# Use parallel processing (if available)
+parallel_enable : false
+
+# Number of cores to use (0 means use the number detected by python)
+#   This value is only used if parallel processing is enabled, either in
+#   the configuration file or as a keyword argument.
+parallel_ncores : 0
+
+####
+# Observation Defaults
+####
+
+# Default detector oversample
+observation_detector_oversample : 1
+
+# Default Background
+#   - can be none/avg/min/med/max as keywords
+#   - can be 'jbt' to use the JBT background tool
+#   - can be a floating point
+observation_default_background : 'none'
+
+# JBT background location. Default is $DATA for stips_data. Only matters if
+#   the background is set to jbt. Can be
+#   - $WEB to use online JBT
+#   - $DATA to use the stips_data directory
+#   - a path to local JBT data
+observation_jbt_location : '$WEB'
+
+# Memory-map: should the AstroImage use memory mapping.
+observation_memory_map : true
+
+# Include distortion parameters (if available)
+observation_distortion_enable : false
+
+####
+# PSF Convolution Configuration
+####
+
+# Default PSF grid size
+psf_grid_default_size : 1
+
+# Enable PSF cache
+psf_cache_enable : true
+
+# PSF cache location. Only used if use_psf_cache is true.
+#   Default is "$DATA" for the stips_data directory
+#   Otherwise specify a path directly.
+psf_cache_location : "$DATA"
+
+# PSF cache directory name.
+psf_cache_directory : 'psf_cache'
+
+# PSF convolution maximum grid size (length of 1 side of 2D array)
+psf_convolution_max_size : 8192
+
+####
+# Residual Configuration
+####
+
+# Perform PSF convolution
+residual_convolve_psf : true
+
+# Add Poisson noise
+residual_poisson : true
+
+# Add Readnoise
+residual_readnoise : true
+
+# Add flatfield residual
+residual_flat : true
+
+# Add dark current residual
+residual_dark : true
+
+# Add Cosmic Ray residual
+residual_cosmic : true

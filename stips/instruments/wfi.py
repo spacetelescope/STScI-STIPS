@@ -12,12 +12,12 @@ from astropy.io import fits as pyfits
 #Local Modules
 from ..astro_image import AstroImage
 from .instrument import Instrument
-from .wfirst_instrument import WfirstInstrument
-from ..utilities import OffsetPosition
+from .roman_instrument import RomanInstrument
+from ..utilities import OffsetPosition, SelectParameter
 
 from .. import __version__ as stips_version
 
-class WFI(WfirstInstrument):
+class WFI(RomanInstrument):
     __classtype__ = "detector"
     """
     The WFI class contains the necessary constants and modifications to run WFI
@@ -37,10 +37,10 @@ class WFI(WfirstInstrument):
         super(WFI, self).__init__(**kwargs)
         
         #Set oversampling
-        self.oversample = kwargs.get('oversample', self.OVERSAMPLE_DEFAULT)
+        self.oversample = SelectParameter('oversample', kwargs)
         
         #Set PSF grid points
-        self.grid_size = kwargs.get('grid_size', self.PSF_GRID_SIZE_DEFAULT)
+        self.grid_size = SelectParameter('psf_grid_size', kwargs)
 
 
     def generateReadnoise(self):

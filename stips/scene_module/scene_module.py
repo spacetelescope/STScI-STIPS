@@ -16,7 +16,10 @@ else:
 
 # Local modules
 from ..stellar_module import StarGenerator
-from ..utilities import GetStipsData, OffsetPosition, StipsDataTable
+from ..utilities import GetStipsData
+from ..utilities import OffsetPosition
+from ..utilities import SelectParameter
+from ..utilities import StipsDataTable
 from .convert_units import (DivideInterval, RadiiUnknown2Arcsec, RadiiUnknown2Parsec, RescaleArray)
 
 #-----------
@@ -48,18 +51,19 @@ class SceneModule(object):
         self: obj
             Class instance.
 
-        **kwargs: dictionary
+        kwargs: dictionary
             Additional arguments needed to make the scene
 
         """
-        self.out_path = kwargs.get('out_path', os.getcwd())
+        self.out_path = SelectParameter('out_path', kwargs)
         self.prefix = kwargs.get('out_prefix', 'sim')
-        self.cat_type = kwargs.get('cat_type', 'fits')
+        self.cat_type = SelectParameter('cat_type', kwargs)
         if 'logger' in kwargs:
             self.logger = kwargs['logger']
         else:
             self.logger = logging.getLogger('__stips__')
-            self.logger.setLevel(logging.INFO)
+            log_level = SelectParameter('log_level', kwargs)
+            self.logger.setLevel(getattr(logging, log_level))
             if not len(self.logger.handlers):
                 stream_handler = logging.StreamHandler(sys.stderr)
                 stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))# [in %(pathname)s:%(lineno)d]'))
@@ -67,16 +71,18 @@ class SceneModule(object):
         if 'scene_general' in kwargs:
             self.ra = kwargs['scene_general'].get('ra', 0.0)
             self.dec = kwargs['scene_general'].get('dec', 0.0)
-            self.seed = kwargs['scene_general'].get('seed', 0)
+            self.seed = SelectParameter('seed', kwargs['scene_general'])
         else:
             self.ra = kwargs.get('ra', 0.0)
             self.dec = kwargs.get('dec', 0.0)
-            self.seed = kwargs.get('seed', 0)
+            self.seed = SelectParameter('seed', kwargs)
 
-        self.params =  [ 'Random seed: %d' % (self.seed) ]
-        self.params += [ 'Centre (RA,DEC) = (%f,%f)' % (self.ra,self.dec) ]
+        self.params =  [ 'Random seed: {}'.format(self.seed) ]
+        msg = 'Centre (RA,DEC) = ({:.3f},{:.3f})'
+        self.params += [  msg.format(self.ra, self.dec) ]
         self.catalogues = {}
     
+
     #-----------
     def CreatePopulation(self, pop, id=0):
         """
@@ -160,22 +166,22 @@ class SceneModule(object):
         offset_ra = float(pop['offset_ra'])/3600. #offset in RA arcseconds, convert to degrees.
         offset_dec = float(pop['offset_dec'])/3600. #offset in DEC arcseconds, convert to degrees.
         
-        metadata = {'type': 'phoenix', 'id': id, 'n_stars': n_stars, 'age_l': age_l, 'age_h': age_h,
-                    'met_l': met_l, 'met_h': met_h, 'imf': imf, 'alpha': alpha,
-                    'distribution': distribution, 'clustered': clustered, 'radius': radius,
-                    'radius_units': rad_units, 'dist_l': dist_l, 'dist_h': dist_h, 
-                    'offset_ra': offset_ra, 'offset_dec': offset_dec, 
+        metadata = {'type': 'phoenix', 'id': id, 'n_stars': n_stars, 
+                    'age_l': age_l, 'age_h': age_h, 'met_l': met_l, 
+                    'met_h': met_h, 'imf': imf, 'alpha': alpha,
+                    'distribution': distribution, 'clustered': clustered, 
+                    'radius': radius, 'radius_units': rad_units, 
+                    'dist_l': dist_l, 'dist_h': dist_h, 'offset_ra': offset_ra, 
+                    'offset_dec': offset_dec, 
                     'name': 'Phoenix Stellar Population Table'}
         data_table.meta = metadata
 
-        self._log("info","Creating age and metallicity numbers")
-#         ages = np.random.RandomState(seed=self.seed).random_sample(size=len(age_bins))
+        self._log("info", "Creating age and metallicity numbers")
         ages = np.random.random_sample(size=len(age_bins))
         ages /= ages.sum()
-#         mets = np.random.RandomState(seed=self.seed).random_sample(size=len(met_bins))
         mets = np.random.random_sample(size=len(met_bins))
         mets /= mets.sum()
-        self._log("info","Created age and metallicity numbers")
+        self._log("info", "Created age and metallicity numbers")
         
         self._log("info","Creating stars")
         #Generate star masses
@@ -265,7 +271,7 @@ class SceneModule(object):
                 datasets += 1
                 total += num_stars
 
-        self._log("info","Done creating catalogue")
+        self._log("info", "Done creating catalogue")
         return outList
 
     #-----------
@@ -622,7 +628,7 @@ class SceneModule(object):
         """
         Checks if a logger exists. Else prints.
         """
-        if hasattr(self,'logger'):
-            getattr(self.logger,mtype)(message)
+        if hasattr(self, 'logger'):
+            getattr(self.logger, mtype)(message)
         else:
-            sys.stderr.write("%s: %s\n" % (mtype,message))
+            sys.stderr.write("{}: {}\n".format(mtype, message))

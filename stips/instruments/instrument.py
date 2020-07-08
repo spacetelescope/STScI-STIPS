@@ -14,7 +14,13 @@ from functools import wraps
 #Local Modules
 from ..stellar_module import StarGenerator
 from ..astro_image import AstroImage
-from ..utilities import GetStipsData, OffsetPosition, read_metadata, read_table, internet, StipsDataTable
+from ..utilities import GetStipsData
+from ..utilities import OffsetPosition
+from ..utilities import read_metadata
+from ..utilities import read_table
+from ..utilities import internet
+from ..utilities import StipsDataTable
+from ..utilities import SelectParameter
 
 if sys.version_info[0] >= 3:
     import builtins
@@ -38,46 +44,54 @@ class Instrument(object):
         """
         Instrument. The __init__ function creates a (potentially) empty instrument.
         """
-        self.COMPFILES =  sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmc.fits")))
-        self.GRAPHFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmg.fits")))
-        self.THERMFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmt.fits")))
+        cdbs_dir = os.environ.get("PYSYN_CDBS", os.getcwd())
+        ref_file_types = {
+                            "tmc": "COMPFILES", 
+                            "tmg": "GRAPHFILES", 
+                            "tmt": "THERMFILES"
+                         }
+        for ref_type in ref_file_types:
+            name = ref_file_types[ref_type]
+            dir = os.path.join(cdbs_dir, "mtab", "*{}.fits".format(ref_type))
+            setattr(self, name, sorted(glob.glob(dir)))
 
         if 'logger' in kwargs:
             self.logger = kwargs['logger']
         else:
             self.logger = logging.getLogger('__stips__')
-            self.logger.setLevel(getattr(logging, kwargs.get("log_level", "INFO")))
+            log_level = SelectParameter('log_level', kwargs)
+            self.logger.setLevel(getattr(logging, log_level))
             if not len(self.logger.handlers):
                 stream_handler = logging.StreamHandler(sys.stderr)
                 stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))# [in %(pathname)s:%(lineno)d]'))
                 self.logger.addHandler(stream_handler)
         
-        self.out_path = kwargs.get('out_path', os.getcwd())
+        self.out_path = SelectParameter('out_path', kwargs)
         self.prefix = kwargs.get('prefix', '')
-        self.cat_type = kwargs.get('cat_type', 'fits')
+        self.cat_type = SelectParameter('cat_type', kwargs)
         self.flatfile = GetStipsData(os.path.join("residual_files", self.FLATFILE))
         self.darkfile = GetStipsData(os.path.join("residual_files", self.DARKFILE))
-        self.oversample = 1
-        self.seed = kwargs.get('seed', 1234)
+        self.oversample = SelectParameter('oversample', kwargs)
+        self.seed = SelectParameter('seed', kwargs)
         self.imgbase = kwargs.get('imgbase', '')
         self.ra = kwargs.get('ra', 0.)
         self.dec = kwargs.get('dec', 0.)
         self.pa = kwargs.get('pa', 0.)
-        self.distortion = kwargs.get('distortion', False)
+        self.distortion = SelectParameter('distortion', kwargs)
         self.exptime = kwargs.get('exptime', 1.)
         self.small_subarray = kwargs.get('small_subarray', False)
         self.filter = None
         self.detectors = None
         self.psf_commands = kwargs.get('psf_commands', None)
         self.instrument = kwargs.get('instrument', "")
-        self.background_value = kwargs.get('background', 'none')
+        self.background_value = SelectParameter('background', kwargs)
+        self.background_location = SelectParameter('jbt_location', kwargs)
         self.custom_background = kwargs.get('custom_background', 0.)
         self.CENTRAL_OFFSET = (0., 0., 0.)
-        self.convolve_size = kwargs.get('convolve_size', 8192)
+        self.convolve_size = SelectParameter('convolve_size', kwargs)
         self.set_celery = kwargs.get('set_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
-        self.use_local_cache = kwargs.get('use_local_cache', False)
-        self.memmap = kwargs.get('memmap', True)
+        self.memmap = SelectParameter('memmap', kwargs)
 
         #Adjust # of detectors based on keyword:
         n_detectors = int(kwargs.get('detectors', len(self.DETECTOR_OFFSETS)))
@@ -88,12 +102,9 @@ class Instrument(object):
         self._log('info', msg.format(self.DETECTOR, n_detectors, 
                                      self.CENTRAL_OFFSET))
 
-        #Set oversampling
-        self.oversample = kwargs.get('oversample', self.OVERSAMPLE_DEFAULT)
-        
         #Set PSF grid points
-        self.psf_grid_size = kwargs.get('psf_grid_size', 
-                                        self.PSF_GRID_SIZE_DEFAULT)
+        self.psf_grid_size = SelectParameter('psf_grid_size', kwargs)
+
     
     @classmethod
     def initFromImage(cls, image, **kwargs):
@@ -191,14 +202,15 @@ class Instrument(object):
             self._log("info", "Detector {} created".format(name))
             self.detectors.append(detector)
         
-    def toFits(self,outfile):
+    def toFits(self, outfile):
         """
         Takes the detectors and turns them into a multi-extension FITS file.
         """
         self._log("info","Converting to FITS file")
         hdus = [pyfits.PrimaryHDU()]
         for detector in self.detectors:
-            self._log("info","Converting detector %s to FITS extension" % (detector.name))
+            msg = "Converting detector {} to FITS extension"
+            self._log("info", msg.format(detector.name))
             hdus.append(detector.imageHdu)
         hdulist = pyfits.HDUList(hdus)
         hdulist.writeto(outfile, overwrite=True)
@@ -756,17 +768,29 @@ class Instrument(object):
 
     @classmethod
     def doSubpixel(cls,dithers,subpixels):
-        """For each (x,y) in dithers, dither around that point for each point in subpixels. Return the full set"""
+        """
+        For each (x,y) in dithers, dither around that point for each point in 
+        subpixels. Return the full set
+        """
         my_dithers = []
         for (x,y) in dithers:
             for (i,j) in subpixels:
                 my_dithers.append((x+i,y+j))
         return my_dithers
     
-    def addError(self, convolve=True, poisson=True, readnoise=True, flat=True, dark=True, cosmic=True, parallel=False, snapshots={}, *args, **kwargs):
+    def addError(self, *args, **kwargs):
         """Base function for adding in residual error"""
         self._log("info","Adding residual error")
-        cores = kwargs.get('cores', None)
+        cores = SelectParameter('cores', kwargs)
+        convolve = SelectParameter('convolve', kwargs)
+        poisson = SelectParameter('residual_poisson', kwargs)
+        readnoise = SelectParameter('residual_readnoise', kwargs)
+        flat = SelectParameter('residual_flat', kwargs)
+        dark = SelectParameter('residual_dark', kwargs)
+        cosmic = SelectParameter('residual_cosmic', kwargs)
+        parallel = SelectParameter('parallel_enable', kwargs)
+        snapshots = kwargs.get("snapshots", {})
+
         base_state = self.getState()
         if flat:
             flat = AstroImage.initDataFromFits(self.flatfile,ext='COMPRESSED_IMAGE', psf=False, logger=self.logger)
@@ -839,7 +863,8 @@ class Instrument(object):
         from pandeia.engine.normalization import NormalizationFactory
         norm_type = self.get_type(bandpass)
         
-        norm = NormalizationFactory(type=norm_type, bandpass=bandpass, norm_fluxunit='abmag', norm_flux=norm_flux)
+        norm = NormalizationFactory(type=norm_type, bandpass=bandpass, 
+                                    norm_fluxunit='abmag', norm_flux=norm_flux)
         if isinstance(source_spectrum_or_wave_flux, tuple):
             wave, flux = source_spectrum_or_wave_flux
         else:
@@ -852,7 +877,7 @@ class Instrument(object):
     def get_type(self, bandpass_str):
         if 'miri' in bandpass_str or 'nircam' in bandpass_str:
             return 'jwst'
-        elif 'wfi' in bandpass_str or 'wfirst' in bandpass_str:
+        elif 'wfi' in bandpass_str or 'wfirst' in bandpass_str or 'roman' in bandpass_str:
             return 'wfirst'
         elif 'wfc3' in bandpass_str:
             return 'hst'
@@ -881,7 +906,9 @@ class Instrument(object):
             wave = np.append(wave, wave[-1]+(wave[-1]-wave[-2]))
             pce = np.append(pce, 0.)
         
-        self._bp = ps.ArrayBandpass(wave=wave, throughput=pce, waveunits='micron', name='bp_{}_{}'.format(self.instrument, self.filter))
+        bp_name = 'bp_{}_{}'.format(self.instrument, self.filter)
+        self._bp = ps.ArrayBandpass(wave=wave, throughput=pce, 
+                                    waveunits='micron', name=bp_name)
         self._bp.convert('angstroms')
         return self._bp
     
@@ -899,10 +926,15 @@ class Instrument(object):
                                     'miri': 'miri'
                                 }
 
-        conf = build_default_calc(self.TELESCOPE.lower(), translate_instrument.get(self.INSTRUMENT.lower(), self.INSTRUMENT.lower()), self.MODE)['configuration']
+        telescope = self.TELESCOPE.lower()
+        instrument = self.INSTRUMENT.lower()
+        translated_ins = translate_instrument.get(instrument, instrument)
+        conf = build_default_calc(telescope, translated_ins, 
+                                  self.MODE)['configuration']
         conf['instrument']['filter'] = self.filter.lower()
         
-        self.logger.info("Creating Instrument with Configuration {}".format(conf['instrument']))
+        msg = "Creating Instrument with Configuration {}"
+        self.logger.info(msg.format(conf['instrument']))
         
         self._instrument = InstrumentFactory(config=conf)
         return self._instrument        
@@ -910,7 +942,8 @@ class Instrument(object):
     @property
     def zeropoint(self):
         ps.setref(**self.REFS)
-        standard_star_file = GetStipsData(os.path.join("standards", "alpha_lyr_stis_008.fits"))
+        vega_path = os.path.join("standards", "alpha_lyr_stis_008.fits")
+        standard_star_file = GetStipsData(vega_path)
         sp = ps.FileSpectrum(standard_star_file)
         sp.convert('angstroms')
         bp = self.bandpass
@@ -933,60 +966,99 @@ class Instrument(object):
         if self.background_value == 'none':
             self._log("info", "Returning background 0.0 for 'none'")
             return 0.
+        elif isinstance(self.background_value, int):
+            return self.background_value
+        elif isinstance(self.background_value, float):
+            return self.background_value
         elif self.background_value == 'custom':
-            self._log("info", "Returning background {} for 'custom'".format(self.custom_background))
+            msg = "Returning background {} for 'custom'"
+            self._log("info", msg.format(self.custom_background))
             return self.custom_background
-
-        bg = None
-        if internet() and not self.use_local_cache:
-            from jwst_backgrounds import jbt
-            try:
-                bg = jbt.background(self.ra, self.dec, self.PHOTPLAM[self.filter])
-            except Exception as e:
-                self._log("error", "Accessing JBT background produced error {}".format(e))
-                self._log("warning", "Unable to connect to the JBT server")
+        elif self.background_value in ['min', 'avg', 'med', 'max']:
+            if hasattr(self, 'BACKGROUND'):
+                if self.background_value in self.BACKGROUND:
+                    bg = self.BACKGROUND[self.background_value]
+                    if self.filter in bg:
+                        return bg[self.filter]
+            msg = 'Background {} not implemented for {} {} {}'
+            msg = msg.format(self.background_value, self.telescope,
+                             self.instrument, self.filter)
+            raise NotImplementedError(msg)
+        elif self.background_value == 'jbt':
+            bg = None
+            if self.background_location == '$WEB':
+                if internet():
+                    from jwst_backgrounds import jbt
+                    try:
+                        bg = jbt.background(self.ra, self.dec, 
+                                            self.PHOTPLAM[self.filter])
+                    except Exception as e:
+                        msg = "Accessing JBT background produced error {}"
+                        self._log("error", msg.format(e))
+                        msg = "Unable to connect to the JBT server"
+                        self._log("warning", msg)
+                else:
+                    msg = "Accessing JBT background produced error {}"
+                    self._log("error", msg.format(e))
+                    self._log("warning", "Unable to connect to the JBT server")
         
-        if bg is None:
-            self._log("info", "Using local cache of JBT background data")
-            from ..utilities import CachedJbtBackground
-            try:
-                bg = CachedJbtBackground(self.ra, self.dec, self.PHOTPLAM[self.filter])
-            except Exception as e:
-                self._log("error", "Retrieving local cache produced error {}".format(e))
-                self._log("info", "More complete error: {}".format(repr(e)))
-                message = "Unable to retrieve local cache. Returning background 0.0 for '{}'"
-                self._log("warning", message.format(self.background_value))
-                return 0.
+            if bg is None:
+                self._log("info", "Using local cache of JBT background data")
+                from ..utilities import CachedJbtBackground
+                try:
+                    bg = CachedJbtBackground(self.ra, self.dec, 
+                                             self.PHOTPLAM[self.filter])
+                except Exception as e:
+                    msg = "Retrieving local cache produced error {}"
+                    self._log("error", msg.format(e))
+                    self._log("info", "More complete error: {}".format(repr(e)))
+                    msg = "Unable to retrieve local cache. "
+                    msg += "Returning background 0.0 for '{}'"
+                    self._log("warning", msg.format(self.background_value))
+                    return 0.
 
-        wave_array = bg.bkg_data['wave_array']
-        combined_bg_array = bg.bkg_data['total_bg']
+            wave_array = bg.bkg_data['wave_array']
+            combined_bg_array = bg.bkg_data['total_bg']
     
-        if self.background_value == 'avg':
-            flux_array = np.mean(combined_bg_array, axis=0)
-        elif self.background_value == 'med':
-            flux_array = np.median(combined_bg_array, axis=0)
-        elif self.background_value == 'max':
-            flux_array = np.max(combined_bg_array, axis=0)
-        elif self.background_value == 'min':
-            flux_array = np.min(combined_bg_array, axis=0)
+            if self.background_value == 'avg':
+                flux_array = np.mean(combined_bg_array, axis=0)
+            elif self.background_value == 'med':
+                flux_array = np.median(combined_bg_array, axis=0)
+            elif self.background_value == 'max':
+                flux_array = np.max(combined_bg_array, axis=0)
+            elif self.background_value == 'min':
+                flux_array = np.min(combined_bg_array, axis=0)
+            else:
+                flux_array = combined_bg_array[0]
+    
+            # Convert background flux from MJy/sr to mJy/pixel.
+            #   Conversion: * 1e9 for MJy -> mJy
+            #   Conversion: * 2.3504e-11 for sr^-2 -> arcsec^-2
+            #   Conversion: * self.SCALE[0] * self.SCALE[1] for arcsec^-2 -> pixel^-2
+            flux_array_pixels = 1e9 * flux_array * 2.3504e-11 * self.SCALE[0] * self.SCALE[1]
+    
+            ps.setref(**self.REFS)
+            sp = ps.ArraySpectrum(wave_array, flux_array_pixels, 
+                                  waveunits='micron', fluxunits='mjy')
+            sp.convert('angstroms')
+            sp.convert('photlam')
+            obs = ps.Observation(sp, self.bandpass, binset=sp.wave, 
+                                 force='taper')
+            bg = obs.countrate()
+            
+            msg = "Returning background {} for '{}'"
+            self._log("info", msg.format(bg, self.background_value))
+            return bg
+
         else:
-            flux_array = combined_bg_array[0]
-    
-        # Convert background flux from MJy/sr to mJy/pixel.
-        #   Conversion: * 1e9 for MJy -> mJy
-        #   Conversion: * 2.3504e-11 for sr^-2 -> arcsec^-2
-        #   Conversion: * self.SCALE[0] * self.SCALE[1] for arcsec^-2 -> pixel^-2
-        flux_array_pixels = 1e9 * flux_array * 2.3504e-11 * self.SCALE[0] * self.SCALE[1]
-    
-        ps.setref(**self.REFS)
-        sp = ps.ArraySpectrum(wave_array, flux_array_pixels, waveunits='micron', fluxunits='mjy')
-        sp.convert('angstroms')
-        sp.convert('photlam')
-        obs = ps.Observation(sp, self.bandpass, binset=sp.wave, force='taper')
-        bg = obs.countrate()
-        
-        self._log("info", "Returning background {} for '{}'".format(bg, self.background_value))
-        return bg
+            msg = 'Background {} not implemented for {} {} {}'
+            msg = msg.format(self.background_value, self.telescope,
+                             self.instrument, self.filter)
+            raise NotImplementedError(msg)
+
+        # Shouldn't get here, but in case we do....
+        return 0.
+
 
     def _log(self,mtype,message):
         """
