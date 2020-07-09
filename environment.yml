@@ -58,7 +58,6 @@ dependencies:
 
   - pip:
     # Base dependencies
-    - automodinit
     - jwst_backgrounds
 
     # Major modules
@@ -68,5 +67,4 @@ dependencies:
     - montage-wrapper
 
     # Docs
-    - astropy_helpers
     - sphinx_astropy

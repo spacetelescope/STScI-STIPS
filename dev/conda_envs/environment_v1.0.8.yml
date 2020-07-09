@@ -195,12 +195,12 @@ dependencies:
   - zlib=1.2.11=h0b31af3_1006
   - zstd=1.4.4=h4b3e974_3
   - pip:
-    - astropy-helpers==4.0.1
     - astropy-sphinx-theme==1.1
     - automodinit==0.16
     - jwst-backgrounds==1.1.2
     - montage-wrapper==0.9.9
     - pandeia-engine==1.5.1
+    - photutils==0.7.2
     - pyqt5-sip==4.19.18
     - pyqtchart==5.12
     - pyqtwebengine==5.12.1
