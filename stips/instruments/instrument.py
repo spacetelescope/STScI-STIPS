@@ -793,9 +793,11 @@ class Instrument(object):
 
         base_state = self.getState()
         if flat:
-            flat = AstroImage.initDataFromFits(self.flatfile,ext='COMPRESSED_IMAGE', psf=False, logger=self.logger)
+            flat = AstroImage.initRefFile(self.flatfile, ext='COMPRESSED_IMAGE', 
+                                          psf=False, logger=self.logger)
         if dark:
-            dark = AstroImage.initDataFromFits(self.darkfile,ext='COMPRESSED_IMAGE', psf=False, logger=self.logger)
+            dark = AstroImage.initRefFile(self.darkfile, ext='COMPRESSED_IMAGE', 
+                                          psf=False, logger=self.logger)
             dark *= self.exptime
         if readnoise:
             rn = self.generateReadnoise()
@@ -923,14 +925,19 @@ class Instrument(object):
                                     'wfi': 'wfirstimager',
                                     'nircamlong': 'nircam',
                                     'nircamshort': 'nircam',
-                                    'miri': 'miri'
+                                    'miri': 'miri',
+                                    'roman': 'wfirstimager'
                                 }
+        translate_telescope = {
+                                'roman': 'wfirst'
+                              }
 
         telescope = self.TELESCOPE.lower()
+        telescope = translate_telescope.get(telescope, telescope)
         instrument = self.INSTRUMENT.lower()
-        translated_ins = translate_instrument.get(instrument, instrument)
-        conf = build_default_calc(telescope, translated_ins, 
-                                  self.MODE)['configuration']
+        instrument = translate_instrument.get(instrument, instrument)
+        calc = build_default_calc(telescope, instrument, self.MODE)
+        conf = calc['configuration']
         conf['instrument']['filter'] = self.filter.lower()
         
         msg = "Creating Instrument with Configuration {}"

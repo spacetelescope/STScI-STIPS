@@ -429,7 +429,6 @@ def GetParameter(param, config_file=None):
     local_data_dir = os.path.join(local_dir, "..", "stips", "data")
     local_config_file = os.path.join(local_data_dir, "stips_config.yaml")
     local_config = os.path.abspath(local_config_file)
-    print("Config file at {}".format(local_config))
     
     if config_file is not None and os.path.isfile(config_file):
         conf_file = config_file
@@ -447,8 +446,6 @@ def GetParameter(param, config_file=None):
     if conf_file is not None:
         with open(conf_file, 'r') as config:
             settings = yaml.safe_load(config)
-    
-    print("Config is {}".format(settings))
     
     if settings is not None and param in settings:
         return TranslateParameter(param, settings[param])

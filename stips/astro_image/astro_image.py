@@ -68,7 +68,7 @@ class AstroImage(object):
             self.zeropoint = self.parent.zeropoint
             self.photflam = self.parent.photflam
             self.photplam = self.parent.PHOTPLAM[self.filter]
-            background = self.parent.background
+            background = self.parent.pixel_background
             self.psf_grid_size = self.parent.psf_grid_size
             self.psf_commands = self.parent.psf_commands
             small_subarray = self.parent.small_subarray
@@ -220,6 +220,34 @@ class AstroImage(object):
     @classmethod
     def initDataFromFits(cls, file, **kwargs):
         """Takes *only* data from the FITS, and everything else from kwargs (or sets to default)"""
+        img = cls(**kwargs)
+        if file != '':
+            try:
+                with fits.open(file) as inf:
+                    ext = kwargs.get('ext', 0)
+                    dat = inf[ext].data
+                    img._init_dat(base_shape=np.array(dat.shape), data=dat)
+                img.wcs = img._getWcs(**kwargs)
+                img._prepRaDec()
+                img._prepHeader()
+                img.updateHeader("ASTROIMAGEVALID", True)
+                img.addHistory("Data imported from FITS file %s" % (os.path.split(file)[1]))
+                img._log("info","Created AstroImage %s and imported data from FITS file %s" % (img.name,os.path.split(file)[1]))
+            except IOError as e:
+                img.updateHeader("ASTROIMAGEVALID", False)
+                img.addHistory("Attempted to create from invalid FITS file %s" % (os.path.split(file)[1]))
+                img._log("warning","Attempted to create AstroImage %s from invalid FITS file %s" % (img.name,os.path.split(file)[1]))
+        return img
+    
+    @classmethod
+    def initRefFile(cls, file, **kwargs):
+        """
+        Initializes as a reference file (i.e. not an observation), so sets 
+        a number of keywords to default values.
+        """
+        for key in cls.INSTRUMENT_DEFAULT:
+            if key not in kwargs:
+                kwargs[key] = cls.INSTRUMENT_DEFAULT[key]
         img = cls(**kwargs)
         if file != '':
             try:
@@ -415,7 +443,11 @@ class AstroImage(object):
     @property
     def psf_constructor(self):
         import webbpsf
-        return getattr(getattr(webbpsf, self.telescope), self.instrument)()
+        telescope_remap = {
+                            'roman': 'wfirst'
+                          }
+        telescope = telescope_remap.get(self.telescope.lower(), self.telescope)
+        return getattr(getattr(webbpsf, telescope), self.instrument)()
     
     
     @property

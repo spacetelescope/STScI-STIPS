@@ -10,8 +10,8 @@ input_location : "$CWD"
 #   - $CWD for run directory.
 output_location : "$CWD"
 
-# Catalogue type: type of catalogues to generate. 'ASCII' or 'FITS'
-catalogue_type : 'FITS'
+# Catalogue type: type of catalogues to generate. 'ascii.ipac' or 'fits'
+catalogue_type : 'fits'
 
 # Logging Level: string input to python logging module.
 #   CRITICAL/ERROR/WARNING/INFO/DEBUG are valid strings.
@@ -44,7 +44,7 @@ observation_detector_oversample : 1
 #   - can be none/avg/min/med/max as keywords
 #   - can be 'jbt' to use the JBT background tool
 #   - can be a floating point
-observation_default_background : 'none'
+observation_default_background : 0.0
 
 # JBT background location. Default is $DATA for stips_data. Only matters if
 #   the background is set to jbt. Can be
