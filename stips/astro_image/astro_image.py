@@ -700,7 +700,7 @@ class AstroImage(object):
                                                        self.filter,
                                                        self.oversample,
                                                        self.psf_grid_size,
-                                                       self.detector)
+                                                       self.detector.lower())
         if os.path.exists(os.path.join(self.out_path, "psf_cache")):
             psf_file = os.path.join(self.out_path, "psf_cache", psf_name)
             if os.path.exists(psf_file):

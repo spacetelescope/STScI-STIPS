@@ -425,8 +425,8 @@ def GetParameter(param, config_file=None):
     settings = None
     conf_file = None
     stips_data_dir = GetStipsDataDir()
-    local_dir = os.path.basename(__file__)
-    local_data_dir = os.path.join(local_dir, "..", "stips", "data")
+    local_dir = os.path.abspath(__file__)
+    local_data_dir = os.path.join(local_dir, "..", "..", "data")
     local_config_file = os.path.join(local_data_dir, "stips_config.yaml")
     local_config = os.path.abspath(local_config_file)
     
