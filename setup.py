@@ -179,7 +179,7 @@ def generate_version_py(conf):
                                                  bugfix=bugfix,
                                                  rel=release)
 
-    with open(version_py, 'w') as f:
+    with open(os.path.join(packagename, "version.py"), 'w') as f:
         # This overwrites the actual version.py
         f.write(content)
     return version
