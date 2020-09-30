@@ -2,7 +2,7 @@ from __future__ import absolute_import,division
 __filetype__ = "base"
 
 #External Modules
-import logging, os, shutil, sys, time, uuid
+import logging, os, shutil, sys, time, uuid, weakref
 
 import numpy as np
 
@@ -124,6 +124,7 @@ class AstroImage(object):
         if self.memmap:
             fname = self.prefix+"_"+uuid.uuid4().hex+"_"+self.name+".tmp"
             self.fname = os.path.join(self.out_path, fname)
+            self._finalizer = weakref.finalize(self, os.remove, self.fname)
 
         if self.psf_commands is None:
             self.psf_commands = ''
@@ -169,10 +170,6 @@ class AstroImage(object):
         self.noise_floor = max(background, kwargs.get('noise_floor', 1.))        
 
     
-    def __del__(self):
-        if os.path.exists(self.fname):
-            os.remove(self.fname)
-
     def copy(self):
         other = AstroImage(out_path=self.out_path, detname=self.name, wcs=self.wcs, header=self.header, history=self.history,
                            xsize=self.xsize, ysize=self.ysize, zeropoint=self.zeropoint, photflam=self.photflam, 
@@ -946,7 +943,7 @@ class AstroImage(object):
                     del fp_crop
                     if os.path.exists(self.fname):
                         os.remove(self.fname)
-                    self.fname = g
+                        os.rename(g, self.fname)
                 else:
                     del self.fname
                     self.fname = fp_crop
@@ -958,8 +955,6 @@ class AstroImage(object):
                 os.remove(f)
             if os.path.exists(g):
                 os.remove(g)
-            if os.path.exists(self.fname):
-                os.remove(self.fname)
             raise e
 
     def rotate(self,angle,reshape=False):
@@ -984,15 +979,13 @@ class AstroImage(object):
                 del fp_result
                 if os.path.exists(self.fname):
                     os.remove(self.fname)
-                self.fname = f
+                    os.rename(f, self.fname)
             else:
                 del self.fname
                 self.fname = fp_result
         except Exception as e:
             if os.path.exists(f):
                 os.remove(f)
-            if os.path.exists(self.fname):
-                os.remove(self.fname)
             raise e
 
     def addWithOffset(self,other,offset_x,offset_y):
@@ -1140,7 +1133,7 @@ class AstroImage(object):
                 del fp_result
                 if os.path.exists(self.fname):
                     os.remove(self.fname)
-                self.fname = f
+                    os.rename(f, self.fname)
             else:
                 del self.fname
                 self.fname = fp_result
@@ -1148,8 +1141,6 @@ class AstroImage(object):
         except Exception as e:
             if os.path.exists(f):
                 os.remove(f)
-            if os.path.exists(self.fname):
-                os.remove(self.fname)
             raise e
         self._scale = scale
         self.wcs = self._wcs(self.ra, self.dec, self.pa, scale)
@@ -1180,7 +1171,7 @@ class AstroImage(object):
                     mapped[:] = binned[:]
                     if os.path.exists(self.fname):
                         os.remove(self.fname)
-                    self.fname = f
+                        os.rename(f, self.fname)
                 else:
                     del self.fname
                     self.fname = binned
@@ -1188,8 +1179,6 @@ class AstroImage(object):
         except Exception as e:
             if os.path.exists(f):
                 os.remove(f)
-            if os.path.exists(self.fname):
-                os.remove(self.fname)
             raise e
         self.wcs = self._wcs(self.ra, self.dec, self.pa, [self.scale[0]*binx, self.scale[1]*biny])
         self._prepHeader()
@@ -1257,8 +1246,6 @@ class AstroImage(object):
                 os.remove(a)
             if os.path.exists(n):
                 os.remove(n)
-            if os.path.exists(self.fname):
-                os.remove(self.fname)
             raise e
         self.addHistory("Adding Poisson Noise with mean {} and standard deviation {}".format(mean, std))
         self._log("info", "Adding Poisson Noise with mean {} and standard deviation {}".format(mean, std))            
@@ -1288,8 +1275,6 @@ class AstroImage(object):
         except Exception as e:
             if os.path.exists(n):
                 os.remove(n)
-            if os.path.exists(self.fname):
-                os.remove(self.fname)
             raise e
         self.updateHeader('RDNOISE', readnoise)
         self.addHistory("Adding Read noise with mean %f and standard deviation %f" % (mean, std))
@@ -1359,8 +1344,6 @@ class AstroImage(object):
         except Exception as e:
             if os.path.exists(n):
                 os.remove(n)
-            if os.path.exists(self.fname):
-                os.remove(self.fname)
             raise e
         self.addHistory("Adding Cosmic Ray residual with mean %f and standard deviation %f" % (mean, std))
         self._log("info","Adding Cosmic Ray residual with mean %f and standard deviation %f" % (mean, std))
