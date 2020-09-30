@@ -388,8 +388,12 @@ def SelectParameter(name, override_dict=None, config_file=None):
                         
                     }
     
-    if override_dict is not None and name in override_dict:
-        return override_dict[name]
+    if override_dict is not None:
+        if name in override_dict:
+            return override_dict[name]
+        elif name in name_mappings and name_mappings[name] in override_dict:
+            return override_dict[name_mappings[name]]
+        
     value = GetParameter(name, config_file)
     if value is not None:
         return value

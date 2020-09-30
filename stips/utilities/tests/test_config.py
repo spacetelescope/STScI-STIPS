@@ -1,7 +1,8 @@
 import os, pytest
 
 from stips import stips_data_base
-from stips.utilities import GetParameter, SelectParameter, TranslateParameter
+from stips.utilities import SelectParameter
+from stips.utilities.utilities import GetParameter
 
 @pytest.fixture(autouse=True)
 def pre_post_test():
@@ -31,14 +32,14 @@ def pre_post_test():
 
 
 def test_local_file(data_base):
-    config_file = os.path.join(data_base, "test", "override_config.yaml")
+    config_file = os.path.join(data_base, "override_config.yaml")
     with open(config_file, "w") as conf:
         conf.write("psf_grid_default_size : 17\n")
         conf.write("observation_distortion_enable : true")
     
     # A parameter in the local file
     assert SelectParameter('psf_grid_size', config_file=config_file) == 17
-    assert GetParameter('psf_grid_size', config_file=config_file) == 1
+    assert GetParameter('psf_grid_size', config_file=config_file) is None
 
     assert SelectParameter('psf_grid_default_size', config_file=config_file) == 17
     assert GetParameter('psf_grid_default_size', config_file=config_file) == 17
@@ -48,7 +49,7 @@ def test_local_file(data_base):
     assert GetParameter('observation_detector_oversample', config_file=config_file) == 1
 
     assert SelectParameter('oversample', config_file=config_file) == 1
-    assert GetParameter('oversample', config_file=config_file) == 1
+    assert GetParameter('oversample', config_file=config_file) is None
     
     if os.path.exists(config_file):
         os.remove(config_file)
@@ -72,7 +73,7 @@ def test_override_dict(data_base):
 
 
 def test_environment_variable(data_base):
-    config_file = os.path.join(data_base, "test", "override_config.yaml")
+    config_file = os.path.join(data_base, "override_config.yaml")
     with open(config_file, "w") as conf:
         conf.write("psf_grid_default_size : 17\n")
         conf.write("observation_distortion_enable : true")
@@ -80,7 +81,7 @@ def test_environment_variable(data_base):
     
     # A parameter in the local file
     assert SelectParameter('psf_grid_size') == 17
-    assert GetParameter('psf_grid_size') == 1
+    assert GetParameter('psf_grid_size') is None
 
     assert SelectParameter('psf_grid_default_size') == 17
     assert GetParameter('psf_grid_default_size') == 17
@@ -90,7 +91,7 @@ def test_environment_variable(data_base):
     assert GetParameter('observation_detector_oversample') == 1
 
     assert SelectParameter('oversample') == 1
-    assert GetParameter('oversample') == 1
+    assert GetParameter('oversample') is None
     
     if os.path.exists(config_file):
         os.remove(config_file)
@@ -99,14 +100,14 @@ def test_environment_variable(data_base):
 
 
 def test_data_variable(data_base):
-    config_file = os.path.join(data_base, "stips_config.yaml")
+    config_file = os.path.join(stips_data_base, "stips_config.yaml")
     with open(config_file, "w") as conf:
         conf.write("psf_grid_default_size : 17\n")
         conf.write("observation_distortion_enable : true")
     
     # A parameter in the local file
     assert SelectParameter('psf_grid_size') == 17
-    assert GetParameter('psf_grid_size') == 11
+    assert GetParameter('psf_grid_size') is None
 
     assert SelectParameter('psf_grid_default_size') == 17
     assert GetParameter('psf_grid_default_size') == 17
@@ -116,7 +117,7 @@ def test_data_variable(data_base):
     assert GetParameter('observation_detector_oversample') == 1
 
     assert SelectParameter('oversample') == 1
-    assert GetParameter('oversample') == 1
+    assert GetParameter('oversample') is None
     
     if os.path.exists(config_file):
         os.remove(config_file)
