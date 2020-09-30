@@ -201,11 +201,11 @@ package_info = {
                 'ext_modules': [],
                 'packages': [],
                 'package_dir': {},
-                'package_data': conf['options']['package_data'],
+                'package_data': {PACKAGENAME: []},
                }
 
 # Add the project-global data
-package_info['package_data'].setdefault(PACKAGENAME, [])
+# package_info['package_data'].setdefault(PACKAGENAME, [])
 package_info['package_data'][PACKAGENAME].append('data/*/*')
 
 setup(version=version, cmdclass=cmdclass, **package_info)
