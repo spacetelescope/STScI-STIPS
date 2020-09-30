@@ -36,7 +36,7 @@ dependencies:
   - healpy
   - pysynphot
   - esutil
-  - pkgresources
+  - pkg_resources
 
   # Major modules
   - webbpsf>=0.9.0
