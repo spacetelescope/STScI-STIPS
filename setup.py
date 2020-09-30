@@ -2,7 +2,7 @@
 
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-import builtins, datetime, locale, os, pkgresources, subprocess, sys, time, warnings
+import builtins, datetime, locale, os, pkg_resources, subprocess, sys, time, warnings
 
 from configparser import ConfigParser
 
