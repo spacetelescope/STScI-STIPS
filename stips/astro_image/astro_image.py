@@ -695,20 +695,39 @@ class AstroImage(object):
     def make_psf(self):
         from webbpsf import __version__ as psf_version
         have_psf = False
+
         psf_name = "psf_{}_{}_{}_{}_{}_{}.fits".format(self.instrument,
                                                        stips_version, 
                                                        self.filter,
                                                        self.oversample,
                                                        self.psf_grid_size,
                                                        self.detector.lower())
-        if os.path.exists(os.path.join(self.out_path, "psf_cache")):
-            psf_file = os.path.join(self.out_path, "psf_cache", psf_name)
+
+        psf_cache = SelectParameter('psf_cache_enable')
+        if psf_cache:
+            save = True
+            overwrite = True
+            psf_dir = os.path.join(SelectParameter('psf_cache_location'),
+                                   "psf_cache")
+            self._log("info", "Using PSF Cache at {}".format(psf_dir))
+            if not os.path.exists(psf_dir):
+                os.makedirs(psf_dir)
+            psf_file = os.path.join(psf_dir, psf_name)
             if os.path.exists(psf_file):
                 from webbpsf.utils import to_griddedpsfmodel
                 if (self.psf_commands is None or self.psf_commands == ''):
                     self.psf = to_griddedpsfmodel(psf_file)
                     have_psf = True
+                    self._psf_found = True
+        else:
+            self._log("info", "Not Using PSF Cache")
+            save = False
+            overwrite = False
+            psf_dir = None
+            psf_file = None
+
         if not have_psf:
+            self._psf_found = False
             base_state = self.celery_state
             update_state = "<br /><span class='indented'>Generating PSF</span>"
             self.celery_state = base_state + update_state
@@ -733,20 +752,11 @@ class AstroImage(object):
             if fov_pix%2 != 0:
                 fov_pix += 1
             num_psfs = self.psf_grid_size*self.psf_grid_size
-            if os.path.exists(os.path.join(self.out_path, "psf_cache")):
-                save = True
-                overwrite = True
-                psf_dir = os.path.join(self.out_path, "psf_cache")
-                psf_file = "psf_{}_{}_{}_{}_{}".format(self.instrument,
-                                                       stips_version, 
-                                                       self.filter,
-                                                       self.oversample,
-                                                       self.psf_grid_size)
-            else:
-                save = False
-                overwrite = False
-                psf_dir = None
-                psf_file = None
+            psf_file = "psf_{}_{}_{}_{}_{}".format(self.instrument,
+                                                   stips_version, 
+                                                   self.filter,
+                                                   self.oversample,
+                                                   self.psf_grid_size)
             
             msg = "{}: Starting {}x{} PSF Grid creation at {}"
             self._log("info", msg.format(self.name, self.psf_grid_size, 

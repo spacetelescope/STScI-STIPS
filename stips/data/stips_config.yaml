@@ -69,7 +69,7 @@ psf_grid_default_size : 1
 # Enable PSF cache
 psf_cache_enable : true
 
-# PSF cache location. Only used if use_psf_cache is true.
+# PSF cache location. Only used if psf_cache_enable is true.
 #   Default is "$DATA" for the stips_data directory
 #   Otherwise specify a path directly.
 psf_cache_location : "$DATA"
