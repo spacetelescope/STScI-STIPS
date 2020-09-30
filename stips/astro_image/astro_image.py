@@ -1291,6 +1291,7 @@ class AstroImage(object):
             if os.path.exists(self.fname):
                 os.remove(self.fname)
             raise e
+        self.updateHeader('READNOIS', readnoise)
         self.addHistory("Adding Read noise with mean %f and standard deviation %f" % (mean, std))
         self._log("info","Adding readnoise with mean %f and STDEV %f" % (mean, std))
 

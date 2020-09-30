@@ -399,7 +399,7 @@ def SelectParameter(name, override_dict=None, config_file=None):
     return None
 
 #-----------
-def GetParameter(param, config_file=None):
+def GetParameter(param, config_file=None, use_environ=True, use_data=True):
     """
     Retrieve a parameter from the STIPS configuration file. This function looks
     for the STIPS configuration file as follows (returning the first file found)
@@ -422,6 +422,7 @@ def GetParameter(param, config_file=None):
     value : obj
         The value found (None if no value is found)
     """
+    file_used = "local"
     settings = None
     conf_file = None
     stips_data_dir = GetStipsDataDir()
@@ -429,17 +430,22 @@ def GetParameter(param, config_file=None):
     local_data_dir = os.path.join(local_dir, "..", "..", "data")
     local_config_file = os.path.join(local_data_dir, "stips_config.yaml")
     local_config = os.path.abspath(local_config_file)
+    data_config = os.path.join(stips_data_dir, "stips_config.yaml")
     
     if config_file is not None and os.path.isfile(config_file):
         conf_file = config_file
-    elif 'stips_config' in os.environ:
+        file_used = "provided"
+    elif use_environ and 'stips_config' in os.environ:
         conf_dir = os.environ['stips_config']
         if os.path.isfile(conf_dir):
+            file_used = "environ"
             conf_file = conf_dir
         elif os.path.isfile(os.path.join(conf_dir, 'stips_config.yaml')):
+            file_used = "environ"
             conf_file = os.path.join(conf_dir, 'stips_config.yaml')
-    elif os.path.isfile(os.path.join(stips_data_dir, 'stips_config.yaml')):
-        conf_file = os.path.join(stips_data_dir, 'stips_config.yaml')
+    elif use_data and os.path.isfile(data_config):
+        file_used = "data"
+        conf_file = data_config
     elif os.path.isfile(local_config):
         conf_file = local_config
     
@@ -449,6 +455,18 @@ def GetParameter(param, config_file=None):
     
     if settings is not None and param in settings:
         return TranslateParameter(param, settings[param])
+    elif param not in settings and file_used == "provided":
+        # Try without the supplied config file in case it doesn't include
+        #   the full set of parameters
+        return GetParameter(param)
+    elif param not in settings and file_used == "environ":
+        # Try without the environment variable config in case it doesn't include
+        #   the full set of parameters
+        return GetParameter(param, use_environ=False)
+    elif param not in settings and file_used == "data":
+        # Try without the stips_data config in case it doesn't include
+        #   the full set of parameters
+        return GetParameter(param, use_environ=False, use_data=False)
         
     return None
 
