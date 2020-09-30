@@ -189,7 +189,7 @@ conf = ConfigParser()
 conf.read('setup.cfg')
 
 PACKAGENAME = conf.get('metadata', 'name')
-version = generate_version_py()
+version = generate_version_py(conf)
 
 cmdclass = {
             'sdist': DistutilsSdist,
