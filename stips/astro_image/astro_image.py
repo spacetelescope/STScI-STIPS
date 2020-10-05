@@ -683,11 +683,17 @@ class AstroImage(object):
                                                        self.oversample,
                                                        self.psf_grid_size,
                                                        self.detector.lower())
+        
+        psf_cache_dir = SelectParameter('psf_cache_location')
+        psf_cache_name = SelectParameter('psf_cache_directory')
+        if psf_cache_name not in psf_cache_dir:
+            psf_cache_dir = os.path.join(psf_cache_dir, psf_cache_name)
         if SelectParameter('psf_cache_enable'):
-            psf_cache_dir = SelectParameter('psf_cache_directory')
-            if 'psf_cache' not in psf_cache_dir:
-                psf_cache_dir = os.path.join(psf_cache_dir, 'psf_cache')
+            if not os.path.exists(psf_cache_dir):
+                os.makedirs(psf_cache_dir)
             psf_file = os.path.join(psf_cache_dir, psf_name)
+            self._log("info", "PSF File {} to be put at {}".format(psf_name, psf_cache_dir))
+            self._log("info", "PSF File is {}".format(psf_file))
             if os.path.exists(psf_file):
                 from webbpsf.utils import to_griddedpsfmodel
                 if (self.psf_commands is None or self.psf_commands == ''):
@@ -720,9 +726,6 @@ class AstroImage(object):
                 fov_pix += 1
             num_psfs = self.psf_grid_size*self.psf_grid_size
             if SelectParameter('psf_cache_enable'):
-                psf_cache_dir = SelectParameter('psf_cache_directory')
-                if 'psf_cache' not in psf_cache_dir:
-                    psf_cache_dir = os.path.join(psf_cache_dir, 'psf_cache')
                 save = True
                 overwrite = True
                 psf_file = "psf_{}_{}_{}_{}_{}".format(self.instrument,

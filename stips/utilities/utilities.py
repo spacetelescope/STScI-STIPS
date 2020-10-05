@@ -27,6 +27,22 @@ class classproperty(object):
     def __get__(self, *a):
         return self.f.__get__(*a)()
 #-----------
+class __grid__(object):
+    @classproperty
+    def __pandeia__version__(self):
+        with open(GetStipsData(os.path.join("grid", "VERSION.txt")), "r") as inf:
+            line = inf.readline()
+            items = line.strip().split()
+            return items[1]
+    
+    @classproperty
+    def __stips__version__(self):
+        with open(GetStipsData(os.path.join("grid", "VERSION.txt")), "r") as inf:
+            line = inf.readline()
+            line = inf.readline()
+            items = line.strip().split()
+            return items[1]
+#-----------
 class StipsEnvironment(object):
     @classproperty
     def __stips__version__(self):

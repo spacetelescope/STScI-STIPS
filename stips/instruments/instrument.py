@@ -54,11 +54,11 @@ class Instrument(object):
             self.logger = logging.getLogger('__stips__')
             log_level = SelectParameter('log_level', kwargs)
             self.logger.setLevel(getattr(logging, log_level))
-                if not len(self.logger.handlers):
-                    stream_handler = logging.StreamHandler(sys.stderr)
-                    format = '%(asctime)s %(levelname)s: %(message)s'
-                    stream_handler.setFormatter(logging.Formatter(format))
-                    self.logger.addHandler(stream_handler)
+            if not len(self.logger.handlers):
+                stream_handler = logging.StreamHandler(sys.stderr)
+                format = '%(asctime)s %(levelname)s: %(message)s'
+                stream_handler.setFormatter(logging.Formatter(format))
+                self.logger.addHandler(stream_handler)
 
         self.out_path = SelectParameter('out_path', kwargs)
         self.prefix = kwargs.get('prefix', '')
@@ -72,7 +72,7 @@ class Instrument(object):
         self.ra = kwargs.get('ra', 0.)
         self.dec = kwargs.get('dec', 0.)
         self.pa = kwargs.get('pa', 0.)
-        self.distortion = kwargs.get('distortion', False)
+        self.distortion = SelectParameter('distortion', kwargs)
         self.exptime = kwargs.get('exptime', 1.)
         self.small_subarray = kwargs.get('small_subarray', False)
         self.filter = None
@@ -172,7 +172,7 @@ class Instrument(object):
         self.detectors = []
         for offset, name in zip(self.DETECTOR_OFFSETS, self.OFFSET_NAMES):
             distortion = None
-            if self.distortion:
+            if self.distortion and hasattr(self, 'DISTORTION'):
                 distortion = self.DISTORTION[name]
             (delta_ra, delta_dec, delta_pa) = offset
             delta_ra = (delta_ra - self.CENTRAL_OFFSET[0])/3600.
