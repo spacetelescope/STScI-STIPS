@@ -9,7 +9,7 @@ General CGI form functions.
 from __future__ import absolute_import,division
 
 # External modules
-import importlib, inspect, os, shutil, socket, struct, sys, urllib, uuid
+import importlib, inspect, os, shutil, socket, struct, sys, urllib, uuid, yaml
 import numpy as np
 import astropy.io.fits as pyfits
 from numpy.fft import fft2, ifft2
@@ -188,10 +188,9 @@ class CachedJbtBackground(background, object):
                 'thermal_bg':self.thermal_bg, 'zodi_bg':zodi_bg, 'stray_light_bg':stray_light_bg, 'total_bg':total_bg} 
 
 #-----------
-def GetStipsData(to_retrieve):
+def GetStipsDataDir():
     """
-    Retrieve a file from the stips_data directory. Will also print out a warning if the directory
-    can't be found.
+    Get the STIPS data directory path.
     """
     stips_version = __stips__version__.strip().replace(".", "")
     if "dev" in stips_version:
@@ -210,6 +209,18 @@ def GetStipsData(to_retrieve):
         msg += "Please make sure that the STIPS data directory exists.\n"
         sys.stderr.write(msg)
         raise FileNotFoundError("${stips_data} does not exist.")
+    return stips_data_base
+
+#-----------
+def GetStipsData(to_retrieve):
+    """
+    Retrieve a file from the stips_data directory. Will also print out a warning if the directory
+    can't be found.
+    """
+    stips_data_base = GetStipsDataDir()
+    stips_version = __stips__version__.strip().replace(".", "")
+    if "dev" in stips_version:
+        stips_version = stips_version[:stips_version.find("dev")]
     retrieval_file = os.path.join(stips_data_base, to_retrieve)
     if not os.path.exists(retrieval_file):
         msg = "ERROR: STIPS data file {} not found. ".format(retrieval_file)
@@ -219,6 +230,170 @@ def GetStipsData(to_retrieve):
         sys.stderr.write(msg.format(stips_version))
         raise FileNotFoundError("File {} does not exist.".format(retrieval_file))
     return retrieval_file
+
+#-----------
+def SelectParameter(name, override_dict=None, config_file=None):
+    """
+    If override_dict contains the key name, return override_dict[name]. 
+    Otherwise, if the parameter name is present in the configuration file, 
+    return the value found in the configuration file. Otherwise, if an alternate
+    name (as defined in a local dictionary) is found in the configuration file,
+    return the value for that name. Otherwise, return None.
+    
+    Parameters
+    ----------
+    name : str
+        Name of parameter
+    
+    override_dict : dict, default None
+        Dictionary that may override a configuration value
+    
+    config_file : str, default None
+        Supplied configuration file
+    
+    Returns
+    -------
+    value : obj
+        The value found (None if no value is found)
+    """
+    name_mappings = {
+                        'background': 'observation_default_background',
+                        'background_location': 'observation_jbt_location',
+                        'cat_path': 'input_location',
+                        'cat_type': 'catalogue_type',
+                        'convolve': 'residual_convolve_psf',
+                        'convolve_size': 'psf_convolution_max_size',
+                        'cores': 'parallel_ncores',
+                        'distortion': 'observation_distortion_enable',
+                        'jbt_location': 'observation_jbt_location',
+                        'memmap': 'observation_memory_map',
+                        'out_path': 'output_location',
+                        'oversample': 'observation_detector_oversample',
+                        'psf_grid_size': 'psf_grid_default_size',
+                        'seed': 'random_seed',
+                        
+                    }
+    
+    if override_dict is not None:
+        if name in override_dict:
+            return override_dict[name]
+        elif name in name_mappings and name_mappings[name] in override_dict:
+            return override_dict[name_mappings[name]]
+        
+    value = GetParameter(name, config_file)
+    if value is not None:
+        return value
+    elif name in name_mappings:
+        return GetParameter(name_mappings[name], config_file)
+
+    return None
+
+#-----------
+def GetParameter(param, config_file=None, use_environ=True, use_data=True):
+    """
+    Retrieve a parameter from the STIPS configuration file. This function looks
+    for the STIPS configuration file as follows (returning the first file found)
+    
+    - If a file is provided to the function, check that file
+    - If there is a stips_config environment variable, check that file
+    - If there is a "stips_config.yaml" file in stips_data, check that file
+    - Check the internal data/stips_config.yaml file.
+    
+    Parameters
+    ----------
+    param : str
+        Name of parameter
+    
+    config_file : str, default None
+        Supplied configuration file
+    
+    Returns
+    -------
+    value : obj
+        The value found (None if no value is found)
+    """
+    file_used = "local"
+    settings = None
+    conf_file = None
+    stips_data_dir = GetStipsDataDir()
+    local_dir = os.path.abspath(__file__)
+    local_data_dir = os.path.join(local_dir, "..", "..", "data")
+    local_config_file = os.path.join(local_data_dir, "stips_config.yaml")
+    local_config = os.path.abspath(local_config_file)
+    data_config = os.path.join(stips_data_dir, "stips_config.yaml")
+    
+    if config_file is not None and os.path.isfile(config_file):
+        conf_file = config_file
+        file_used = "provided"
+    elif use_environ and 'stips_config' in os.environ:
+        conf_dir = os.environ['stips_config']
+        if os.path.isfile(conf_dir):
+            file_used = "environ"
+            conf_file = conf_dir
+        elif os.path.isfile(os.path.join(conf_dir, 'stips_config.yaml')):
+            file_used = "environ"
+            conf_file = os.path.join(conf_dir, 'stips_config.yaml')
+    elif use_data and os.path.isfile(data_config):
+        file_used = "data"
+        conf_file = data_config
+    elif os.path.isfile(local_config):
+        conf_file = local_config
+    
+    if conf_file is not None:
+        with open(conf_file, 'r') as config:
+            settings = yaml.safe_load(config)
+    
+    if settings is not None and param in settings:
+        return TranslateParameter(param, settings[param])
+    elif param not in settings and file_used == "provided":
+        # Try without the supplied config file in case it doesn't include
+        #   the full set of parameters
+        return GetParameter(param)
+    elif param not in settings and file_used == "environ":
+        # Try without the environment variable config in case it doesn't include
+        #   the full set of parameters
+        return GetParameter(param, use_environ=False)
+    elif param not in settings and file_used == "data":
+        # Try without the stips_data config in case it doesn't include
+        #   the full set of parameters
+        return GetParameter(param, use_environ=False, use_data=False)
+        
+    return None
+
+#-----------
+def TranslateParameter(param, value):
+    """
+    Check if a parameter is in a dictionary of special values and, if so,
+    substitute in the proper value.
+    
+    Parameters
+    ----------
+    param : str
+        Name of parameter
+    
+    value : obj
+        Supplied value
+    
+    Returns
+    -------
+    value : obj
+        The value as translated
+    """
+    translations = {
+                    'input_location': {'$CWD': os.getcwd()},
+                    'output_location': {'$CWD': os.getcwd()},
+                    'psf_cache_location': {'$DATA': GetStipsDataDir()},
+                    
+                   }
+
+    if param in translations:
+        if value in translations[param]:
+            if callable(translations[param][value]):
+                return translations[param][value]()
+            return translations[param][value]
+        return value
+        
+    return value
 
 #-----------
 def internet(host="8.8.8.8", port=53, timeout=3):
