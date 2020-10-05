@@ -62,7 +62,7 @@ def get_default_obs():
     return obs
 
 
-def test_wfirst_observation():
+def test_roman_observation():
 
     stellar_cat_file, galaxy_cat_file = create_catalogues()
     
@@ -77,7 +77,7 @@ def test_wfirst_observation():
 
 
 @pytest.mark.veryslow
-def test_wfirst_observation_deluxe():
+def test_roman_observation_deluxe():
 
     stellar_cat_file, galaxy_cat_file = create_catalogues()
 

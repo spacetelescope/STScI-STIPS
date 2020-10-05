@@ -29,6 +29,7 @@ from ..utilities import read_table
 from ..utilities import ImageData
 from ..utilities import Percenter
 from ..utilities import StipsDataTable
+from ..utilities import SelectParameter
 from ..errors import GetCrProbs, GetCrTemplate, MakeCosmicRay
 
 
@@ -82,35 +83,35 @@ class AstroImage(object):
                 self.logger = kwargs['logger']
             else:
                 self.logger = logging.getLogger('__stips__')
-                self.logger.setLevel(logging.INFO)
+                log_level = SelectParameter("log_level")
+                self.logger.setLevel(getattr(logging, log_level))
                 if not len(self.logger.handlers):
                     stream_handler = logging.StreamHandler(sys.stderr)
                     format = '%(asctime)s %(levelname)s: %(message)s'
                     stream_handler.setFormatter(logging.Formatter(format))
                     self.logger.addHandler(stream_handler)
-            self.out_path = kwargs.get('out_path', os.getcwd())
-            self.oversample = kwargs.get('oversample', default['oversample'])
-            self.shape = kwargs.get('shape', default['shape'])
-            self.shape = np.array(self.shape) * self.oversample
+            self.out_path = SelectParameter('out_path', kwargs)
+            self.oversample = SelectParameter('oversample', kwargs)
+            shape = kwargs.get('shape', default['shape'])
+            self.shape = np.array(shape) * self.oversample
             self._scale = kwargs.get('scale', np.array(default['scale']))
             self.prefix = kwargs.get('prefix', '')
-            self.cat_type = kwargs.get('cat_type', 'fits')
+            self.cat_type = SelectParameter('cat_type', kwargs)
             self.set_celery = kwargs.get('set_celery', None)
             self.get_celery = kwargs.get('get_celery', None)
-            self.seed = kwargs.get('seed', 1234)
+            self.seed = SelectParameter('seed', kwargs)
             small_subarray = kwargs.get('small_subarray', False)
             self.zeropoint = kwargs.get('zeropoint', default['zeropoint'])
             self.photflam = kwargs.get('photflam', default['photflam'])
             self.photplam = kwargs.get('photplam', default['photplam'])
-            background = kwargs.get('background', default['background'])
+            background = SelectParameter('background', kwargs)
             self.telescope = kwargs.get('telescope', default['telescope'])
             self.instrument = kwargs.get('instrument', default['instrument'])
             self.filter = kwargs.get('filter', default['filter'])
-            self.psf_grid_size = kwargs.get('psf_grid_size', 
-                                            default['psf_grid_size'])
+            self.psf_grid_size = SelectParameter('psf_grid_size', kwargs)
             self.psf_commands = kwargs.get('psf_commands', '')
-            self.convolve_size = kwargs.get('convolve_size', 8192)
-            self.memmap = kwargs.get('memmap', True)
+            self.convolve_size = SelectParameter('convolve_size', kwargs)
+            self.memmap = SelectParameter('memmap', kwargs)
         
         if self.get_celery is None:
             self.get_celery = lambda: ""
@@ -150,9 +151,7 @@ class AstroImage(object):
         self._prepRaDec()
         
         #Header
-        self.header = kwargs.get('header', {})
-        if self.header == {}:
-            self.header = kwargs.get('imh', {})
+        self.header = kwargs.get('header', kwargs.get('imh', {}))
         self._prepHeader()
         if 'exptime' in self.header:
             self.exptime = self.header['exptime']
@@ -379,8 +378,15 @@ class AstroImage(object):
         """Output AstroImage as a FITS Primary HDU"""
         with ImageData(self.fname, self.shape, mode='r+', memmap=self.memmap) as dat:
             hdu = fits.PrimaryHDU(dat, header=self.wcs.to_header(relax=True))
-        hdu.header['CDELT1'] = self.scale[0]/3600.
-        hdu.header['CDELT2'] = self.scale[0]/3600.
+        if 'CDELT1' not in hdu.header:
+            hdu.header['CDELT1'] = self.scale[0]/3600.
+            hdu.header['CDELT2'] = self.scale[0]/3600.
+        # Apparently astropy refuses to add the identity matrix to a header
+        if ('PA1_1' not in hdu.header) and ('CD1_1' not in hdu.header):
+            hdu.header['PA1_1'] = 1.
+            hdu.header['PA1_2'] = 0.
+            hdu.header['PA2_1'] = 0.
+            hdu.header['PA2_2'] = 1.
         if sys.version_info[0] >= 3:
             for k,v in self.header.items():
                 if k != "ASTROIMAGEVALID":
@@ -400,6 +406,15 @@ class AstroImage(object):
         self._log("info","Creating Extension HDU from AstroImage %s" % (self.name))
         with ImageData(self.fname, self.shape, mode='r+', memmap=self.memmap) as dat:
             hdu = fits.ImageHDU(dat, header=self.wcs.to_header(relax=True), name=self.name)
+        if 'CDELT1' not in hdu.header:
+            hdu.header['CDELT1'] = self.scale[0]/3600.
+            hdu.header['CDELT2'] = self.scale[0]/3600.
+        # Apparently astropy refuses to add the identity matrix to a header
+        if ('PA1_1' not in hdu.header) and ('CD1_1' not in hdu.header):
+            hdu.header['PA1_1'] = 1.
+            hdu.header['PA1_2'] = 0.
+            hdu.header['PA2_1'] = 0.
+            hdu.header['PA2_2'] = 1.
         if sys.version_info[0] >= 3:
             for k,v in self.header.items():
                 hdu.header[k] = v
@@ -667,14 +682,18 @@ class AstroImage(object):
                                                        self.filter,
                                                        self.oversample,
                                                        self.psf_grid_size,
-                                                       self.detector)
-        if os.path.exists(os.path.join(self.out_path, "psf_cache")):
-            psf_file = os.path.join(self.out_path, "psf_cache", psf_name)
+                                                       self.detector.lower())
+        if SelectParameter('psf_cache_enable'):
+            psf_cache_dir = SelectParameter('psf_cache_directory')
+            if 'psf_cache' not in psf_cache_dir:
+                psf_cache_dir = os.path.join(psf_cache_dir, 'psf_cache')
+            psf_file = os.path.join(psf_cache_dir, psf_name)
             if os.path.exists(psf_file):
                 from webbpsf.utils import to_griddedpsfmodel
                 if (self.psf_commands is None or self.psf_commands == ''):
                     self.psf = to_griddedpsfmodel(psf_file)
                     have_psf = True
+
         if not have_psf:
             base_state = self.celery_state
             update_state = "<br /><span class='indented'>Generating PSF</span>"
@@ -700,10 +719,12 @@ class AstroImage(object):
             if fov_pix%2 != 0:
                 fov_pix += 1
             num_psfs = self.psf_grid_size*self.psf_grid_size
-            if os.path.exists(os.path.join(self.out_path, "psf_cache")):
+            if SelectParameter('psf_cache_enable'):
+                psf_cache_dir = SelectParameter('psf_cache_directory')
+                if 'psf_cache' not in psf_cache_dir:
+                    psf_cache_dir = os.path.join(psf_cache_dir, 'psf_cache')
                 save = True
                 overwrite = True
-                psf_dir = os.path.join(self.out_path, "psf_cache")
                 psf_file = "psf_{}_{}_{}_{}_{}".format(self.instrument,
                                                        stips_version, 
                                                        self.filter,
@@ -721,7 +742,7 @@ class AstroImage(object):
             self.psf = ins.psf_grid(all_detectors=False, num_psfs=num_psfs,
                                     fov_pixels=fov_pix, normalize='last',
                                     oversample=self.oversample, save=save,
-                                    outdir=psf_dir, outfile=psf_file,
+                                    outdir=psf_cache_dir, outfile=psf_file,
                                     overwrite=overwrite)
             msg = "{}: Finished PSF Grid creation at {}"
             self._log("info", msg.format(self.name, time.ctime()))
@@ -1248,6 +1269,7 @@ class AstroImage(object):
             if os.path.exists(self.fname):
                 os.remove(self.fname)
             raise e
+        self.updateHeader("RDNOISE", readnoise)
         self.addHistory("Adding Read noise with mean %f and standard deviation %f" % (mean, std))
         self._log("info","Adding readnoise with mean %f and STDEV %f" % (mean, std))
 
@@ -1612,7 +1634,4 @@ class AstroImage(object):
                             'zeropoint': 21.0,
                             'photflam': 0.,
                             'photplam': 0.6700,
-                            'background': 0.,
-                            'oversample': 1,
-                            'psf_grid_size': 1
                          }

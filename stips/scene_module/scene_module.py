@@ -15,9 +15,13 @@ else:
     from cStringIO import StringIO
 
 # Local modules
-from ..stellar_module import StarGenerator
-from ..utilities import GetStipsData, OffsetPosition, StipsDataTable
 from .convert_units import (DivideInterval, RadiiUnknown2Arcsec, RadiiUnknown2Parsec, RescaleArray)
+from ..stellar_module import StarGenerator
+from ..stellar_module import StarGenerator
+from ..utilities import GetStipsData
+from ..utilities import OffsetPosition
+from ..utilities import SelectParameter
+from ..utilities import StipsDataTable
 
 #-----------
 class SceneModule(object):
@@ -52,14 +56,16 @@ class SceneModule(object):
             Additional arguments needed to make the scene
 
         """
-        self.out_path = kwargs.get('out_path', os.getcwd())
+        self.out_path = SelectParameter('out_path', kwargs)
         self.prefix = kwargs.get('out_prefix', 'sim')
-        self.cat_type = kwargs.get('cat_type', 'fits')
+        self.cat_type = SelectParameter('cat_type', kwargs)
         if 'logger' in kwargs:
             self.logger = kwargs['logger']
         else:
             self.logger = logging.getLogger('__stips__')
-            self.logger.setLevel(logging.INFO)
+            log_level = SelectParameter('log_level', kwargs)
+            print("Log level: {}".format(log_level))
+            self.logger.setLevel(getattr(logging, log_level))
             if not len(self.logger.handlers):
                 stream_handler = logging.StreamHandler(sys.stderr)
                 stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))# [in %(pathname)s:%(lineno)d]'))
@@ -67,15 +73,17 @@ class SceneModule(object):
         if 'scene_general' in kwargs:
             self.ra = kwargs['scene_general'].get('ra', 0.0)
             self.dec = kwargs['scene_general'].get('dec', 0.0)
-            self.seed = kwargs['scene_general'].get('seed', 0)
+            self.seed = SelectParameter('seed', kwargs['scene_general'])
         else:
             self.ra = kwargs.get('ra', 0.0)
             self.dec = kwargs.get('dec', 0.0)
-            self.seed = kwargs.get('seed', 0)
+            self.seed = SelectParameter('seed', kwargs)
 
-        self.params =  [ 'Random seed: %d' % (self.seed) ]
-        self.params += [ 'Centre (RA,DEC) = (%f,%f)' % (self.ra,self.dec) ]
+        self.params =  [ 'Random seed: {}'.format(self.seed) ]
+        msg = 'Centre (RA,DEC) = ({:.3f},{:.3f})'
+        self.params += [  msg.format(self.ra, self.dec) ]
         self.catalogues = {}
+
     
     #-----------
     def CreatePopulation(self, pop, id=0):

@@ -12,7 +12,7 @@ from astropy.io import fits as pyfits
 from ..astro_image import AstroImage
 from .instrument import Instrument
 from .jwst_instrument import JwstInstrument
-from ..utilities import OffsetPosition
+from ..utilities import OffsetPosition, SelectParameter
 
 class MIRI(JwstInstrument):
     __classtype__ = "detector"
@@ -31,9 +31,6 @@ class MIRI(JwstInstrument):
         """
         #Initialize superclass
         super(MIRI,self).__init__(**kwargs)
-
-        #Set oversampling
-        self.oversample = kwargs.get('oversample', 1)
         
         self.k = self.K[kwargs.get('miri_mods', 'fast')]
         self.a = self.A[kwargs.get('miri_mods', 'fast')]
