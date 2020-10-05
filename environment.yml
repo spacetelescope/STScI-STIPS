@@ -45,6 +45,7 @@ dependencies:
   - mechanize
   - pyfftw
   - ConfigParser
+  - jwst_backgrounds
 
   # Docs
   - sphinx
@@ -56,12 +57,8 @@ dependencies:
   - pytest-astropy
 
   - pip:
-    # Base dependencies
-    - automodinit
-    - jwst_backgrounds
-
     # Major modules
-    - pandeia.engine>=1.5
+    - pandeia.engine==1.5
 
     # Minor modules
     - montage-wrapper
