@@ -9,7 +9,7 @@ from ._astropy_init import *
 
 __all__ = ['astro_image', 'errors', 'galaxy_module', 'instruments',
            'observation_module', 'scene_module', 'stellar_module',
-           'utilities', 'version', '__version__', 'test']
+           'utilities', 'version', 'test']
 
 try:
     from .version import version as __version__
@@ -23,8 +23,10 @@ from .astro_image import AstroImage
 from .instruments import Instrument
 from .observation_module import ObservationModule
 from .scene_module import SceneModule
-
-from .utilities import GetStipsData, internet, CachedJbtBackground, __grid__
+from .utilities import __grid__
+from .utilities import CachedJbtBackground
+from .utilities import GetStipsData
+from .utilities import internet
 
 __grid__pandeia__version__ = __grid__.__pandeia__version__
 __grid__stips__version__ = __grid__.__stips__version__

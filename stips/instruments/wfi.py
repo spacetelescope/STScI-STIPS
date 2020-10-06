@@ -13,7 +13,7 @@ from astropy.io import fits as pyfits
 from ..astro_image import AstroImage
 from .instrument import Instrument
 from .wfirst_instrument import WfirstInstrument
-from ..utilities import OffsetPosition
+from ..utilities import OffsetPosition, SelectParameter
 
 from .. import __version__ as stips_version
 
@@ -35,12 +35,6 @@ class WFI(WfirstInstrument):
         self.classname = self.__class__.__name__
         #Initialize superclass
         super(WFI, self).__init__(**kwargs)
-        
-        #Set oversampling
-        self.oversample = kwargs.get('oversample', self.OVERSAMPLE_DEFAULT)
-        
-        #Set PSF grid points
-        self.grid_size = kwargs.get('grid_size', self.PSF_GRID_SIZE_DEFAULT)
 
 
     def generateReadnoise(self):
@@ -87,12 +81,77 @@ class WFI(WfirstInstrument):
                 10: (0., 0., 0.), 11: (0., 0., 0.), 12: (0., 0., 0.), 
                 13: (0., 0., 0.), 14: (0., 0., 0.), 15: (0., 0., 0.), 
                 16: (0., 0., 0.), 17: (0., 0., 0.), 18: (0., 0., 0.)}
+    # This is a set of offsets derived from "WFIRST-STSCI-TR1506A"
+    #
+    # Since that document doesn't actually cover the column offsets, they are 
+    #   assumed to be 188.2" e.g. between 08 and 07, and 376.4" e.g. between
+    #   09 and 08 (and the same for each other column)(see ASCII diagrams).
+    #   Further, it assumes no rotation or imperfection.
+    #       09             18
+    #               
+    #       08 06       15 17
+    #       07    03 12    16
+    #          05       14
+    #          04 02 11 13
+    #             01 10
 
+    # The detector positions WRT to WFI Local FOV are as follows (with the 
+    # X-axis pointing right and the Y-axis pointing up):
+    #
+    #             01 10
+    #          04 02 11 13
+    #          05       14
+    #       07    03 12    16
+    #       08 06       15 17
+    #
+    #       09             18
+    #
+    # with the large gaps (e.g. 09-08) showing the larger offset between the 
+    # bottom row of detectors and the top two rows, or, in the case of the 
+    # offsets between columns (e.g. the Y positions of 07 vs. 04 vs. 01) the
+    # staggered offsets of the columns. 
+    #
+    # The following positions come from the spreadsheet 
+    # "GRISM off orders position_Zernikes_efficiency data_v4_20200424.xlsx" on
+    # the "WSM-GRISM" tab, with values in mm. Note that for all detectors values
+    # are taken from Field Position 1 (centre) for a wavelength of 1 micron.
+    #
+    # These are referred to as FPA positions because they are the detector
+    # positions on the focal plane array, albeit with the Y axis inverted to 
+    # yield WFI-local co-ordinates rather than FPA-local co-ordinates.
+
+    FPA_GLOBAL_ROTATION = -120. # degrees
+    
+    # Values in mm. From "FPA Position" X and Y columns (F/G in xlsx)
+    # Specifically, 1.55 um is supposed to be the "undistorted" wavelength, so
+    # I'm using the detector centre at 1.55um.
+    DETECTOR_FPA = (# SCA01                SCA02               SCA03
+                      ( -22.029, -11.956), ( -22.181, 36.421), ( -22.331, 80.749),
+                    # SCA04                SCA05               SCA06
+                      ( -65.558, -20.505), ( -66.055, 27.856), ( -66.543, 71.928),
+                    # SCA07                SCA08               SCA09
+                      (-109.05,  -41.316), (-109.83,   7.001), (-110.97,  50.358),
+                    # SCA10                SCA11               SCA12
+                      (  21.509, -11.955), (  21.65,  36.42),  (  21.787, 80.747),
+                    # SCA13                SCA14               SCA15
+                      (  65.03,  -20.503), (  65.517, 27.854), (  65.993, 71.923),
+                    # SCA16                SCA17               SCA18
+                      ( 108.507, -41.309), ( 109.282,  7.002), ( 110.409, 50.353),
+                   )
+    
+    # From WFIRST-STScI-TR1506A(3).pdf, 2.5mm=27.5", and 8.564mm=94.2"
+    DETECTOR_MM_ARCSEC = 11.
+    
+    # I can't currently figure out rotation angles (or rather figure out which
+    # rotation angle to use), so I'm setting everything to just zero for now.
+    DETECTOR_ROTATION = (0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                         0., 0., 0., 0., 0., 0., 0., 0., 0.)
+    
     # N_DETECTORS is a set of options on how many of the instrument's detectors you want to use    
     N_DETECTORS = [1]
     INSTRUMENT_OFFSET = (0.,0.,0.) #Presumably there is one, but not determined
     DETECTOR_SIZE = (4096,4096) #pixels
-    PIXEL_SIZE = 18.0 #um (Assume for now)
+    PIXEL_SIZE = 10.0 #um (Assume for now)
     SCALE = [0.11,0.11] #Assume for now
     FILTERS = ('F062', 'F087', 'F106', 'F129', 'F158', 'F184', 'F146', 'F149') #W149 needs to go away at some point.
     DEFAULT_FILTER = 'F184' #Assume for now

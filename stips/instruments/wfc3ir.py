@@ -36,7 +36,8 @@ class WFC3IR(HstInstrument):
         if self.filter not in self.FILTERS:
             raise ValueError("Filter %s is not a valid WFC3IR filter" % (self.filter))
         psf_path = GetStipsData(os.path.join('psf_data', 'PSF_WFC3IR_{}.fits'.format(self.filter)))
-        self.psf = AstroImage.initDataFromFits(psf_path, detname="WFC3IRPSF", logger=self.logger)
+        self.psf = AstroImage.initRefFile(psf_path, detname="WFC3IRPSF", 
+                                          logger=self.logger)
 
 
     @property

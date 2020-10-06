@@ -56,12 +56,9 @@ dependencies:
   - pytest-astropy
 
   - pip:
-    # Base dependencies
-    - automodinit
-    - jwst_backgrounds
-
     # Major modules
-    - pandeia.engine>=1.5
+    - pandeia.engine==1.5
+    - jwst_backgrounds
 
     # Minor modules
     - montage-wrapper

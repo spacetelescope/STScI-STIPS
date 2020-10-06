@@ -14,7 +14,13 @@ from functools import wraps
 #Local Modules
 from ..stellar_module import StarGenerator
 from ..astro_image import AstroImage
-from ..utilities import GetStipsData, OffsetPosition, read_metadata, read_table, internet, StipsDataTable
+from ..utilities import GetStipsData
+from ..utilities import internet
+from ..utilities import OffsetPosition
+from ..utilities import read_metadata
+from ..utilities import read_table
+from ..utilities import SelectParameter
+from ..utilities import StipsDataTable
 
 if sys.version_info[0] >= 3:
     import builtins
@@ -46,38 +52,41 @@ class Instrument(object):
             self.logger = kwargs['logger']
         else:
             self.logger = logging.getLogger('__stips__')
-            self.logger.setLevel(getattr(logging, kwargs.get("log_level", "INFO")))
+            log_level = SelectParameter('log_level', kwargs)
+            self.logger.setLevel(getattr(logging, log_level))
             if not len(self.logger.handlers):
                 stream_handler = logging.StreamHandler(sys.stderr)
-                stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))# [in %(pathname)s:%(lineno)d]'))
+                format = '%(asctime)s %(levelname)s: %(message)s'
+                stream_handler.setFormatter(logging.Formatter(format))
                 self.logger.addHandler(stream_handler)
-        
-        self.out_path = kwargs.get('out_path', os.getcwd())
+
+        self.out_path = SelectParameter('out_path', kwargs)
         self.prefix = kwargs.get('prefix', '')
-        self.cat_type = kwargs.get('cat_type', 'fits')
+        self.cat_type = SelectParameter('cat_type', kwargs)
         self.flatfile = GetStipsData(os.path.join("residual_files", self.FLATFILE))
         self.darkfile = GetStipsData(os.path.join("residual_files", self.DARKFILE))
-        self.oversample = 1
-        self.seed = kwargs.get('seed', 1234)
+        self.oversample = SelectParameter('oversample', kwargs)
+        self.psf_grid_size = SelectParameter('psf_grid_size', kwargs)
+        self.seed = SelectParameter('seed', kwargs)
         self.imgbase = kwargs.get('imgbase', '')
         self.ra = kwargs.get('ra', 0.)
         self.dec = kwargs.get('dec', 0.)
         self.pa = kwargs.get('pa', 0.)
-        self.distortion = kwargs.get('distortion', False)
+        self.distortion = SelectParameter('distortion', kwargs)
         self.exptime = kwargs.get('exptime', 1.)
         self.small_subarray = kwargs.get('small_subarray', False)
         self.filter = None
         self.detectors = None
         self.psf_commands = kwargs.get('psf_commands', None)
         self.instrument = kwargs.get('instrument', "")
-        self.background_value = kwargs.get('background', 'none')
+        self.background_value = SelectParameter('background', kwargs)
+        self.background_location = SelectParameter('jbt_location', kwargs)
         self.custom_background = kwargs.get('custom_background', 0.)
         self.CENTRAL_OFFSET = (0., 0., 0.)
-        self.convolve_size = kwargs.get('convolve_size', 8192)
+        self.convolve_size = SelectParameter('convolve_size', kwargs)
+        self.memmap = SelectParameter('memmap', kwargs)
         self.set_celery = kwargs.get('set_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
-        self.use_local_cache = kwargs.get('use_local_cache', False)
-        self.memmap = kwargs.get('memmap', True)
 
         #Adjust # of detectors based on keyword:
         n_detectors = int(kwargs.get('detectors', len(self.DETECTOR_OFFSETS)))
@@ -87,13 +96,6 @@ class Instrument(object):
         msg = "{} with {} detectors. Central offset {}"
         self._log('info', msg.format(self.DETECTOR, n_detectors, 
                                      self.CENTRAL_OFFSET))
-
-        #Set oversampling
-        self.oversample = kwargs.get('oversample', self.OVERSAMPLE_DEFAULT)
-        
-        #Set PSF grid points
-        self.psf_grid_size = kwargs.get('psf_grid_size', 
-                                        self.PSF_GRID_SIZE_DEFAULT)
     
     @classmethod
     def initFromImage(cls, image, **kwargs):
@@ -170,7 +172,7 @@ class Instrument(object):
         self.detectors = []
         for offset, name in zip(self.DETECTOR_OFFSETS, self.OFFSET_NAMES):
             distortion = None
-            if self.distortion:
+            if self.distortion and hasattr(self, 'DISTORTION'):
                 distortion = self.DISTORTION[name]
             (delta_ra, delta_dec, delta_pa) = offset
             delta_ra = (delta_ra - self.CENTRAL_OFFSET[0])/3600.
@@ -763,10 +765,19 @@ class Instrument(object):
                 my_dithers.append((x+i,y+j))
         return my_dithers
     
-    def addError(self, convolve=True, poisson=True, readnoise=True, flat=True, dark=True, cosmic=True, parallel=False, snapshots={}, *args, **kwargs):
+    def addError(self, *args, **kwargs):
         """Base function for adding in residual error"""
         self._log("info","Adding residual error")
-        cores = kwargs.get('cores', None)
+        cores = SelectParameter('cores', kwargs)
+        convolve = SelectParameter('convolve', kwargs)
+        poisson = SelectParameter('residual_poisson', kwargs)
+        readnoise = SelectParameter('residual_readnoise', kwargs)
+        flat = SelectParameter('residual_flat', kwargs)
+        dark = SelectParameter('residual_dark', kwargs)
+        cosmic = SelectParameter('residual_cosmic', kwargs)
+        parallel = SelectParameter('parallel_enable', kwargs)
+        snapshots = kwargs.get("snapshots", {})
+
         base_state = self.getState()
         if flat:
             flat = AstroImage.initDataFromFits(self.flatfile,ext='COMPRESSED_IMAGE', psf=False, logger=self.logger)
@@ -938,7 +949,7 @@ class Instrument(object):
             return self.custom_background
 
         bg = None
-        if internet() and not self.use_local_cache:
+        if internet() and self.background_location == '$WEB':
             from jwst_backgrounds import jbt
             try:
                 bg = jbt.background(self.ra, self.dec, self.PHOTPLAM[self.filter])
@@ -1005,16 +1016,4 @@ class Instrument(object):
         if self.get_celery is not None:
             return self.get_celery()
         return ""
-    
-    # Simulation defaults
-    
-    # Default detector oversample.
-    #   - it is not actually recommended to use this for real simulations.
-    #   - an oversample of at least 5 is preferable, 10 is recommended.
-    #   - that said, it's a balance between size, speed, and accuracy.
-    OVERSAMPLE_DEFAULT = 1
-    
-    # Size of the side of the grid. e.g. 5 = 5X5 grid = 25 PSFs.
-    #   - using the current default will result in a non-varying PSF.
-    PSF_GRID_SIZE_DEFAULT = 1
 
