@@ -27,6 +27,7 @@ from .utilities import __grid__
 from .utilities import CachedJbtBackground
 from .utilities import GetStipsData
 from .utilities import internet
+from .utilities import StipsEnvironment
 
 __grid__pandeia__version__ = StipsEnvironment.__pandeia__version__
 __grid__stips__version__ = StipsEnvironment.__stips__grid__version__

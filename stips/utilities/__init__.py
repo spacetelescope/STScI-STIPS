@@ -13,4 +13,5 @@ from .utilities import Percenter
 from .utilities import read_metadata
 from .utilities import read_table
 from .utilities import SelectParameter
+from .utilities import StipsEnvironment
 from .DataTable import StipsDataTable
