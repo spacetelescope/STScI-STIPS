@@ -27,9 +27,12 @@ from .utilities import __grid__
 from .utilities import CachedJbtBackground
 from .utilities import GetStipsData
 from .utilities import internet
+from .utilities import StipsEnvironment
 
-__grid__pandeia__version__ = __grid__.__pandeia__version__
-__grid__stips__version__ = __grid__.__stips__version__
+__grid__pandeia__version__ = StipsEnvironment.__pandeia__version__
+__grid__stips__version__ = StipsEnvironment.__stips__grid__version__
+__env__report__ = StipsEnvironment.__stips__environment__report__pretty__
+__env__dict__ = StipsEnvironment.__stips__environment__dict__
 
 try:
      stips_data_base = os.environ["stips_data"]

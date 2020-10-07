@@ -103,21 +103,9 @@ def test_fits_wcs(ra, dec, pa):
         assert np.isclose(img_wcs.wcs.pc[1][1], pc_matrix[1][1])
         assert np.isclose(input_file[0].header["CRVAL1"], ra)
         assert np.isclose(input_file[0].header["CRVAL2"], dec)
-        if "PC1_1" in input_file[0].header:
-            assert np.isclose(input_file[0].header["PC1_1"], pc_matrix[0][0])
-        else:
-            assert pa == 0.
-        if "PC1_2" in input_file[0].header:
-            assert np.isclose(input_file[0].header["PC1_2"], pc_matrix[0][1])
-        else:
-            assert pa == 0.
-        if "PC2_1" in input_file[0].header:
-            assert np.isclose(input_file[0].header["PC2_1"], pc_matrix[1][0])
-        else:
-            assert pa == 0.
-        if "PC2_2" in input_file[0].header:
-            assert np.isclose(input_file[0].header["PC2_2"], pc_matrix[1][1])
-        else:
-            assert pa == 0.
+        assert np.isclose(input_file[0].header["PC1_1"], pc_matrix[0][0])
+        assert np.isclose(input_file[0].header["PC1_2"], pc_matrix[0][1])
+        assert np.isclose(input_file[0].header["PC2_1"], pc_matrix[1][0])
+        assert np.isclose(input_file[0].header["PC2_2"], pc_matrix[1][1])
         
     os.remove("test_wcs.fits")
