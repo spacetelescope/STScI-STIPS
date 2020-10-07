@@ -1,3 +1,5 @@
+|Travis Status| |PyPI Status|
+
 # STScI-STIPS
 
 For documentation and installation instructions please visit https://stsci-stips.readthedocs.io
