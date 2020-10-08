@@ -58,7 +58,7 @@ dependencies:
 
   - pip:
     # Major modules
-    - pandeia.engine>=1.5.2
+    - pandeia.engine==1.5.2
     - jwst_backgrounds
 
     # Minor modules
