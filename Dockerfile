@@ -67,7 +67,7 @@ ENV PYSYN_CDBS /opt/grp/hst/cdbs
 
 # Extract Pandeia reference data
 RUN wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz | tar -xvz
-ENV pandeia_refdata /opt/pandeia_data-1.5_wfirst
+ENV pandeia_refdata /opt/pandeia_data-1.5.2rc2_roman
 
 # Extract WebbPSF reference data
 # (note: version number env vars are declared close to where they are used
