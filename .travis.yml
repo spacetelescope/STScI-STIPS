@@ -130,7 +130,7 @@ before_install:
     - wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O $TEST_DATA_PATH/synphot1.tar.gz
     - wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O $TEST_DATA_PATH/synphot2.tar.gz
     - wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O $TEST_DATA_PATH/synphot5.tar.gz
-    - wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O $TEST_DATA_PATH/synphot5.tar.gz
+    - wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O $TEST_DATA_PATH/synphot6.tar.gz
 
     - tar -xzvf $TEST_DATA_PATH/synphot1.tar.gz -C $TEST_DATA_PATH/synphot/
     - tar -xzvf $TEST_DATA_PATH/synphot2.tar.gz -C $TEST_DATA_PATH/synphot/
