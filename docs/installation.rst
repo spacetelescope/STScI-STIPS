@@ -100,10 +100,10 @@ You will need to download the data and add them to your environmental path
 2. `cd` into a directory you would like to store the data in and run the following commands::
 
     # Synphot and STSynphot reference data
-    wget -qO- http://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz | tar xvz
-    wget -qO- http://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz | tar xvz
-    wget -qO- http://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz | tar xvz
-    wget -qO- http://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz | tar xvz
+    wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz | tar xvz
+    wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz | tar xvz
+    wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz | tar xvz
+    wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz | tar xvz
 
 
     # Pandeia reference data
@@ -116,9 +116,9 @@ You will need to download the data and add them to your environmental path
 
     export WEBBPSF_PATH=/<path_to_data_dir>/webbpsf-data
     export PYSYN_CDBS=/<path_to_data_dir>/grp/hst/cdbs
-    export pandeia_refdata=/<path_to_data_dir>/pandeia_data-x.x_wfirst
+    export pandeia_refdata=/<path_to_data_dir>/pandeia_data-x.x.x_roman
 
-Make sure that you have the correct version number for `pandeia_refdata` (replace the "x.x").
+Make sure that you have the correct version number for `pandeia_refdata` (replace the "x.x.x").
 
 .. note::
     The URL we provide in this section and the suggested pandeia reference data directory name
