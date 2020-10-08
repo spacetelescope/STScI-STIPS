@@ -168,7 +168,7 @@ class AstroImage(object):
 
     
     def __del__(self):
-        if os.path.exists(self.fname):
+        if hasattr(self, 'fname') and os.path.exists(self.fname):
             os.remove(self.fname)
 
     def copy(self):

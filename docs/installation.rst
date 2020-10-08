@@ -23,9 +23,9 @@ STIPS Requirements
 * `numpy`: STIPS uses numpy extensively for almost everything that it does.
 * `photutils`: STIPS uses photutils to determine the flux inside the half-light radius
   in generated Sersic profiles.
-* `pysynphot`: STIPS uses pysynphot to generate bandpasses, count rates, and
-  zero points. Note that pysynphot's data files (also known as the CDBS data tree) must also be
-  installed and available as indicated in pysynphot's documentation.
+* `synphot` and `stsynphot`: STIPS uses synphot and stsynphot to generate 
+  bandpasses, count rates, and zero points. Note that the reference data must
+  also be downloaded, as described below in "Doanloading Required Data".
 * `scipy`: STIPS uses scipy to manipulate its internal images (zoom and rotate).
 
 Finally, STIPS requires a set of data files whose location is marked by setting the environment
@@ -99,10 +99,11 @@ You will need to download the data and add them to your environmental path
 
 2. `cd` into a directory you would like to store the data in and run the following commands::
 
-    # PySynphot reference data
-    wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot1.tar.gz | tar xvz
-    wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot2.tar.gz | tar xvz
-    wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot5.tar.gz | tar xvz
+    # Synphot and STSynphot reference data
+    wget -qO- http://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz | tar xvz
+    wget -qO- http://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz | tar xvz
+    wget -qO- http://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz | tar xvz
+    wget -qO- http://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz | tar xvz
 
 
     # Pandeia reference data
