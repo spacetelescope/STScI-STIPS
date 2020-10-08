@@ -992,8 +992,10 @@ class Instrument(object):
         #   Conversion: * self.SCALE[0] * self.SCALE[1] for arcsec^-2 -> pixel^-2
         flux_array_pixels = 1e9 * flux_array * 2.3504e-11 * self.SCALE[0] * self.SCALE[1]
     
-        sp = syn.SourceSpectrum(syn.Empirical1D, points=wave_array, lookup_table=flux_array_pixels)
-        obs = syn.Observation(sp, self.bandpass, binset=sp.waveset, force='taper')
+        sp = syn.SourceSpectrum(syn.Empirical1D, points=wave_array*u.micron, 
+                                lookup_table=flux_array_pixels)
+        obs = syn.Observation(sp, self.bandpass, binset=sp.waveset, 
+                              force='taper')
         bg = obs.countrate(area=self.AREA)
         
         self._log("info", "Returning background {} for '{}'".format(bg, self.background_value))
