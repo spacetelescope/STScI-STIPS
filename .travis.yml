@@ -140,7 +140,7 @@ before_install:
     - export PYSYN_CDBS=$TEST_DATA_PATH/synphot/grp/hst/cdbs
 
     # download pandeia_data data
-    - wget -qO- https://stsci.box.com/shared/static/5j506xzg9tem2l7ymaqzwqtxne7ts3sr.gz -O $TEST_DATA_PATH/pandeia_data-1.5_wfirst.gz
+    - wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O $TEST_DATA_PATH/pandeia_data-1.5_wfirst.gz
 
     - tar -xzvf $TEST_DATA_PATH/pandeia_data-1.5_wfirst.gz -C $TEST_DATA_PATH/
     - export pandeia_refdata=$TEST_DATA_PATH/pandeia_data-1.5_wfirst

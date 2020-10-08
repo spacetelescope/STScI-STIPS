@@ -66,8 +66,8 @@ RUN wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz | tar xvz
 ENV PYSYN_CDBS /opt/grp/hst/cdbs
 
 # Extract Pandeia reference data
-RUN wget -qO- https://stsci.box.com/shared/static/5j506xzg9tem2l7ymaqzwqtxne7ts3sr.gz | tar -xvz
-ENV pandeia_refdata /opt/pandeia_data-1.5.2_wfirst
+RUN wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz | tar -xvz
+ENV pandeia_refdata /opt/pandeia_data-1.5_wfirst
 
 # Extract WebbPSF reference data
 # (note: version number env vars are declared close to where they are used
