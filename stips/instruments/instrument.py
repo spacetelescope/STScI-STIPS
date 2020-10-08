@@ -929,7 +929,11 @@ class Instrument(object):
         return zeropoint
     
     @property
-    def unit_photflam(self):
+    def photflam(self):
+        return self.photflam_unit.value
+    
+    @property
+    def photflam_unit(self):
         sp = syn.SourceSpectrum(syn.ConstFlux1D, amplitude=(0.*u.STmag))
         bp = self.bandpass
         obs = syn.Observation(sp, bp, binset=sp.waveset)
@@ -937,11 +941,11 @@ class Instrument(object):
         return pf
     
     @property
-    def photflam(self):
-        return self.unit_photflam.value
+    def pixel_background(self):
+        return self.pixel_background_unit.value
     
     @property
-    def pixel_background(self):
+    def pixel_background_unit(self):
         if isinstance(self.background_value, (int, float)):
             return self.background_value
         elif self.background_value == 'none':
