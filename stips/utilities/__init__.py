@@ -3,6 +3,7 @@ __all__ = ['utilities']
 from .utilities import __grid__
 from .utilities import CachedJbtBackground
 from .utilities import GetStipsData
+from .utilities import GetStipsDataDir
 from .utilities import ImageData 
 from .utilities import internet
 from .utilities import InstrumentList
