@@ -613,7 +613,7 @@ class Instrument(object):
         ratios = table['axial_ratio']
         pas = (table['pa'] + (self.pa*180./np.pi) )%360.
         vmags = table['apparent_surface_brightness']
-        norm_bp = '{}'.format(vmags.unit)
+        norm_bp = table.meta['BANDPASS']
         self._log("info", "Normalization Bandpass is {} ({})".format(norm_bp, type(norm_bp)))
         if norm_bp == '' or norm_bp is None or norm_bp == 'None':
             norm_bp = 'johnson,v'
@@ -850,15 +850,21 @@ class Instrument(object):
         self._log("info","Finished adding error")
 
     def normalize(self, source_spectrum_or_wave_flux, norm_flux, bandpass):
+#         print("source: {}".format(source_spectrum_or_wave_flux))
+#         print("flux: {}".format(norm_flux))
+#         print("bandpass: {}".format(bandpass))
         from pandeia.engine.normalization import NormalizationFactory
         norm_type = self.get_type(bandpass)
+#         print("norm_type: {}".format(norm_type))
         
-        norm = NormalizationFactory(type=norm_type, bandpass=bandpass, norm_fluxunit='abmag', norm_flux=norm_flux)
+        norm = NormalizationFactory(type=norm_type, bandpass=bandpass, 
+                                    norm_fluxunit='abmag', norm_flux=norm_flux)
         if isinstance(source_spectrum_or_wave_flux, tuple):
             wave, flux = source_spectrum_or_wave_flux
         else:
             wave = source_spectrum_or_wave_flux.waveset
             flux = source_spectrum_or_wave_flux(wave)
+#         print("wave, flux = {}, {}".format(wave, flux))
         norm_wave, norm_flux = norm.normalize(wave, flux)
         sp = syn.SourceSpectrum(syn.Empirical1D, points=norm_wave, lookup_table=norm_flux)
         return sp
