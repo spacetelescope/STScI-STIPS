@@ -18,6 +18,9 @@ addons:
 
 env:
     global:
+        # Define Conda Version
+        - MINICONDA_VERSION=4.8.5
+    
         # The following versions are the 'default' for tests, unless
         # overridden underneath. They are defined here in order to save having
         # to repeat them for all configurations.
