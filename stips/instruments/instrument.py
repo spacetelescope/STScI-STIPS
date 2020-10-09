@@ -17,6 +17,7 @@ from functools import wraps
 from ..stellar_module import StarGenerator
 from ..astro_image import AstroImage
 from ..utilities import GetStipsData
+from ..utilities import GetStipsDataDir
 from ..utilities import internet
 from ..utilities import OffsetPosition
 from ..utilities import read_metadata
@@ -947,63 +948,98 @@ class Instrument(object):
     @property
     def pixel_background_unit(self):
         if isinstance(self.background_value, (int, float)):
-            return self.background_value
-        elif self.background_value == 'none':
-            self._log("info", "Returning background 0.0 for 'none'")
-            return 0.
+            msg = "Returning background {}."
+            self._log("info", msg.format(self.background_value))
+            return self.background_value*u.counts/u.sec
+        elif self.background_value in ['none', 'low', 'avg', 'high']:
+            if self.background_value in self.BACKGROUND:
+                bkg = self.BACKGROUND[self.background_value][self.filter]
+            else:
+                msg = "Background {} not found for {}. Using 0.0 for None"
+                self._log("warning", msg.format(self.background_value,
+                                                self.DETECTOR))
+                bkg = 0.
+            msg = "Returning background {} for '{}'"
+            self._log("info", msg.format(bkg, self.background_value))
+            return bkg*u.counts/u.sec
         elif self.background_value == 'custom':
-            self._log("info", "Returning background {} for 'custom'".format(self.custom_background))
+            msg = "Returning background {} for 'custom'"
+            self._log("info", msg.format(self.custom_background))
             return self.custom_background
+        elif "jbt" in self.background_value:
+            if ":" in self.background_value:
+                bg_type = self.background_value.split(":")[-1]
+            else:
+                bg_type = "mean"
 
-        bg = None
-        if internet() and self.background_location == '$WEB':
-            from jwst_backgrounds import jbt
-            try:
-                bg = jbt.background(self.ra, self.dec, self.PHOTPLAM[self.filter])
-            except Exception as e:
-                self._log("error", "Accessing JBT background produced error {}".format(e))
-                self._log("warning", "Unable to connect to the JBT server")
+            bg = None
+            if internet() and self.background_location == '$WEB':
+                from jwst_backgrounds import jbt
+                try:
+                    bg = jbt.background(self.ra, self.dec, 
+                                        self.PHOTPLAM[self.filter])
+                except Exception as e:
+                    msg = "Accessing JBT background produced error {}"
+                    self._log("error", msg.format(e))
+                    self._log("warning", "Unable to connect to the JBT server")
         
-        if bg is None:
-            self._log("info", "Using local cache of JBT background data")
-            from ..utilities import CachedJbtBackground
-            try:
-                bg = CachedJbtBackground(self.ra, self.dec, self.PHOTPLAM[self.filter])
-            except Exception as e:
-                self._log("error", "Retrieving local cache produced error {}".format(e))
-                self._log("info", "More complete error: {}".format(repr(e)))
-                message = "Unable to retrieve local cache. Returning background 0.0 for '{}'"
-                self._log("warning", message.format(self.background_value))
-                return 0.
+            if os.path.exists(self.background_location):
+                self._log("info", "Using local JBT background cache.")
+                from ..utilities import CachedJbtBackground
+                try:
+                    bg = CachedJbtBackground(self.ra, self.dec, 
+                                             self.PHOTPLAM[self.filter])
+                except Exception as e:
+                    msg = "Retrieving local cache produced error {}"
+                    self._log("error", msg.format(e))
+                    self._log("info", "More complete error: {}".format(repr(e)))
+                    msg = "Unable to retrieve local cache. Returning "
+                    msg += "background 0.0 for '{}'"
+                    self._log("warning", msg.format(self.background_value))
+                    return 0.*u.counts/u.sec
 
-        wave_array = bg.bkg_data['wave_array']
-        combined_bg_array = bg.bkg_data['total_bg']
+            if bg is None:
+                msg = "Unable to retrieve JBT background data."
+                self._log("error", msg)
+                msg = "Falling back to zero background."
+                self._log("warning", msg)
+                return 0.*u.counts/u.sec
+            
+            wave_array = bg.bkg_data['wave_array']
+            combined_bg_array = bg.bkg_data['total_bg']
     
-        if self.background_value == 'avg':
-            flux_array = np.mean(combined_bg_array, axis=0)
-        elif self.background_value == 'med':
-            flux_array = np.median(combined_bg_array, axis=0)
-        elif self.background_value == 'max':
-            flux_array = np.max(combined_bg_array, axis=0)
-        elif self.background_value == 'min':
-            flux_array = np.min(combined_bg_array, axis=0)
-        else:
-            flux_array = combined_bg_array[0]
+            if bg_type in ['avg', 'mean']:
+                flux_array = np.mean(combined_bg_array, axis=0)
+            elif bg_type in ['med', 'median']:
+                flux_array = np.median(combined_bg_array, axis=0)
+            elif bg_type == 'max':
+                flux_array = np.max(combined_bg_array, axis=0)
+            elif bg_type == 'min':
+                flux_array = np.min(combined_bg_array, axis=0)
+            else:
+                flux_array = combined_bg_array[0]
     
-        # Convert background flux from MJy/sr to mJy/pixel.
-        #   Conversion: * 1e9 for MJy -> mJy
-        #   Conversion: * 2.3504e-11 for sr^-2 -> arcsec^-2
-        #   Conversion: * self.SCALE[0] * self.SCALE[1] for arcsec^-2 -> pixel^-2
-        flux_array_pixels = 1e9 * flux_array * 2.3504e-11 * self.SCALE[0] * self.SCALE[1]
+            # Background Flux is MJy/sr^2
+            flux_data_array = 1e6 * flux_array * u.Jy / (u.sr * u.sr)
+            flux_data_array = flux_data_array.to(u.Jy/(1.e6*u.arcsec*u.arcsec))
+            
+            # convert from arcsec^-2 to pixel^-2
+            flux_data_array = flux_data_array * self.SCALE[0] * self.SCALE[1]
     
-        sp = syn.SourceSpectrum(syn.Empirical1D, points=wave_array*u.micron, 
-                                lookup_table=flux_array_pixels)
-        obs = syn.Observation(sp, self.bandpass, binset=sp.waveset, 
-                              force='taper')
-        bg = obs.countrate(area=self.AREA)
+            sp = syn.SourceSpectrum(syn.Empirical1D, points=wave_array*u.micron, 
+                                    lookup_table=flux_array_pixels)
+            obs = syn.Observation(sp, self.bandpass, binset=sp.waveset, 
+                                  force='taper')
+            bg = obs.countrate(area=self.AREA)
+            
+            msg = "Returning background {} for '{}'"
+            self._log("info", msg.format(bg, self.background_value))
+            return bg
         
-        self._log("info", "Returning background {} for '{}'".format(bg, self.background_value))
-        return bg
+        msg = "Unknown Background {}. Returning 0."
+        self._log("warning", msg.format(self.background_value))
+        return 0.*u.counts/u.sec
+
 
     def _log(self,mtype,message):
         """
