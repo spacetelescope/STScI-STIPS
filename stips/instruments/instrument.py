@@ -5,8 +5,10 @@ __filetype__ = "base"
 import glob, logging, os, shutil, sys, types, uuid
 
 import numpy as np
-import pysynphot as ps
+import synphot as syn
+import stsynphot as stsyn
 
+from astropy import units as u
 from astropy.io import fits as pyfits
 from astropy.table import Table, Column
 from functools import wraps
@@ -464,7 +466,7 @@ class Instrument(object):
             idx = np.where(datasets == dataset)
             if len(idx[0]) > 0:
                 stargen = StarGenerator(ages[idx][0], metallicities[idx][0], seed=self.seed, logger=self.logger)
-                rates[idx] = stargen.make_cluster_rates(masses[idx], self.DETECTOR, self.filter, bp, self.REFS)
+                rates[idx] = stargen.make_cluster_rates(masses[idx], self, bp)
                 del stargen
         rates = rates * 100 / (distances**2) #convert absolute to apparent rates
         if cached > 0:
@@ -509,7 +511,6 @@ class Instrument(object):
         """
         if table is None:
             return None
-        ps.setref(**self.REFS)
         ids = table['id']
         ras = table['ra']
         decs = table['dec']
@@ -523,10 +524,10 @@ class Instrument(object):
         rates = np.zeros_like(ras)
         for index in range(len(ids)):
             t, g, Z, a = temps[index], gravs[index], metallicities[index], apparents[index]
-            sp = ps.Icat('phoenix', t, Z, g)
+            sp = stsyn.grid_to_spec('phoenix', t, Z, g)
             sp = self.normalize(sp, a, norm_bp)
-            obs = ps.Observation(sp, bp, binset=sp.wave)
-            rates[index] = obs.countrate()
+            obs = syn.Observation(sp, bp, binset=sp.waveset)
+            rates[index] = obs.countrate(area=self.AREA)
         t = Table()
         t['ra'] = Column(data=ras)
         t['dec'] = Column(data=decs)
@@ -549,7 +550,6 @@ class Instrument(object):
         if table is None:
             return None
         from pandeia.engine.sed import SEDFactory
-        ps.setref(**self.REFS)
         ids = table['id']
         ras = table['ra']
         decs = table['dec']
@@ -564,8 +564,8 @@ class Instrument(object):
             spectrum = SEDFactory(config=config)
             wave, flux = spectrum.get_spectrum()
             sp = self.normalize((wave, flux), a, norm_bp)
-            obs = ps.Observation(sp, bp, binset=sp.wave)
-            rates = np.append(rates, obs.countrate())
+            obs = syn.Observation(sp, bp, binset=sp.wave)
+            rates = np.append(rates, obs.countrate(area=self.AREA))
         t = Table()
         t['ra'] = Column(data=ras)
         t['dec'] = Column(data=decs)
@@ -584,6 +584,7 @@ class Instrument(object):
         """
         Converts a BC95 galaxy grid of sources into the internal source table standard
         """
+        from pandeia.engine.custom_exceptions import SynphotError as pSynError
         if table is None:
             return None
         # This function is needed because I can't get python not to read '50E8' as a number, or to output it as a correctly formatted string
@@ -593,10 +594,8 @@ class Instrument(object):
             value = int(10*(num/(10**np.floor(np.log10(num)))))
             return "{}E{}".format(value, exponent-1)
         
-        from pandeia.engine.custom_exceptions import PysynphotError
         self._log("info", "Converting BC95 Catalogue")
         proflist = {"expdisk":1,"devauc":4}
-        ps.setref(**self.REFS)
         distance_type = "redshift"
         ids = table['id']
         ras = table['ra']
@@ -626,18 +625,21 @@ class Instrument(object):
 #             self._log("info", "{} of {}: {} {} {} {} {} {} {} {}".format(i, total, z, model, age, profile, radius, ratio, pa, mag))
             fname = "bc95_{}_{}.fits".format(model, stringify(age))
             try:
-                sp = ps.FileSpectrum(os.path.join(os.environ['PYSYN_CDBS'],"grid","bc95","templates",fname))
+                sp = syn.SourceSpectrum.from_file(os.path.join(os.environ['PYSYN_CDBS'],"grid","bc95","templates",fname))
                 if distance_type == "redshift":
-                    sp = sp.redshift(z)
+                    sp = syn.SourceSpectrum(sp.model, z=z)
                 sp = self.normalize(sp, mag, norm_bp)
-                obs = ps.Observation(sp, self.bandpass, force='taper', binset=sp.wave)
-                rate = obs.countrate()
-            except PysynphotError as e:
-                self._log('warning', 'Source {} of {}: Pysynphot Error {} encountered'.format(i, total, e))
+                obs = syn.Observation(sp, self.bandpass, force='taper', 
+                                      binset=sp.waveset)
+                rate = obs.countrate(area=self.AREA).value
+            except pSynError as e:
+                msg = 'Source {} of {}: Pysynphot Error {} encountered'
+                self._log('warning', msg.format(i, total, e))
                 rate = 0.
-            rates = np.append(rates,rate)
-            indices = np.append(indices,proflist[profile])
-            notes = np.append(notes,"BC95_{}_{}_{}".format(model, stringify(age), mag))
+            rates = np.append(rates, rate)
+            indices = np.append(indices, proflist[profile])
+            note = "BC95_{}_{}_{}".format(model, stringify(age), mag)
+            notes = np.append(notes, note)
         t = Table()
         t['ra'] = Column(data=ras, dtype=np.float)
         t['dec'] = Column(data=decs)
@@ -854,10 +856,10 @@ class Instrument(object):
         if isinstance(source_spectrum_or_wave_flux, tuple):
             wave, flux = source_spectrum_or_wave_flux
         else:
-            wave, flux = norm.from_pysynphot(source_spectrum_or_wave_flux)
+            wave = source_spectrum_or_wave_flux.waveset
+            flux = source_spectrum_or_wave_flux(wave)
         norm_wave, norm_flux = norm.normalize(wave, flux)
-        sp = norm.to_pysynphot(norm_wave, norm_flux)
-        sp.convert('angstroms')
+        sp = syn.SourceSpectrum(syn.Empirical1D, points=norm_wave, lookup_table=norm_flux)
         return sp
     
     def get_type(self, bandpass_str):
@@ -892,8 +894,8 @@ class Instrument(object):
             wave = np.append(wave, wave[-1]+(wave[-1]-wave[-2]))
             pce = np.append(pce, 0.)
         
-        self._bp = ps.ArrayBandpass(wave=wave, throughput=pce, waveunits='micron', name='bp_{}_{}'.format(self.instrument, self.filter))
-        self._bp.convert('angstroms')
+        self._bp = syn.SpectralElement(syn.Empirical1D, points=wave*u.micron, 
+                                       lookup_table=pce)
         return self._bp
     
     @property
@@ -920,28 +922,33 @@ class Instrument(object):
     
     @property
     def zeropoint(self):
-        ps.setref(**self.REFS)
-        standard_star_file = GetStipsData(os.path.join("standards", "alpha_lyr_stis_008.fits"))
-        sp = ps.FileSpectrum(standard_star_file)
-        sp.convert('angstroms')
+        sp = syn.SourceSpectrum.from_vega()
         bp = self.bandpass
-        sp = sp.renorm(0.0,"VEGAMAG",bp)
-        obs = ps.Observation(sp, bp, binset=sp.wave)
-        zeropoint = obs.effstim("OBMAG")
+        obs = syn.Observation(sp, bp, binset=sp.waveset)
+        zeropoint = obs.effstim(flux_unit=u.ABmag).value
         return zeropoint
     
     @property
     def photflam(self):
-        ps.setref(**self.REFS)
-        sp = ps.FlatSpectrum(0, fluxunits='stmag')
-        sp.convert('angstroms')
+        return self.photflam_unit.value
+    
+    @property
+    def photflam_unit(self):
+        sp = syn.SourceSpectrum(syn.ConstFlux1D, amplitude=(0.*u.STmag))
         bp = self.bandpass
-        obs = ps.Observation(sp, bp, binset=sp.wave)
-        return obs.effstim('flam') / obs.countrate()
+        obs = syn.Observation(sp, bp, binset=sp.waveset)
+        pf = (obs.effstim(flux_unit='flam') / obs.countrate(area=self.AREA))
+        return pf
     
     @property
     def pixel_background(self):
-        if self.background_value == 'none':
+        return self.pixel_background_unit.value
+    
+    @property
+    def pixel_background_unit(self):
+        if isinstance(self.background_value, (int, float)):
+            return self.background_value
+        elif self.background_value == 'none':
             self._log("info", "Returning background 0.0 for 'none'")
             return 0.
         elif self.background_value == 'custom':
@@ -989,12 +996,11 @@ class Instrument(object):
         #   Conversion: * self.SCALE[0] * self.SCALE[1] for arcsec^-2 -> pixel^-2
         flux_array_pixels = 1e9 * flux_array * 2.3504e-11 * self.SCALE[0] * self.SCALE[1]
     
-        ps.setref(**self.REFS)
-        sp = ps.ArraySpectrum(wave_array, flux_array_pixels, waveunits='micron', fluxunits='mjy')
-        sp.convert('angstroms')
-        sp.convert('photlam')
-        obs = ps.Observation(sp, self.bandpass, binset=sp.wave, force='taper')
-        bg = obs.countrate()
+        sp = syn.SourceSpectrum(syn.Empirical1D, points=wave_array*u.micron, 
+                                lookup_table=flux_array_pixels)
+        obs = syn.Observation(sp, self.bandpass, binset=sp.waveset, 
+                              force='taper')
+        bg = obs.countrate(area=self.AREA)
         
         self._log("info", "Returning background {} for '{}'".format(bg, self.background_value))
         return bg

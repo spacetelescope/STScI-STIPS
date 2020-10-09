@@ -17,31 +17,15 @@ print("Pandeia Version: {}".format(pandeia_version_info))
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "..", "..")))
 
 import numpy as np
-import pysynphot as ps
+import synphot as syn
+import stsynphot as stsyn
 from stips.utilities import InstrumentList
 from .. import __version__ as stips_version_info
 from astropy.io import fits as pyfits
+from astropy import units as u
 
 print("STIPS Version: {}".format(stips_version_info))
 
-COMPFILES =  sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmc.fits")))
-GRAPHFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmg.fits")))
-THERMFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmt.fits")))
-wfc3_refs = {
-                'comptable': COMPFILES[-1],
-                'graphtable': GRAPHFILES[-1],
-                'thermtable': THERMFILES[-1],
-                'area': 45238.93416,
-                'waveset': (500,26000,10000.,'log')
-            }
-
-area =  {
-            'nircamlong':   253260.0,
-            'nircamshort':  253260.0,
-            'miri':         253260.0,
-            'wfc3ir':       45238.93416,
-            'wfi':          45238.93416
-        }
 modes = {
             'nircamshort':  ['sw_imaging'],
             'nircamlong':   ['lw_imaging'],
@@ -66,6 +50,14 @@ apertures = {
                 'wfc3ir':       {'imaging':     "default"},
                 'wfi':          {'imaging':     "any"}
             }
+area =  {
+            'nircamlong':   253260.0,
+            'nircamshort':  253260.0,
+            'miri':         253260.0,
+            'wfc3ir':       45238.93416,
+            'wfi':          45238.93416
+        }
+        
 
 def get_grid_points():
     grid_file = os.path.abspath(os.path.join(os.environ['PYSYN_CDBS'], "grid", "phoenix", "catalog.fits"))
@@ -81,7 +73,7 @@ def get_grid_points():
 
 
 if __name__ == '__main__':
-    norm_bandpass = ps.ObsBandpass('johnson,i')
+    norm_bandpass = syn.SpectralElement.from_filter('johnson_i')
     coords = get_grid_points()
     print(coords)
     bandpasses = {}
@@ -110,23 +102,23 @@ if __name__ == '__main__':
             for k, teff in enumerate(coords[2]):
                 print("\t\t{}: Starting Teff = {}".format(time.ctime(), teff))
                 try:
-                    spec = ps.Icat('phoenix', teff, Z, logg)
+                    spec = stsyn.grid_to_spec('phoenix', teff, Z, logg)
                     counts = False
                     if sum(spec.flux) > 0:
                         counts = True
-                except ps.exceptions.ParameterOutOfBounds:
+                except syn.exceptions.ParameterOutOfBounds:
                     counts = False
                 for l, mag in enumerate(coords[3]):
                     print("\t\t\t{} of {}: {}: Starting Z = {}, log(g) = {}, Teff = {}, Mabs = {:>4}".format(n+1, total, time.ctime(), Z, logg, teff, mag), end='')
                     if counts:
-                        spec_norm = spec.renorm(mag, 'vegamag', norm_bandpass)
+                        norm_value = u.Magnitude(mag)
+                        spec_norm = spec.normalize(norm_value, norm_bandpass)
                     for instrument in instruments:
-                        ps.setref(area=area[instrument.lower()], waveset=(500, 260000, 10000., 'log'))
                         for mode in modes[instrument.lower()]:
                             for filter in filters[instrument.lower()][mode]:
                                 if counts:
-                                    obs = ps.Observation(spec_norm, bandpasses[instrument.lower()][filter], binset=spec_norm.wave)
-                                    result_arrays[instrument.lower()][filter][i,j,k,l] = obs.countrate()
+                                    obs = syn.Observation(spec_norm, bandpasses[instrument.lower()][filter], binset=spec_norm.waveset)
+                                    result_arrays[instrument.lower()][filter][i,j,k,l] = obs.countrate(area[mode])
                                     print(".", end='')
                                 else:
                                     result_arrays[instrument.lower()][filter][i,j,k,l] = 0.

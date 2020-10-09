@@ -18,6 +18,9 @@ addons:
 
 env:
     global:
+        # Define Conda Version
+        - MINICONDA_VERSION=py37_4.8.3
+    
         # The following versions are the 'default' for tests, unless
         # overridden underneath. They are defined here in order to save having
         # to repeat them for all configurations.
@@ -74,7 +77,7 @@ matrix:
         - name: "Doc Build Test"
           os: linux
           env: SETUP_CMD='build_docs -w'
-               CONDA_DEPENDENCIES=$CONDA_DEPENDENCIES_DOC
+               CONDA_ENVIRONMENT='.rtd-environment.yml'
 
         # Main test
         # ---------------------------
@@ -127,21 +130,23 @@ before_install:
     # download synphot data
     - mkdir $TEST_DATA_PATH/synphot
 
-    - wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot1.tar.gz -O $TEST_DATA_PATH/synphot1.tar.gz
-    - wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot2.tar.gz -O $TEST_DATA_PATH/synphot2.tar.gz
-    - wget -qO- http://ssb.stsci.edu/cdbs/tarfiles/synphot5.tar.gz -O $TEST_DATA_PATH/synphot5.tar.gz
+    - wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O $TEST_DATA_PATH/synphot1.tar.gz
+    - wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O $TEST_DATA_PATH/synphot2.tar.gz
+    - wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O $TEST_DATA_PATH/synphot5.tar.gz
+    - wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O $TEST_DATA_PATH/synphot6.tar.gz
 
     - tar -xzvf $TEST_DATA_PATH/synphot1.tar.gz -C $TEST_DATA_PATH/synphot/
     - tar -xzvf $TEST_DATA_PATH/synphot2.tar.gz -C $TEST_DATA_PATH/synphot/
     - tar -xzvf $TEST_DATA_PATH/synphot5.tar.gz -C $TEST_DATA_PATH/synphot/
+    - tar -xzvf $TEST_DATA_PATH/synphot6.tar.gz -C $TEST_DATA_PATH/synphot/
 
     - export PYSYN_CDBS=$TEST_DATA_PATH/synphot/grp/hst/cdbs
 
     # download pandeia_data data
-    - wget -qO- https://stsci.box.com/shared/static/5j506xzg9tem2l7ymaqzwqtxne7ts3sr.gz -O $TEST_DATA_PATH/pandeia_data-1.5_wfirst.gz
+    - wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O $TEST_DATA_PATH/pandeia_data-1.5.2rc2_roman.gz
 
-    - tar -xzvf $TEST_DATA_PATH/pandeia_data-1.5_wfirst.gz -C $TEST_DATA_PATH/
-    - export pandeia_refdata=$TEST_DATA_PATH/pandeia_data-1.5_wfirst
+    - tar -xzvf $TEST_DATA_PATH/pandeia_data-1.5.2rc2_roman.gz -C $TEST_DATA_PATH/
+    - export pandeia_refdata=$TEST_DATA_PATH/pandeia_data-1.5.2rc2_roman
 
     # download webbpsf data
     - wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O $TEST_DATA_PATH/webbpsf_data.gz

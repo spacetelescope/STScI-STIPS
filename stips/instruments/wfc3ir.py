@@ -3,6 +3,7 @@ __filetype__ = "detector"
 
 #External Modules
 import os
+import stsynphot as stsyn
 
 #Local Modules
 from ..astro_image import AstroImage
@@ -42,10 +43,8 @@ class WFC3IR(HstInstrument):
 
     @property
     def bandpass(self):
-        import pysynphot as ps
-        ps.setref(**self.REFS)
         obsmode = "wfc3,ir," + self.filter.lower()
-        return ps.ObsBandpass(obsmode)
+        return stsyn.band(obsmode)
             
     def generateReadnoise(self):
         """

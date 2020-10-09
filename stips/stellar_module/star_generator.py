@@ -33,6 +33,8 @@ import os
 import numpy as np
 import sqlite3
 
+from astropy import units as u
+
 from scipy.interpolate import RegularGridInterpolator
 
 from esutil import sqlite_util
@@ -239,7 +241,9 @@ class StarGenerator(object):
         arr = sc.execute(stmt,asarray=True)
         return arr['m_ini'],arr['te'],arr['log_g'],arr['johnson_i_abs']
     
-    def make_cluster_rates(self,masses,instrument,filter,bandpass=None,refs=None):
+    def make_cluster_rates(self, masses, ins, bandpass=None):
+        filter = ins.filter
+        instrument = ins.DETECTOR
         try:
             coords = np.load(os.path.join(self.gridpath, 'input.npy'), allow_pickle=True)
         except UnicodeError:
@@ -271,15 +275,15 @@ class StarGenerator(object):
         else:
             self.log('warning', 'Could not find result file "result_{}_{}.npy" from {}'.format(instrument.lower(), filter.lower(), self.gridpath))
 #             raise FileNotFoundError('Could not find result file "result_{}_{}.npy" from {}'.format(instrument.lower(), filter.lower(), self.gridpath))
-            import pysynphot as ps
+            import synphot as syn
+            import stsynphot as stsyn
             countrates = np.array(())
-            ps.setref(**refs)
-            johnson_i = ps.ObsBandpass('johnson,i')
+            johnson_i = syn.SpectralElement.from_filter('johnson_i')
             for te, log_g, z, j_i in zip(temps, gravs, metals, mags):
-                spectrum = ps.Icat('phoenix', te, z, log_g)
-                spectrum = spectrum.renorm(j_i, 'vegamag', johnson_i)
-                obs = ps.Observation(spectrum, bandpass, binset=spectrum.wave)
-                countrates = np.append(countrates, obs.countrate())
+                spectrum = stsyn.grid_to_spec('phoenix', te, z, log_g)
+                spectrum = spectrum.normalize(u.Magnitude(j_i), johnson_i)
+                obs = syn.Observation(spectrum, bandpass, binset=spectrum.waveset)
+                countrates = np.append(countrates, obs.countrate(ins.AREA))
                 self.log('info', 'Manually created star {} of {}'.format(len(countrates), len(temps)))
         return countrates
 
