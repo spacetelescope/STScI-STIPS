@@ -950,7 +950,7 @@ class Instrument(object):
         if isinstance(self.background_value, (int, float)):
             msg = "Returning background {}."
             self._log("info", msg.format(self.background_value))
-            return self.background_value*u.photons/u.sec
+            return self.background_value*u.photon/u.sec
         elif self.background_value in ['none', 'low', 'avg', 'high']:
             if self.background_value in self.BACKGROUND:
                 bkg = self.BACKGROUND[self.background_value][self.filter]
@@ -961,7 +961,7 @@ class Instrument(object):
                 bkg = 0.
             msg = "Returning background {} for '{}'"
             self._log("info", msg.format(bkg, self.background_value))
-            return bkg*u.photons/u.sec
+            return bkg*u.photon/u.sec
         elif self.background_value == 'custom':
             msg = "Returning background {} for 'custom'"
             self._log("info", msg.format(self.custom_background))
@@ -996,14 +996,14 @@ class Instrument(object):
                     msg = "Unable to retrieve local cache. Returning "
                     msg += "background 0.0 for '{}'"
                     self._log("warning", msg.format(self.background_value))
-                    return 0.*u.photons/u.sec
+                    return 0.*u.photon/u.sec
 
             if bg is None:
                 msg = "Unable to retrieve JBT background data."
                 self._log("error", msg)
                 msg = "Falling back to zero background."
                 self._log("warning", msg)
-                return 0.*u.photons/u.sec
+                return 0.*u.photon/u.sec
             
             wave_array = bg.bkg_data['wave_array']
             combined_bg_array = bg.bkg_data['total_bg']
@@ -1038,7 +1038,7 @@ class Instrument(object):
         
         msg = "Unknown Background {}. Returning 0."
         self._log("warning", msg.format(self.background_value))
-        return 0.*u.photons/u.sec
+        return 0.*u.photon/u.sec
 
 
     def _log(self,mtype,message):
