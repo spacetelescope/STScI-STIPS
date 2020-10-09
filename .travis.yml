@@ -77,7 +77,7 @@ matrix:
         - name: "Doc Build Test"
           os: linux
           env: SETUP_CMD='build_docs -w'
-               CONDA_DEPENDENCIES=$CONDA_DEPENDENCIES_DOC
+               CONDA_ENVIRONMENT='.rtd-environment.yml'
 
         # Main test
         # ---------------------------
