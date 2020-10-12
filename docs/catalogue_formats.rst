@@ -18,10 +18,9 @@ STIPS will internally divide tables into chunks of 100,000 entries, putting each
 chunk into its own extension.
 
 In IPAC_ tables, metadata is presented at the start of the table, in lines with
-the format
+the format::
 
-::
-	\key=value
+    \key=value
 
 In FITS tables, metadata is included as header keywords.
 
@@ -42,8 +41,8 @@ Phoenix Tables
 --------------
 
 Phoenix tables are tables of point sources that can be generated as models using
-the `Phoenix <http://phoenix.ens-lyon.fr>` _ star simulator. STIPS uses 
-`stsynphot <https://stsynphot.readthedocs.io/en/latest/>` _ to generate its
+the `Phoenix <http://phoenix.ens-lyon.fr>`_ star simulator. STIPS uses 
+`stsynphot <https://stsynphot.readthedocs.io/en/latest/>`_ to generate its
 phoenix spectra, either using a pre-computed grid (if the instrument/filter
 combination is available in the grid) or at runtime (if the filter throughput
 can be calculated but is not present in the grid). A phoenix table 
@@ -129,7 +128,7 @@ BC95 Catalogue
 
 A BC95 catalogue is intended to include galaxies created from the `Bruzual and
 Charlot Isochrone Synthesis Spectral Evolutionary Code (December 1995 version)
-<https://ssb.stsci.edu/pysynphot/docs/appendixa.html#pysynphot-appendixa-bc95">` _.
+<https://ssb.stsci.edu/pysynphot/docs/appendixa.html#pysynphot-appendixa-bc95">`_.
 A BC95 catalogue is an extended-source catalogue, and specifies sources with the
 following columns:
 
@@ -138,7 +137,9 @@ following columns:
 * DEC (decimal degrees)
 * Redshift
 * Model (one of 'a', 'b', 'c', 'd', or 'e', with the description of each model 
-  provided in the `BC95 README <https://www.stsci.edu/hst/observatory/crds/cdbs_bc95.html>` _ file.
+  provided in the 
+  `BC95 README <https://www.stsci.edu/hst/observatory/crds/cdbs_bc95.html>`_ 
+  file.
 * Age (one of 10E5, 25E5, 50E5, 76E5, 10E6, 25E6, 50E6, 10E7, 50E7, 10E8, 50E8, 
   10E9, years)
 * Profile (one of 'expdisk' or 'devauc')
