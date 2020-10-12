@@ -41,5 +41,5 @@ Robel Geda (`@robelgeda <https://github.com/robelgeda>`_).
   :maxdepth: 2
 
   installation
-  catalogue formats
+  catalogue_formats
   examples

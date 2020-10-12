@@ -109,7 +109,7 @@ if __name__ == '__main__':
                     counts = False
                     if np.sum(spec(spec.waveset)) > 0.:
                         counts = True
-                except syn.exceptions.ParameterOutOfBounds:
+                except stsyn.exceptions.ParameterOutOfBounds:
                     counts = False
                 for l, mag in enumerate(coords[3]):
                     print("\t\t\t{:6d} of {}: {}: Starting Z = {}, log(g) = {}, Teff = {}, Mabs = {:>4}".format(n+1, total, time.ctime(), Z, logg, teff, mag), end='')
