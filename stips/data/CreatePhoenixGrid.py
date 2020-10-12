@@ -112,7 +112,8 @@ if __name__ == '__main__':
                 except stsyn.exceptions.ParameterOutOfBounds:
                     counts = False
                 for l, mag in enumerate(coords[3]):
-                    print("\t\t\t{:6d} of {}: {}: Starting Z = {}, log(g) = {}, Teff = {}, Mabs = {:>4}".format(n+1, total, time.ctime(), Z, logg, teff, mag), end='')
+                    msg = "\t\t\t{:6d} of {}: {}: Starting Z = {}, log(g) = {}, Teff = {:7.1f}, Mabs = {:>4}"
+                    print(msg.format(n+1, total, time.ctime(), Z, logg, teff, mag), end='')
                     if counts:
                         norm_value = mag*u.ABmag
                         spec_norm = spec.normalize(norm_value, norm_bandpass)
