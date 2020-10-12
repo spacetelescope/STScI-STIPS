@@ -95,7 +95,8 @@ class Instrument(object):
         n_detectors = int(kwargs.get('detectors', len(self.DETECTOR_OFFSETS)))
         self.DETECTOR_OFFSETS = self.DETECTOR_OFFSETS[:n_detectors]
         self.OFFSET_NAMES = self.OFFSET_NAMES[:n_detectors]
-        self.CENTRAL_OFFSET = self.N_OFFSET[n_detectors]
+        if hasattr(self, "N_OFFSET"):
+            self.CENTRAL_OFFSET = self.N_OFFSET[n_detectors]
         msg = "{} with {} detectors. Central offset {}"
         self._log('info', msg.format(self.DETECTOR, n_detectors, 
                                      self.CENTRAL_OFFSET))
