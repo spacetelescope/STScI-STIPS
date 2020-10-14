@@ -14,13 +14,15 @@ with open(pandeia_version_file, 'r') as inf:
     pandeia_version_info = inf.readline().strip()
 print("Pandeia Version: {}".format(pandeia_version_info))
 
-sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "..", "..")))
+file_dir = os.path.basename(os.path.abspath(__file__))
+stips_dir = os.path.abspath(os.path.join(file_dir, "..", ".."))
+sys.path.append(stips_dir)
 
 import numpy as np
 import synphot as syn
 import stsynphot as stsyn
 from stips.utilities import InstrumentList
-from .. import __version__ as stips_version_info
+from stips import __version__ as stips_version_info
 from astropy.io import fits as pyfits
 from astropy import units as u
 
@@ -41,8 +43,9 @@ filters = {
                             },
             'miri':         {'imaging': ["f560w", "f770w", "f1000w", "f1130w", "f1280w", "f1500w", "f1800w", "f2100w", "f2550w"]},
             'wfc3ir':       {'imaging': ["f110w", "f160w"]},
-            'wfi':          {'imaging': ['f062', 'z087', 'y106', 'w149', 'j129', 'h158', 'f184']}
+            'wfi':          {'imaging': ['f062', 'f087', 'f106', 'f129', 'f146', 'f149', 'f158', 'f184']}
           }
+
 apertures = {
                 'nircamshort':  {'sw_imaging':  "sw"},
                 'nircamlong':   {'lw_imaging':  "lw"},
@@ -104,21 +107,22 @@ if __name__ == '__main__':
                 try:
                     spec = stsyn.grid_to_spec('phoenix', teff, Z, logg)
                     counts = False
-                    if sum(spec.flux) > 0:
+                    if np.sum(spec(spec.waveset)) > 0.:
                         counts = True
-                except syn.exceptions.ParameterOutOfBounds:
+                except stsyn.exceptions.ParameterOutOfBounds:
                     counts = False
                 for l, mag in enumerate(coords[3]):
-                    print("\t\t\t{} of {}: {}: Starting Z = {}, log(g) = {}, Teff = {}, Mabs = {:>4}".format(n+1, total, time.ctime(), Z, logg, teff, mag), end='')
+                    msg = "\t\t\t{:6d} of {}: {}: Starting Z = {}, log(g) = {}, Teff = {:7.1f}, Mabs = {:>4}"
+                    print(msg.format(n+1, total, time.ctime(), Z, logg, teff, mag), end='')
                     if counts:
-                        norm_value = u.Magnitude(mag)
+                        norm_value = mag*u.ABmag
                         spec_norm = spec.normalize(norm_value, norm_bandpass)
                     for instrument in instruments:
                         for mode in modes[instrument.lower()]:
                             for filter in filters[instrument.lower()][mode]:
                                 if counts:
                                     obs = syn.Observation(spec_norm, bandpasses[instrument.lower()][filter], binset=spec_norm.waveset)
-                                    result_arrays[instrument.lower()][filter][i,j,k,l] = obs.countrate(area[mode])
+                                    result_arrays[instrument.lower()][filter][i,j,k,l] = obs.countrate(area[instrument.lower()]).value
                                     print(".", end='')
                                 else:
                                     result_arrays[instrument.lower()][filter][i,j,k,l] = 0.
