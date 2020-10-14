@@ -950,13 +950,13 @@ class Instrument(object):
     @property
     def pixel_background_unit(self):
         if isinstance(self.background_value, (int, float)):
-            return self.background_value
+            return self.background_value*u.ct/u.s
         elif self.background_value == 'none':
             self._log("info", "Returning background 0.0 for 'none'")
-            return 0.
+            return 0.*u.ct/u.s
         elif self.background_value == 'custom':
             self._log("info", "Returning background {} for 'custom'".format(self.custom_background))
-            return self.custom_background
+            return self.custom_background*u.ct/u.s
 
         bg = None
         if internet() and self.background_location == '$WEB':
@@ -977,7 +977,7 @@ class Instrument(object):
                 self._log("info", "More complete error: {}".format(repr(e)))
                 message = "Unable to retrieve local cache. Returning background 0.0 for '{}'"
                 self._log("warning", message.format(self.background_value))
-                return 0.
+                return 0.*u.ct/u.s
 
         wave_array = bg.bkg_data['wave_array']
         combined_bg_array = bg.bkg_data['total_bg']
@@ -994,10 +994,10 @@ class Instrument(object):
             flux_array = combined_bg_array[0]
     
         # Convert background flux from MJy/sr to mJy/pixel.
-        #   Conversion: * 1e9 for MJy -> mJy
+        #   Conversion: * 1e6 for MJy -> Jy
         #   Conversion: * 2.3504e-11 for sr^-2 -> arcsec^-2
         #   Conversion: * self.SCALE[0] * self.SCALE[1] for arcsec^-2 -> pixel^-2
-        flux_array_pixels = 1e9 * flux_array * 2.3504e-11 * self.SCALE[0] * self.SCALE[1]
+        flux_array_pixels = 1e6 * flux_array * 2.3504e-11 * self.SCALE[0] * self.SCALE[1] * u.Jy
     
         sp = syn.SourceSpectrum(syn.Empirical1D, points=wave_array*u.micron, 
                                 lookup_table=flux_array_pixels)
