@@ -990,9 +990,11 @@ class Instrument(object):
         else:
             flux_array = combined_bg_array[0]
     
-        # Convert background flux from MJy/sr to Jy/sr.
+# Convert background flux from MJy/sr to mJy/pixel.
         #   Conversion: * 1e6 for MJy -> Jy
-        flux_array_pixels = (1e6 * flux_array)*(u.Jy/u.sr)
+        #   Conversion: * 2.3504e-11 for sr^-2 -> arcsec^-2
+        #   Conversion: * self.SCALE[0] * self.SCALE[1] for arcsec^-2 -> pixel^-2
+        flux_array_pixels = 1e6 * flux_array * 2.3504e-11 * self.SCALE[0] * self.SCALE[1] * u.Jy
     
         sp = syn.SourceSpectrum(syn.Empirical1D, points=wave_array*u.micron, 
                                 lookup_table=flux_array_pixels)
