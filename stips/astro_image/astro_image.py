@@ -1624,7 +1624,7 @@ class AstroImage(object):
     
     
     INSTRUMENT_DEFAULT = {
-                            'telescope': 'wfirst',
+                            'telescope': 'roman',
                             'instrument': 'WFI',
                             'filter': 'F062',
                             'detector': {

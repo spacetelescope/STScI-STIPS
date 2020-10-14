@@ -8,7 +8,7 @@ STIPS Examples
 
 
 * Creating a scene from an existing source catalogue `input_sources.txt`, and observing it with the
-  WFIRST WFI "F129" filter, offset by 0.5 degrees in RA, and rotated by 27 degrees:
+  Roman WFI "F129" filter, offset by 0.5 degrees in RA, and rotated by 27 degrees:
 
 .. code-block:: python
 
