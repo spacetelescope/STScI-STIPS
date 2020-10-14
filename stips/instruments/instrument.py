@@ -909,16 +909,28 @@ class Instrument(object):
         translate_instrument = {
                                     #**WFIRST_REMNANT**
                                     'wfi': 'wfirstimager',
-                                    'wfi': 'romanimager',
+#                                     'wfi': 'romanimager',
                                     'nircamlong': 'nircam',
                                     'nircamshort': 'nircam',
                                     'miri': 'miri'
                                 }
+        instrument = self.INSTRUMENT.lower()
+        if instrument in translate_instrument:
+            instrument = translate_instrument[instrument]
+        
+        translate_telescope = {
+                                'roman': 'wfirst'
+                              }
+        telescope = self.TELESCOPE.lower()
+        if telescope in translate_telescope:
+            telescope = translate_telescope[telescope]
 
-        conf = build_default_calc(self.TELESCOPE.lower(), translate_instrument.get(self.INSTRUMENT.lower(), self.INSTRUMENT.lower()), self.MODE)['configuration']
+        calc = build_default_calc(telescope, instrument, self.MODE)
+        conf = calc['configuration']
         conf['instrument']['filter'] = self.filter.lower()
         
-        self.logger.info("Creating Instrument with Configuration {}".format(conf['instrument']))
+        msg = "Creating Instrument with Configuration {}"
+        self.logger.info(msg.format(conf['instrument']))
         
         self._instrument = InstrumentFactory(config=conf)
         return self._instrument        
