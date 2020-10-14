@@ -429,6 +429,9 @@ class AstroImage(object):
     @property
     def psf_constructor(self):
         import webbpsf
+        #**WFIRST_REMNANT**
+        if not hasattr(webbpsf, self.telescope.lower()) and self.telescope.lower() == 'roman':
+            return getattr(getattr(webbpsf, self.telescope.lower()), self.instrument)()
         return getattr(getattr(webbpsf, self.telescope), self.instrument)()
     
     
