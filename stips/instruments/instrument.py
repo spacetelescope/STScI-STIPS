@@ -36,7 +36,7 @@ else:
 class Instrument(object):
     """
     The Instrument class represents a virtual base class which will be implemented as a variety of
-        JWST, HST, and WFIRST actual instruments. The Instrument class contains:
+        JWST, HST, and Roman actual instruments. The Instrument class contains:
         
         detectors : array of detectors, each an AstroImage, and each with its own RA/DEC
         filter    : string, what filter of the instrument is being observed
@@ -872,8 +872,9 @@ class Instrument(object):
     def get_type(self, bandpass_str):
         if 'miri' in bandpass_str or 'nircam' in bandpass_str:
             return 'jwst'
-        elif 'wfi' in bandpass_str or 'wfirst' in bandpass_str:
-            return 'wfirst'
+        #**WFIRST_REMNANT**
+        elif 'wfi' in bandpass_str or 'wfirst' in bandpass_str or 'roman' in bandpass_str:
+            return 'roman'
         elif 'wfc3' in bandpass_str:
             return 'hst'
         return 'photsys'
@@ -913,16 +914,30 @@ class Instrument(object):
         from pandeia.engine.instrument_factory import InstrumentFactory
     
         translate_instrument = {
+                                    #**WFIRST_REMNANT**
                                     'wfi': 'wfirstimager',
+#                                     'wfi': 'romanimager',
                                     'nircamlong': 'nircam',
                                     'nircamshort': 'nircam',
                                     'miri': 'miri'
                                 }
+        instrument = self.INSTRUMENT.lower()
+        if instrument in translate_instrument:
+            instrument = translate_instrument[instrument]
+        
+        translate_telescope = {
+                                'roman': 'wfirst'
+                              }
+        telescope = self.TELESCOPE.lower()
+        if telescope in translate_telescope:
+            telescope = translate_telescope[telescope]
 
-        conf = build_default_calc(self.TELESCOPE.lower(), translate_instrument.get(self.INSTRUMENT.lower(), self.INSTRUMENT.lower()), self.MODE)['configuration']
+        calc = build_default_calc(telescope, instrument, self.MODE)
+        conf = calc['configuration']
         conf['instrument']['filter'] = self.filter.lower()
         
-        self.logger.info("Creating Instrument with Configuration {}".format(conf['instrument']))
+        msg = "Creating Instrument with Configuration {}"
+        self.logger.info(msg.format(conf['instrument']))
         
         self._instrument = InstrumentFactory(config=conf)
         return self._instrument        
@@ -956,22 +971,22 @@ class Instrument(object):
         if isinstance(self.background_value, (int, float)):
             msg = "Returning background {}."
             self._log("info", msg.format(self.background_value))
-            return self.background_value*u.photon/u.second
+            return self.background_value*u.ct/u.s
         elif self.background_value in ['none', 'low', 'avg', 'high']:
             if self.background_value in self.BACKGROUND:
-                bkg = self.BACKGROUND[self.background_value][self.filter]
+                bkg = self.BACKGROUND[self.background_value][self.filter]*u.ct/u.s
             else:
                 msg = "Background {} not found for {}. Using 0.0 for None"
                 self._log("warning", msg.format(self.background_value,
                                                 self.DETECTOR))
-                bkg = 0.
+                bkg = 0.*u.ct/u.s
             msg = "Returning background {} for '{}'"
             self._log("info", msg.format(bkg, self.background_value))
-            return bkg*u.photon/u.second
+            return bkg*u.ct/u.s
         elif self.background_value == 'custom':
             msg = "Returning background {} for 'custom'"
             self._log("info", msg.format(self.custom_background))
-            return self.custom_background
+            return self.custom_background*u.ct/u.s
         elif "jbt" in self.background_value:
             if ":" in self.background_value:
                 bg_type = self.background_value.split(":")[-1]
@@ -1002,7 +1017,7 @@ class Instrument(object):
                     msg = "Unable to retrieve local cache. Returning "
                     msg += "background 0.0 for '{}'"
                     self._log("warning", msg.format(self.background_value))
-                    return 0.*u.photon/u.second
+                    return 0.*u.ct/u.s
 
             if bg is None:
                 msg = "Unable to retrieve JBT background data."

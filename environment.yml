@@ -37,6 +37,7 @@ dependencies:
   - synphot
   - stsynphot
   - esutil
+  - jupyter
 
   # Major modules
   - webbpsf>=0.9.0

@@ -29,7 +29,7 @@ Version 1.0.7
 - Docker file added for ease of install. [:pr:`48`, :user:`robelgeda`]
 - environment.yml added for easy conda env build. [:pr:`42`, :user:`robelgeda`]
 - Read the Docs documentation established. [:pr:`55`, :user:`robelgeda`]
-- F062 filter added to WFIRST WFI. [:pr:`51`, :user:`york-stsci`]
+- F062 filter added to Roman WFI. [:pr:`51`, :user:`york-stsci`]
 - Update STIPS to use WbbPSF 0.9.0. [:pr:`51`, :user:`york-stsci`]
 - Travis CI initiated for unit and regression testing. [:pr:`40`, :user:`robelgeda`]
 - Python version set to 3.7 [:pr:`40`, :user:`robelgeda`]
