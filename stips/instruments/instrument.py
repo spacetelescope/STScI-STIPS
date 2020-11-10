@@ -35,7 +35,7 @@ else:
 class Instrument(object):
     """
     The Instrument class represents a virtual base class which will be implemented as a variety of
-        JWST, HST, and WFIRST actual instruments. The Instrument class contains:
+        JWST, HST, and Roman actual instruments. The Instrument class contains:
         
         detectors : array of detectors, each an AstroImage, and each with its own RA/DEC
         filter    : string, what filter of the instrument is being observed
@@ -865,8 +865,9 @@ class Instrument(object):
     def get_type(self, bandpass_str):
         if 'miri' in bandpass_str or 'nircam' in bandpass_str:
             return 'jwst'
-        elif 'wfi' in bandpass_str or 'wfirst' in bandpass_str:
-            return 'wfirst'
+        #**WFIRST_REMNANT**
+        elif 'wfi' in bandpass_str or 'wfirst' in bandpass_str or 'roman' in bandpass_str:
+            return 'roman'
         elif 'wfc3' in bandpass_str:
             return 'hst'
         return 'photsys'
@@ -906,16 +907,30 @@ class Instrument(object):
         from pandeia.engine.instrument_factory import InstrumentFactory
     
         translate_instrument = {
+                                    #**WFIRST_REMNANT**
                                     'wfi': 'wfirstimager',
+#                                     'wfi': 'romanimager',
                                     'nircamlong': 'nircam',
                                     'nircamshort': 'nircam',
                                     'miri': 'miri'
                                 }
+        instrument = self.INSTRUMENT.lower()
+        if instrument in translate_instrument:
+            instrument = translate_instrument[instrument]
+        
+        translate_telescope = {
+                                'roman': 'wfirst'
+                              }
+        telescope = self.TELESCOPE.lower()
+        if telescope in translate_telescope:
+            telescope = translate_telescope[telescope]
 
-        conf = build_default_calc(self.TELESCOPE.lower(), translate_instrument.get(self.INSTRUMENT.lower(), self.INSTRUMENT.lower()), self.MODE)['configuration']
+        calc = build_default_calc(telescope, instrument, self.MODE)
+        conf = calc['configuration']
         conf['instrument']['filter'] = self.filter.lower()
         
-        self.logger.info("Creating Instrument with Configuration {}".format(conf['instrument']))
+        msg = "Creating Instrument with Configuration {}"
+        self.logger.info(msg.format(conf['instrument']))
         
         self._instrument = InstrumentFactory(config=conf)
         return self._instrument        
@@ -990,7 +1005,7 @@ class Instrument(object):
         else:
             flux_array = combined_bg_array[0]
     
-# Convert background flux from MJy/sr to mJy/pixel.
+        # Convert background flux from MJy/sr to mJy/pixel.
         #   Conversion: * 1e6 for MJy -> Jy
         #   Conversion: * 2.3504e-11 for sr^-2 -> arcsec^-2
         #   Conversion: * self.SCALE[0] * self.SCALE[1] for arcsec^-2 -> pixel^-2

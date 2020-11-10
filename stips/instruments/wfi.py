@@ -12,12 +12,12 @@ from astropy.io import fits as pyfits
 #Local Modules
 from ..astro_image import AstroImage
 from .instrument import Instrument
-from .wfirst_instrument import WfirstInstrument
+from .roman_instrument import RomanInstrument
 from ..utilities import OffsetPosition, SelectParameter
 
 from .. import __version__ as stips_version
 
-class WFI(WfirstInstrument):
+class WFI(RomanInstrument):
     __classtype__ = "detector"
     """
     The WFI class contains the necessary constants and modifications to run WFI
@@ -81,6 +81,7 @@ class WFI(WfirstInstrument):
                 10: (0., 0., 0.), 11: (0., 0., 0.), 12: (0., 0., 0.), 
                 13: (0., 0., 0.), 14: (0., 0., 0.), 15: (0., 0., 0.), 
                 16: (0., 0., 0.), 17: (0., 0., 0.), 18: (0., 0., 0.)}
+    #**WFIRST_REMNANT**
     # This is a set of offsets derived from "WFIRST-STSCI-TR1506A"
     #
     # Since that document doesn't actually cover the column offsets, they are 
@@ -139,6 +140,7 @@ class WFI(WfirstInstrument):
                       ( 108.507, -41.309), ( 109.282,  7.002), ( 110.409, 50.353),
                    )
     
+    #**WFIRST_REMNANT**
     # From WFIRST-STScI-TR1506A(3).pdf, 2.5mm=27.5", and 8.564mm=94.2"
     DETECTOR_MM_ARCSEC = 11.
     

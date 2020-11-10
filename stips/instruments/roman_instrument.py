@@ -4,7 +4,7 @@ __filetype__ = "base"
 #Local Modules
 from .instrument import Instrument
 
-class WfirstInstrument(Instrument):
+class RomanInstrument(Instrument):
     """
     The JwstInstrument class contains the necessary constants and modifications specific to JWST
         but independent of any specific instrument. This class is also not intended to be 
@@ -19,7 +19,7 @@ class WfirstInstrument(Instrument):
         """
         Still only a base class. Init is super init.
         """
-        super(WfirstInstrument,self).__init__(**kwargs)
+        super(RomanInstrument,self).__init__(**kwargs)
         self.REFS = {   'comptable': self.COMPFILES[-1],
                         'graphtable': self.GRAPHFILES[-1],
                         'thermtable': self.THERMFILES[-1],
@@ -27,7 +27,7 @@ class WfirstInstrument(Instrument):
                         'waveset': (500,26000,10000.,'log')
                     }
     
-    TELESCOPE = 'WFIRST'
+    TELESCOPE = 'ROMAN'
     AREA = 45238.93416
     DBNAME = "IsochroneGrid.db"
     MODE = 'imaging'
