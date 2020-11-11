@@ -55,7 +55,7 @@ RUN pip install -U setuptools
 WORKDIR /opt
 
 # Extract STIPS reference data
-RUN wget -qO- https://stsci.box.com/v/stips-data-1-0-9-tgz | tar xvz
+RUN wget -qO- https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz | tar xvz
 ENV stips_data /opt/stips_data
 
 # Extract PySynphot reference data
