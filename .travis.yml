@@ -19,7 +19,7 @@ addons:
 env:
     global:
         # Define Conda Version
-#        - MINICONDA_VERSION=py37_4.8.3
+        - MINICONDA_VERSION=py37_4.8.2
     
         # The following versions are the 'default' for tests, unless
         # overridden underneath. They are defined here in order to save having
