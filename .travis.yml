@@ -177,11 +177,33 @@ install:
     # in how to install a package, in which case you can have additional
     # commands in the install: section below.
 
-    - echo "Starting ci-helpers install"
-    - git clone --depth 1 git://github.com/astropy/ci-helpers.git
-    - echo "Git cloned"
-    - source ci-helpers/travis/setup_conda.sh
-    - echo "Miniconda Installed"
+#    - echo "Starting ci-helpers install"
+#    - git clone --depth 1 git://github.com/astropy/ci-helpers.git
+#    - echo "Git cloned"
+#    - source ci-helpers/travis/setup_conda.sh
+#    - echo "Miniconda Installed"
+
+    # Now trying to do this with miniconda directly instead of via ci-helpers
+
+    # We do this conditionally because it saves us some downloading if the
+    # version is the same.
+    - if [[ "$PYTHON_VERSION" == "2.7" ]]; then
+        wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+      else
+        wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+      fi
+    - bash miniconda.sh -b -p $HOME/miniconda
+    - source "$HOME/miniconda/etc/profile.d/conda.sh"
+    - hash -r
+    - conda config --set always_yes yes --set changeps1 no
+    - conda update -q conda
+    # Useful for debugging any issues with conda
+    - conda info -a
+
+    # Replace dep1 dep2 ... with your dependencies
+    - conda create -q -n stips python=$PYTHON_VERSION
+    - conda activate test-environment
+    - echo "Finished Conda Install"
 
     # As described above, using ci-helpers, you should be able to set up an
     # environment with dependencies installed using conda and pip, but in some
