@@ -86,15 +86,11 @@ class ObservationModule(object):
             self.dec = kwargs['scene_general'].get('dec', 0.0)
             self.pa = kwargs['scene_general'].get('pa', 0.0)
             self.seed = kwargs['scene_general'].get('seed', 0)
-            if 'cache' in kwargs['scene_general'] and not hasattr(self, 'use_local_cache'):
-                self.use_local_cache = kwargs['scene_general']['cache']
         else:
             self.ra = kwargs.get('ra', 0.0)
             self.dec = kwargs.get('dec', 0.0)
             self.pa = kwargs.get('pa', 0.0)
             self.seed = kwargs.get('seed', 0)
-            if not hasattr(self, 'use_local_cache'):
-                self.use_local_cache = kwargs.get('cache', False)
         if 'residual' in kwargs:
             kwdict = kwargs['residual']
             self.residual_flat = SelectParameter('residual_flat', kwdict)
@@ -154,7 +150,12 @@ class ObservationModule(object):
         """
         scale = (self.instrument.SCALE[0],self.instrument.SCALE[1])
         try:
-            bg = self.instrument.BGTEXT[self.background]
+            if isinstance(self.background, (int, float)):
+                bg = "Set to {}".format(self.background)
+            elif self.background in self.instrument.BGTEXT:
+                bg = self.instrument.BGTEXT[self.background]
+            else:
+                bg = "Custom {}".format(self.background)
         except Exception as e:
             self.logger.error("Error Parsing Background: {}".format(e))
             bg = 'None'

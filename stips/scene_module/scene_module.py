@@ -173,7 +173,7 @@ class SceneModule(object):
                     'distribution': distribution, 'clustered': clustered, 'radius': radius,
                     'radius_units': rad_units, 'dist_l': dist_l, 'dist_h': dist_h, 
                     'offset_ra': offset_ra, 'offset_dec': offset_dec, 
-                    'name': 'Phoenix Stellar Population Table'}
+                    'name': 'Phoenix Stellar Population Table', 'bandpass': 'johnson,i'}
         data_table.meta = metadata
 
         self._log("info","Creating age and metallicity numbers")
@@ -256,18 +256,18 @@ class SceneModule(object):
 
                     t = Table()
                     t['id'] = Column(data=ids, format="%8d")
-                    t['ra'] = Column(data=ras, unit='degrees', format="%17.9e")
-                    t['dec'] = Column(data=decs, unit='degrees', format="%17.9e")
+                    t['ra'] = Column(data=ras, unit=u.deg, format="%17.9e")
+                    t['dec'] = Column(data=decs, unit=u.deg, format="%17.9e")
                     t['distance'] = Column(data=distances, unit='pc', format="%17.9e")
-                    t['age'] = Column(data=np.full_like(ids, age), unit='years', format="%17d")
+                    t['age'] = Column(data=np.full_like(ids, age), unit=u.yr, format="%17d")
                     t['metallicity'] = Column(data=np.full_like(ras, met), format="%4.1f")
-                    t['mass'] = Column(data=masses,unit='solar masses', format="%17.9e")
+                    t['mass'] = Column(data=masses,unit=u.Msun, format="%17.9e")
                     t['teff'] = Column(data=temps, unit='K', format="%13.8f")
                     t['log_g'] = Column(data=gravs, format="%12.9f")
                     t['binary'] = Column(data=binaries, format="%3d")
                     t['dataset'] = Column(data=np.full_like(ids, datasets), format="%6d")
-                    t['absolute'] = Column(data=rates,unit='johnson,i', format="%14.6e")
-                    t['apparent'] = Column(data=apparent_rates,unit='johnson,i', format="%12.4e")
+                    t['absolute'] = Column(data=rates,unit=u.mag, format="%14.6e")
+                    t['apparent'] = Column(data=apparent_rates,unit=u.mag, format="%12.4e")
                     data_table.write_chunk(t)
                     del t
                 datasets += 1
@@ -440,21 +440,21 @@ class SceneModule(object):
                     'radius_l': r_l, 'radius_h': r_h, 'sb_v_l': m_l, 'sb_v_h': m_h,
                     'distribution': distribution, 'clustered': clustered, 'radius': radius,
                     'radius_units': rad_units, 'offset_ra': offset_ra, 'offset_dec': offset_dec,
-                    'name': 'Galaxy Population Table'}
+                    'name': 'Galaxy Population Table', 'bandpass': 'johnson,v'}
         data_table.meta = metadata
         t = Table()
         t['id'] = Column(data=ids)
-        t['ra'] = Column(data=ras,unit='degrees')
-        t['dec'] = Column(data=decs,unit='degrees')
+        t['ra'] = Column(data=ras,unit=u.deg)
+        t['dec'] = Column(data=decs,unit=u.deg)
         t[z_label] = Column(data=zs)
         t['model'] = Column(data=models)
-        t['age'] = Column(data=ages,unit='years')
+        t['age'] = Column(data=ages,unit=u.yr)
         t['profile'] = Column(data=types)
         t['radius'] = Column(data=rads)
-        t['axial_ratio'] = Column(data=axials,unit='degrees')
-        t['pa'] = Column(data=angles,unit='degrees')
-        t['absolute_surface_brightness'] = Column(data=vmags_abs,unit='johnson,v')
-        t['apparent_surface_brightness'] = Column(data=vmags,unit='johnson,v')
+        t['axial_ratio'] = Column(data=axials,unit=u.deg)
+        t['pa'] = Column(data=angles,unit=u.deg)
+        t['absolute_surface_brightness'] = Column(data=vmags_abs,unit=u.mag)
+        t['apparent_surface_brightness'] = Column(data=vmags,unit=u.mag)
         data_table.write_chunk(t)
         self._log("info","Done creating catalogue")
         return outList

@@ -422,12 +422,14 @@ def SelectParameter(name, override_dict=None, config_file=None):
     return None
 
 #-----------
-def GetParameter(param, config_file=None, use_environ=True, use_data=True):
+def GetParameter(param, config_file=None, use_provided=True, use_cwd=True, 
+                 use_environ=True, use_data=True):
     """
     Retrieve a parameter from the STIPS configuration file. This function looks
     for the STIPS configuration file as follows (returning the first file found)
     
     - If a file is provided to the function, check that file
+    - If there is a stips_config.yaml in the current directory, check that file
     - If there is a stips_config environment variable, check that file
     - If there is a "stips_config.yaml" file in stips_data, check that file
     - Check the internal data/stips_config.yaml file.
@@ -453,12 +455,17 @@ def GetParameter(param, config_file=None, use_environ=True, use_data=True):
     local_data_dir = os.path.join(local_dir, "..", "..", "data")
     local_config_file = os.path.join(local_data_dir, "stips_config.yaml")
     local_config = os.path.abspath(local_config_file)
+    cwd_config = os.path.join(os.getcwd(), "stips_config.yaml")
     data_config = os.path.join(stips_data_dir, "stips_config.yaml")
+    env_config = os.environ.get('stips_config', None)
     
-    if config_file is not None and os.path.isfile(config_file):
+    if config_file is not None and os.path.isfile(config_file) and use_provided:
         conf_file = config_file
         file_used = "provided"
-    elif use_environ and 'stips_config' in os.environ:
+    elif os.path.isfile(cwd_config) and use_cwd:
+        conf_file = cwd_config
+        file_used = "cwd"
+    elif 'stips_config' in os.environ and use_environ:
         conf_dir = os.environ['stips_config']
         if os.path.isfile(conf_dir):
             file_used = "environ"
@@ -466,7 +473,7 @@ def GetParameter(param, config_file=None, use_environ=True, use_data=True):
         elif os.path.isfile(os.path.join(conf_dir, 'stips_config.yaml')):
             file_used = "environ"
             conf_file = os.path.join(conf_dir, 'stips_config.yaml')
-    elif use_data and os.path.isfile(data_config):
+    elif os.path.isfile(data_config) and use_data:
         file_used = "data"
         conf_file = data_config
     elif os.path.isfile(local_config):
@@ -481,15 +488,20 @@ def GetParameter(param, config_file=None, use_environ=True, use_data=True):
     elif param not in settings and file_used == "provided":
         # Try without the supplied config file in case it doesn't include
         #   the full set of parameters
-        return GetParameter(param)
+        return GetParameter(param, use_provided=False)
+    elif param not in settings and file_used == "cwd":
+        # Try turning off the cwd flag as well
+        return GetParameter(param, use_provided=False, use_cwd=False)
     elif param not in settings and file_used == "environ":
         # Try without the environment variable config in case it doesn't include
         #   the full set of parameters
-        return GetParameter(param, use_environ=False)
+        return GetParameter(param, use_provided=False, use_cwd=False, 
+                            use_environ=False)
     elif param not in settings and file_used == "data":
         # Try without the stips_data config in case it doesn't include
         #   the full set of parameters
-        return GetParameter(param, use_environ=False, use_data=False)
+        return GetParameter(param, use_provided=False, use_cwd=False, 
+                            use_environ=False, use_data=False)
         
     return None
 

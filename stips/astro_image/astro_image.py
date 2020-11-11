@@ -6,6 +6,7 @@ import logging, os, shutil, sys, time, uuid
 
 import numpy as np
 
+from astropy import units as u
 from astropy import wcs
 from astropy.io import fits
 from astropy.table import Table, Column
@@ -548,7 +549,7 @@ class AstroImage(object):
             ot['type'] = Column(data=types)
             ot['vegamag'] = Column(data=vegamags)
             ot['stmag'] = Column(data=stmags)
-            ot['countrate'] = Column(data=fluxes_observed, unit='counts/s')
+            ot['countrate'] = Column(data=fluxes_observed, unit=(u.photon/u.second))
             ot['id'] = Column(data=ids)
             ot['notes'] = Column(data=notes)
         return ot

@@ -41,8 +41,10 @@ parallel_ncores : 0
 observation_detector_oversample : 1
 
 # Default Background
-#   - can be none/avg/min/med/max as keywords
-#   - can be 'jbt' to use the JBT background tool
+#   - can be none/low/avg/high as keywords
+#   - can be 'jbt' to use the JBT background tool. If 'jbt' will return the mean
+#       value. If jbt:val, will return val, where val is one of 
+#       min/mean/median/max
 #   - can be a floating point
 observation_default_background : 0.0
 
