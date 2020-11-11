@@ -949,7 +949,7 @@ class AstroImage(object):
 
     def rotate(self,angle,reshape=False):
         """
-        Rotate the image a number of radians as specified
+        Rotate the image a number of degrees as specified
         
         ..warning:: This function is not necessarily flux-conserving
         """
