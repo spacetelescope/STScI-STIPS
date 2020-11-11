@@ -201,8 +201,9 @@ install:
     - conda info -a
 
     # Replace dep1 dep2 ... with your dependencies
-    - conda create -q -n stips python=$PYTHON_VERSION
-    - conda activate test-environment
+    - git clone git://github.com/spacetelescope/STScI-STIPS.git
+    - conda env create -n stips -f STScI-STIPS/environment.yml
+    - conda activate stips
     - echo "Finished Conda Install"
 
     # As described above, using ci-helpers, you should be able to set up an
