@@ -125,7 +125,7 @@ before_install:
     # Download stips data
     - wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O $TEST_DATA_PATH/stips_data_current.tar.gz
     - tar -xzvf $TEST_DATA_PATH/stips_data_current.tar.gz -C $TEST_DATA_PATH/
-    - export stips_data=$TEST_DATA_PATH/stips_data
+    - export stips_data=$TEST_DATA_PATH/stips_data-1.0.9
 
     # download synphot data
     - mkdir $TEST_DATA_PATH/synphot
