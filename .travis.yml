@@ -19,7 +19,8 @@ addons:
 env:
     global:
         # Define Conda Version
-        - MINICONDA_VERSION=py37_4.8.3
+        - MINICONDA_VERSION='py37_4.8.3'
+        - CONDA_OS='Linux'
     
         # The following versions are the 'default' for tests, unless
         # overridden underneath. They are defined here in order to save having
@@ -94,6 +95,7 @@ matrix:
         - name: "MacOS X"
           os: osx
           env: EVENT_TYPE='cron'
+               CONDA_OS='MacOSX'
 
 
         # Add a job that runs from cron only and tests against astropy dev and
@@ -109,7 +111,9 @@ matrix:
         # ---------------------
         - name: "veryslow"
           os: linux
-          env: SETUP_CMD='test' VERYSLOW=true
+          env: SETUP_CMD='test' 
+               VERYSLOW=true
+               MAIN_CMD='travis_wait 45 python setup.py'
 
     allow_failures:
 
@@ -123,9 +127,9 @@ before_install:
     - TEST_DATA_PATH=$TRAVIS_BUILD_DIR/test_data
 
     # Download stips data
-    - wget https://stsci.box.com/shared/static/iufbhsiu0lts16wmdsi12cun25888nrb.gz -O $TEST_DATA_PATH/stips_data_current.tar.gz
+    - wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O $TEST_DATA_PATH/stips_data_current.tar.gz
     - tar -xzvf $TEST_DATA_PATH/stips_data_current.tar.gz -C $TEST_DATA_PATH/
-    - export stips_data=$TEST_DATA_PATH/stips_data
+    - export stips_data=$TEST_DATA_PATH/stips_data-1.0.9
 
     # download synphot data
     - mkdir $TEST_DATA_PATH/synphot
@@ -177,8 +181,34 @@ install:
     # in how to install a package, in which case you can have additional
     # commands in the install: section below.
 
-    - git clone --depth 1 git://github.com/astropy/ci-helpers.git
-    - source ci-helpers/travis/setup_conda.sh
+#    - echo "Starting ci-helpers install"
+#    - git clone --depth 1 git://github.com/astropy/ci-helpers.git
+#    - echo "Git cloned"
+#    - source ci-helpers/travis/setup_conda.sh
+#    - echo "Miniconda Installed"
+
+    # Now trying to do this with miniconda directly instead of via ci-helpers
+
+    # We do this conditionally because it saves us some downloading if the
+    # version is the same.
+    - if [[ "$PYTHON_VERSION" == "2.7" ]]; then
+        wget https://repo.continuum.io/miniconda/Miniconda2-latest-$CONDA_OS-x86_64.sh -O miniconda.sh;
+      else
+        wget https://repo.continuum.io/miniconda/Miniconda3-$MINICONDA_VERSION-$CONDA_OS-x86_64.sh -O miniconda.sh;
+      fi
+    - bash miniconda.sh -b -p $HOME/miniconda
+    - source "$HOME/miniconda/etc/profile.d/conda.sh"
+    - hash -r
+    - conda config --set always_yes yes --set changeps1 no
+    - conda update -q conda
+    # Useful for debugging any issues with conda
+    - conda info -a
+
+    # Replace dep1 dep2 ... with your dependencies
+    - git clone git://github.com/spacetelescope/STScI-STIPS.git
+    - conda env create -n stips -f STScI-STIPS/environment.yml
+    - conda activate stips
+    - echo "Finished Conda Install"
 
     # As described above, using ci-helpers, you should be able to set up an
     # environment with dependencies installed using conda and pip, but in some

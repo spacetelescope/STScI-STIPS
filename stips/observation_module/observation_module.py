@@ -115,7 +115,8 @@ class ObservationModule(object):
                 self.instrument_name = self.instrument_name.decode('utf8')
         else:
             self.instrument_name = self.instrument_name.encode('ascii')
-        if self.instrument_name == 'WFIRST':
+        #**WFIRST_REMNANT**
+        if self.instrument_name == 'WFIRST' or self.instrument_name == 'ROMAN':
             self.instrument_name = 'WFI'
         
         self.observations = []

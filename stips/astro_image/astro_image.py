@@ -430,6 +430,11 @@ class AstroImage(object):
     @property
     def psf_constructor(self):
         import webbpsf
+        #**WFIRST_REMNANT**
+        if not hasattr(webbpsf, self.telescope.lower()) and self.telescope.lower() == 'roman':
+            return getattr(getattr(webbpsf, 'wfirst'), self.instrument)()
+        if hasattr(webbpsf, self.instrument):
+            return getattr(webbpsf, self.instrument)()
         return getattr(getattr(webbpsf, self.telescope), self.instrument)()
     
     
@@ -946,7 +951,7 @@ class AstroImage(object):
 
     def rotate(self,angle,reshape=False):
         """
-        Rotate the image a number of radians as specified
+        Rotate the image a number of degrees as specified
         
         ..warning:: This function is not necessarily flux-conserving
         """
@@ -1625,7 +1630,7 @@ class AstroImage(object):
     
     
     INSTRUMENT_DEFAULT = {
-                            'telescope': 'wfirst',
+                            'telescope': 'roman',
                             'instrument': 'WFI',
                             'filter': 'F062',
                             'detector': {
