@@ -111,7 +111,9 @@ matrix:
         # ---------------------
         - name: "veryslow"
           os: linux
-          env: SETUP_CMD='test' VERYSLOW=true
+          env: SETUP_CMD='test' 
+               VERYSLOW=true
+               MAIN_CMD='travis_wait 45 python setup.py'
 
     allow_failures:
 
