@@ -28,6 +28,7 @@ env:
         - PYTHON_VERSION=3.7
         - NUMPY_VERSION=stable
         - ASTROPY_VERSION=stable
+        - MAIN_PREAMBLE=''
         - MAIN_CMD='python setup.py'
         - SETUP_CMD='test'
         - VERYSLOW='false'
@@ -113,7 +114,7 @@ matrix:
           os: linux
           env: SETUP_CMD='test' 
                VERYSLOW=true
-               MAIN_CMD='travis_wait 45 python setup.py'
+               MAIN_PREAMBLE='travis_wait 45'
 
     allow_failures:
 
@@ -129,7 +130,7 @@ before_install:
     # Download stips data
     - wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O $TEST_DATA_PATH/stips_data_current.tar.gz
     - tar -xzvf $TEST_DATA_PATH/stips_data_current.tar.gz -C $TEST_DATA_PATH/
-    - export stips_data=$TEST_DATA_PATH/stips_data-1.0.9
+    - export stips_data=$TEST_DATA_PATH/stips_data
 
     # download synphot data
     - mkdir $TEST_DATA_PATH/synphot
@@ -223,7 +224,7 @@ install:
     #- conda activate stips
 
 script:
-   - $MAIN_CMD $SETUP_CMD "${extra_args[@]}"
+   - $MAIN_PREAMBLE $MAIN_CMD $SETUP_CMD "${extra_args[@]}"
 
 after_success:
     # If coveralls.io is set up for this package, uncomment the line below.

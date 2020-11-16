@@ -40,10 +40,10 @@ except ImportError:
             sys.path.insert(1, a_h_path)
 
 def setup(app):
-    app.add_stylesheet("stsci.css")
+    app.add_css_file("stsci.css")
 
 # Load all of the global Astropy configuration
-from astropy_helpers.sphinx.conf import *
+from sphinx_astropy.conf import *
 
 # Get configuration information from setup.cfg
 try:
