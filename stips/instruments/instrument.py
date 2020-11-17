@@ -520,9 +520,11 @@ class Instrument(object):
         gravs = table['log_g']
         metallicities = table['metallicity']
         apparents = table['apparent']
-        norm_bp = '{}'.format(apparents.unit)
-        if norm_bp == '':
+        norm_bp = table.meta['BANDPASS']
+        self._log("info", "Normalization Bandpass is {} ({})".format(norm_bp, type(norm_bp)))
+        if norm_bp == '' or norm_bp is None or norm_bp == 'None':
             norm_bp = 'johnson,i'
+        self._log("info", "Normalization Bandpass is {}".format(norm_bp))
         rates = np.zeros_like(ras)
         for index in range(len(ids)):
             t, g, Z, a = temps[index], gravs[index], metallicities[index], apparents[index]
@@ -557,9 +559,11 @@ class Instrument(object):
         decs = table['dec']
         keys = table['key']
         apparents = table['apparent']
-        norm_bp = '{}'.format(apparents.unit)
-        if norm_bp == '':
+        norm_bp = table.meta['BANDPASS']
+        self._log("info", "Normalization Bandpass is {} ({})".format(norm_bp, type(norm_bp)))
+        if norm_bp == '' or norm_bp is None or norm_bp == 'None':
             norm_bp = 'johnson,i'
+        self._log("info", "Normalization Bandpass is {}".format(norm_bp))
         rates = np.array((), dtype='float32')
         for a, key in zip(apparents, keys):
             config = {'sed_type': 'phoenix', 'key': key}
