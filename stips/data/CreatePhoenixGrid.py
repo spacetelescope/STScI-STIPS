@@ -81,6 +81,9 @@ if __name__ == '__main__':
     print(coords)
     bandpasses = {}
     result_arrays = {}
+    grid_path = os.path.join(os.getcwd(), "grid")
+    if not os.path.exists(grid_path):
+        os.makedirs(grid_path)
 
     instruments = InstrumentList()
     print("{}: Making Bandpasses...".format(time.ctime()))
