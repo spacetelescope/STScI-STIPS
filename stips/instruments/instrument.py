@@ -644,7 +644,7 @@ class Instrument(object):
                 msg = 'Source {} of {}: Pysynphot Error {} encountered'
                 self._log('warning', msg.format(i, total, e))
                 rate = 0.
-            except SynphotError as e:
+            except syn.exceptions.SynphotError as e:
                 msg = 'Source {} of {}: Synphot Error {} encountered'
                 self._log('warning', msg.format(i, total, e))
                 rate = 0.
