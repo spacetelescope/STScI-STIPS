@@ -73,7 +73,7 @@ class NIRCamBase(JwstInstrument):
     PSF_INSTRUMENT = "NIRCam"
     
     DISTORTION = {
-                    'A1': { 'DIST_A': [[0.,             0.,             0.,             0.,             0.,             0.],
+                    "NRCA1": { 'DIST_A': [[0.,             0.,             0.,             0.,             0.,             0.],
                                        [3.11450E-2,     0.,             0.,             0.,             0.,             0.],
                                        [3.19296E-9,     -2.09854E-7,    -3.45451E-8,    0.,             0.,             0.],
                                        [9.98433E-12,    2.07312E-12,    1.16144E-11,    1.02269E-12,    0.,             0.],
@@ -85,7 +85,7 @@ class NIRCamBase(JwstInstrument):
                                        [6.20123E-13,    9.58663E-12,    1.63279E-12,    1.13863E-11,    0.,             0.],
                                        [-1.42E-16,      -6.51E-16,      -1.15E-15,      -6.25E-16,      -9.33E-16,      0.],
                                        [4.18516E-21,    1.55935E-19,    1.75359E-20,    2.92096E-19,    1.22758E-20,    1.34127E-19]]},
-                    'A2': { 'DIST_A': [[0.,             0.,             0.,             0.,             0.,             0.],
+                    "NRCA2": { 'DIST_A': [[0.,             0.,             0.,             0.,             0.,             0.],
                                        [3.07617E-2,     3.27971E-18,    0.,             0.,             0.,             0.],
                                        [3.78692E-9,     -1.66075E-7,    -3.29971E-8,    0.,             0.,             0.],
                                        [9.39581E-12,    -1.85616E-12,   9.90046E-12,    -4.16255E-13,   0.,             0.],
@@ -296,7 +296,7 @@ class NIRCamShort(NIRCamBase):
     # Detector Offsets are RELATIVE TO INSTRUMENT OFFSET
     DETECTOR_OFFSETS = ((123.24,-33.69,1.21),(123.24,35.37,1.04),(53.67,-33.69,0.62),(53.67,35.37,0.03),
                         (-123.27,33.51,-1.04),(-123.27,-36.33,-1.21),(-53.49,33.51,-0.03),(-53.49,-36.33,-0.62))
-    OFFSET_NAMES = ("A1","A2","A3","A4","B1","B2","B3","B4")
+    OFFSET_NAMES = ("NRCA1","NRCA2","NRCA3","NRCA4","NRCB1","NRCB2","NRCB3","NRCB4")
     # N_DETECTORS is a set of options on how many of the instrument's detectors you want to use
     N_DETECTORS = [1, 4, 8]
     N_OFFSET = {1: (123.24, -33.69, 1.21), 4: (88.17, -1.35, 0.775), 8: (0., 0., 0.)}
@@ -337,7 +337,7 @@ class NIRCamLong(NIRCamBase):
     # N_DETECTORS is a set of options on how many of the instrument's detectors you want to use
     N_DETECTORS = [1, 2]
     N_OFFSET = {1: (88.17, 1.35, 1.21), 2: (0., 0., 0.)}
-    OFFSET_NAMES = ("A5","B5")
+    OFFSET_NAMES = ("NRCA5","NRCB5")
     SCALE = [0.063, 0.063] #arcsec/pixel
     FILTERS = ('F250M','F277W','F300M','F323N','F335M','F356W','F360M','F405N','F410M','F430M',
                'F444W','F460M','F466N','F470N','F480M')

@@ -13,6 +13,7 @@ from __future__ import absolute_import, division, print_function
 import copy, os, sys
 from astropy.io import ascii, fits
 from astropy.table import Table
+from collections import OrderedDict
 
 if sys.version_info[0] >= 3:
     from io import StringIO
@@ -114,34 +115,6 @@ class StipsFitsTable(StipsDataTable):
             try:
                 new_hdu = fits.table_to_hdu(chunk)
             except Exception as e:
-#                 i = 0
-#                 try:
-#                     for row in chunk:
-#                         print(type(row))
-#                         print(type(chunk[i]))
-#                         print(type(chunk[i:i+1]))
-#                         test = copy.deepcopy(chunk[i:i+1])
-#                         print(type(test))
-#                         test_hdu = fits.table_to_hdu(test)
-#                         i += 1
-#                 except Exception as o:
-#                     print("Row {} failed".format(i))
-#                     print(test)
-#                     j = ""
-#                     try:
-#                         for col in test.colnames:
-#                             print("Testing {}".format(col))
-#                             j = col
-#                             test_col = copy.deepcopy(test)
-#                             for tcol in test_col.colnames:
-#                                 if tcol != col:
-#                                     print("Removing {}".format(tcol))
-#                                     test_col.remove_column(tcol)
-#                             print(type(test_col))
-#                             test_col_hdu = fits.table_to_hdu(test_col)
-#                     except Exception as oo:
-#                         print("Column {} failed".format(j))
-#                         print("{} ({}) ({})".format(test_col, type(test_col[j][i]), test_col[j][i].dtype))
                 raise e
             hdulist.insert(self._current_chunk, new_hdu)
             if advance:
@@ -163,6 +136,11 @@ class StipsIpacTable(StipsDataTable):
             if i == n_lines:
                 break
         t = Table.read(lines, format=format)
+        if "keywords" in t.meta:
+            meta = OrderedDict()
+            for item in t.meta["keywords"]:
+                meta[item] = t.meta["keywords"][item]["value"]
+            t.meta = meta
         return t.columns, t.meta
 
     @staticmethod
@@ -177,17 +155,26 @@ class StipsIpacTable(StipsDataTable):
             if i % n_chunk == n_chunk - 1:
                 if i < n_chunk:  # first
                     chunk = ascii.read(lines, format=format, guess=False)
-                    names = chunk.colnames
+                    names, meta = StipsIpacTable.read_metadata(filename, format=format)
+                    chunk.meta = meta
                     yield chunk
                 else:
                     chunk = ascii.read(lines, format='no_header', names=names, guess=False)
+                    names, meta = StipsIpacTable.read_metadata(filename, format=format)
+                    chunk.meta = meta
                     yield chunk
                 lines = []
         if lines:
             if names is not None:
-                yield ascii.read(lines, format='no_header', names=names, guess=False)
+                chunk = ascii.read(lines, format='no_header', names=names, guess=False)
+                names, meta = StipsIpacTable.read_metadata(filename, format=format)
+                chunk.meta = meta
+                yield chunk
             else:
-                yield ascii.read(lines, format=format, guess=False)
+                chunk = ascii.read(lines, format=format, guess=False)
+                names, meta = StipsIpacTable.read_metadata(filename, format=format)
+                chunk.meta = meta
+                yield chunk
     
     def read_chunk(self, chunk=None, advance=True, set=True):
         if not hasattr(self, "_iterator"):
@@ -232,7 +219,5 @@ class StipsIpacTable(StipsDataTable):
                 lines.append(line.rstrip(os.linesep))
                 if i == self.chunk_size:
                     break
-        t = Table.read(lines, format=self.format, guess=False)
-        return (t.colnames, t.meta)
+        return self.read_metadata(self.file, format=self.format)
 
-   
