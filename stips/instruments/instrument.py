@@ -644,6 +644,10 @@ class Instrument(object):
                 msg = 'Source {} of {}: Pysynphot Error {} encountered'
                 self._log('warning', msg.format(i, total, e))
                 rate = 0.
+            except SynphotError as e:
+                msg = 'Source {} of {}: Synphot Error {} encountered'
+                self._log('warning', msg.format(i, total, e))
+                rate = 0.
             rates = np.append(rates, rate)
             indices = np.append(indices, proflist[profile])
             note = "BC95_{}_{}_{}".format(model, stringify(age), mag)
