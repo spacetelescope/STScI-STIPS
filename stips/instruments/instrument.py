@@ -12,6 +12,7 @@ from astropy import units as u
 from astropy.io import fits as pyfits
 from astropy.table import Table, Column
 from functools import wraps
+from pandeia.engine.custom_exceptions import DataConfigurationError
 
 #Local Modules
 from ..stellar_module import StarGenerator
@@ -527,11 +528,12 @@ class Instrument(object):
         self._log("info", "Normalization Bandpass is {}".format(norm_bp))
         rates = np.zeros_like(ras)
         for index in range(len(ids)):
+#             self._log("info", "Converting index={} of {}".format(index, len(ids)))
             t, g, Z, a = temps[index], gravs[index], metallicities[index], apparents[index]
             sp = stsyn.grid_to_spec('phoenix', t, Z, g)
             sp = self.normalize(sp, a, norm_bp)
             obs = syn.Observation(sp, bp, binset=sp.waveset)
-            rates[index] = obs.countrate(area=self.AREA)
+            rates[index] = obs.countrate(area=self.AREA).value
         t = Table()
         t['ra'] = Column(data=ras)
         t['dec'] = Column(data=decs)
@@ -571,7 +573,7 @@ class Instrument(object):
             wave, flux = spectrum.get_spectrum()
             sp = self.normalize((wave, flux), a, norm_bp)
             obs = syn.Observation(sp, bp, binset=sp.wave)
-            rates = np.append(rates, obs.countrate(area=self.AREA))
+            rates = np.append(rates, obs.countrate(area=self.AREA).value)
         t = Table()
         t['ra'] = Column(data=ras)
         t['dec'] = Column(data=decs)
@@ -855,13 +857,11 @@ class Instrument(object):
         self._log("info","Finished adding error")
 
     def normalize(self, source_spectrum_or_wave_flux, norm_flux, bandpass):
-#         print("source: {}".format(source_spectrum_or_wave_flux))
-#         print("flux: {}".format(norm_flux))
-#         print("bandpass: {}".format(bandpass))
-        from pandeia.engine.normalization import NormalizationFactory
+        if "," in bandpass:
+            bandpass = bandpass.replace(",", "_")
         norm_type = self.get_type(bandpass)
-#         print("norm_type: {}".format(norm_type))
         
+        from pandeia.engine.normalization import NormalizationFactory
         norm = NormalizationFactory(type=norm_type, bandpass=bandpass, 
                                     norm_fluxunit='abmag', norm_flux=norm_flux)
         if isinstance(source_spectrum_or_wave_flux, tuple):
@@ -869,8 +869,13 @@ class Instrument(object):
         else:
             wave = source_spectrum_or_wave_flux.waveset
             flux = source_spectrum_or_wave_flux(wave)
-#         print("wave, flux = {}, {}".format(wave, flux))
-        norm_wave, norm_flux = norm.normalize(wave, flux)
+        try:
+            norm_wave, norm_flux = norm.normalize(wave, flux)
+        except DataConfigurationError as e:
+            norm = syn.SpectralElement.from_filter(bandpass)
+            sp = syn.SourceSpectrum(syn.Empirical1D, points=wave, lookup_table=flux)
+            norm_sp = sp.normalize(norm_flux*u.ABmag, band=norm)
+            return norm_sp
         sp = syn.SourceSpectrum(syn.Empirical1D, points=norm_wave, lookup_table=norm_flux)
         return sp
     

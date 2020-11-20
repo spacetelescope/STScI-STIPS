@@ -1635,7 +1635,7 @@ class AstroImage(object):
                             'filter': 'F062',
                             'detector': {
                                             'WFI': 'SCA01',
-                                            'NIRCam': 'A1',
+                                            'NIRCam': "NRCA1",
                                             'MIRI': 'MIRI'
                                         },
                             'shape': (4096, 4096),
