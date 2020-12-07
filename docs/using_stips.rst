@@ -8,3 +8,4 @@ This section describes several important characteristics of STIPS.
 
   using_stips/catalogue_formats
   using_stips/config_file
+  using_stips/psf_grid
