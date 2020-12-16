@@ -197,7 +197,6 @@ dependencies:
   - pip:
     - astropy-helpers==4.0.1
     - astropy-sphinx-theme==1.1
-    - automodinit==0.16
     - jwst-backgrounds==1.1.2
     - montage-wrapper==0.9.9
     - pandeia-engine==1.5.1
