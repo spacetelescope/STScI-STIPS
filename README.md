@@ -1,5 +1,8 @@
 # STScI-STIPS
 
+[![Build Status](https://travis-ci.com/spacetelescope/STScI-STIPS.svg?branch=master)](https://travis-ci.com/spacetelescope/jwst_validation_notebooks)
+[![STScI](https://img.shields.io/badge/powered%20by-STScI-blue.svg?colorA=707170&colorB=3e8ddd&style=flat)](http://www.stsci.edu)
+
 For documentation and installation instructions please visit https://stsci-stips.readthedocs.io
 
 ## Table of Contents
