@@ -79,7 +79,7 @@ jobs:
         python-version: 3.8
     - name: Install base dependencies
       run: |
-        sudo chown 501:20 /usr/local/miniconda/pkgs/cache/*.json
+        sudo chown -R 501:20 /usr/local/miniconda
         $CONDA/bin/conda env update --file environment.yml --name base
     - name: Install Required Data
       run: |
