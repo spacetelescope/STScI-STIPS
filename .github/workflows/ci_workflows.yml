@@ -26,10 +26,6 @@ jobs:
             os: ubuntu-latest
             python: 3.8
 
-          - name: OS X - Python 3.8
-            os: macos-latest
-            python: 3.8
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -41,6 +37,27 @@ jobs:
         python-version: ${{ matrix.python }}
     - name: Install base dependencies
       run: |
+        $CONDA/bin/conda env update --file environment.yml --name base
+    - name: Test with pytest
+      run: |
+        $CONDA/bin/conda install pytest
+        $CONDA/bin/pytest -m "not veryslow"
+
+  mac_ci_test:
+    name: macOS - Python 3.8
+    runs-on: macos-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set up python 3.8 on macos-latest
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Install base dependencies
+      run: |
+        sudo chown 501:20 /usr/local/miniconda/pkgs/cache/31ce02e0.json
         $CONDA/bin/conda env update --file environment.yml --name base
     - name: Test with pytest
       run: |
@@ -62,7 +79,7 @@ jobs:
     - name: Install base dependencies
       run: |
         $CONDA/bin/conda env update --file .rtd-environment.yml --name base
-    - name: Test with pytest
+    - name: Build Docs
       run: |
         $CONDA/bin/python setup.py build_docs -w
 
@@ -81,7 +98,30 @@ jobs:
     - name: Install base dependencies
       run: |
         $CONDA/bin/conda env update --file environment.yml --name base
+    - name: Install Required Data
+      run: |
+        mkdir test_data
+        wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O test_data/stips_data_current.tar.gz
+        tar -xzvf test_data/stips_data_current.tar.gz -C test_data
+        mkdir test_data/synphot
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O test_data/synphot1.tar.gz
+        tar -xzvf test_data/synphot1.tar.gz -C test_data/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O test_data/synphot2.tar.gz
+        tar -xzvf test_data/synphot2.tar.gz -C test_data/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O test_data/synphot5.tar.gz
+        tar -xzvf test_data/synphot5.tar.gz -C test_data/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O test_data/synphot6.tar.gz
+        tar -xzvf test_data/synphot6.tar.gz -C test_data/synphot/
+        wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O test_data/pandeia_data-1.5.2rc2_roman.gz
+        tar -xzvf test_data/pandeia_data-1.5.2rc2_roman.gz -C test_data/
+        wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O test_data/webbpsf_data.gz
+        tar -xzvf test_data/webbpsf_data.gz -C test_data/
     - name: Test with pytest
       run: |
+        export stips_data=./test_data/stips_data
+        export PYSYN_CDBS=./test_data/synphot/grp/hst/cdbs
+        export pandeia_refdata=./test_data/pandeia_data-1.5.2rc2_roman
+        export WEBBPSF_PATH=./test_data/webbpsf-data
         $CONDA/bin/conda install pytest
         $CONDA/bin/pytest
+
