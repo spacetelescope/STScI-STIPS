@@ -80,7 +80,7 @@ jobs:
     - name: Install base dependencies
       run: |
         sudo chown -R 501:20 /usr/local/miniconda
-        $CONDA/bin/conda env update --file environment.yml --name base
+        $CONDA/bin/conda env update --file environment.yml --name base -v
     - name: Install Required Data
       run: |
         mkdir test_data
