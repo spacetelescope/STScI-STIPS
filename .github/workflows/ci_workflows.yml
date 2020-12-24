@@ -76,7 +76,7 @@ jobs:
     - name: Set up environment
       uses: conda-incubator/setup-miniconda@v2
       with:
-        activate-environment: test
+        activate-environment: stips
         environment-file: environment.yml
         python-version: 3.8
         auto-activate-base: false
@@ -105,7 +105,7 @@ jobs:
         export pandeia_refdata=./test_data/pandeia_data-1.5.2rc2_roman
         export WEBBPSF_PATH=./test_data/webbpsf-data
         conda install pytest
-        pytest -m "not veryslow" stips
+        $CONDA/envs/stips/bin/pytest -m "not veryslow" stips
 
   docs_test:
     name: "docs_test"
