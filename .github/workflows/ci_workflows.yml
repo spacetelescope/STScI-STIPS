@@ -73,14 +73,13 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - name: Set up python 3.8 on macos-latest
-      uses: actions/setup-python@v2
+    - name: Set up environment
+      uses: conda-incubator/setup-miniconda@v2
       with:
+        activate-environment: test
+        environment-file: environment.yml
         python-version: 3.8
-    - name: Install base dependencies
-      run: |
-        sudo chown -R 501:20 /usr/local/miniconda
-        $CONDA/bin/conda env update --file environment.yml --name base -v
+        auto-activate-base: false
     - name: Install Required Data
       run: |
         mkdir test_data
@@ -105,8 +104,8 @@ jobs:
         export PYSYN_CDBS=./test_data/synphot/grp/hst/cdbs
         export pandeia_refdata=./test_data/pandeia_data-1.5.2rc2_roman
         export WEBBPSF_PATH=./test_data/webbpsf-data
-        $CONDA/bin/conda install pytest
-        $CONDA/bin/pytest -m "not veryslow" stips
+        conda install pytest
+        pytest -m "not veryslow" stips
 
   docs_test:
     name: "docs_test"
