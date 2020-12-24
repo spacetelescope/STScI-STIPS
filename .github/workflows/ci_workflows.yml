@@ -31,13 +31,13 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - name: Set up python ${{ matrix.python }} on ${{ matrix.os }}
-      uses: actions/setup-python@v2
+    - name: Set up environment
+      uses: conda-incubator/setup-miniconda@v2
       with:
+        activate-environment: stips
+        environment-file: environment.yml
         python-version: ${{ matrix.python }}
-    - name: Install base dependencies
-      run: |
-        $CONDA/bin/conda env update --file environment.yml --name base
+        auto-activate-base: false
     - name: Install Required Data
       run: |
         mkdir test_data
@@ -57,13 +57,14 @@ jobs:
         wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O test_data/webbpsf_data.gz
         tar -xzvf test_data/webbpsf_data.gz -C test_data/
     - name: Test with pytest
+      shell: bash -l {0}
       run: |
         export stips_data=./test_data/stips_data
         export PYSYN_CDBS=./test_data/synphot/grp/hst/cdbs
         export pandeia_refdata=./test_data/pandeia_data-1.5.2rc2_roman
         export WEBBPSF_PATH=./test_data/webbpsf-data
-        $CONDA/bin/conda install pytest
-        $CONDA/bin/pytest -m "not veryslow" stips
+        conda install pytest
+        pytest -m "not veryslow" stips
 
   mac_ci_test:
     name: macOS - Python 3.8
@@ -99,13 +100,14 @@ jobs:
         wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O test_data/webbpsf_data.gz
         tar -xzvf test_data/webbpsf_data.gz -C test_data/
     - name: Test with pytest
+      shell: bash -l {0}
       run: |
         export stips_data=./test_data/stips_data
         export PYSYN_CDBS=./test_data/synphot/grp/hst/cdbs
         export pandeia_refdata=./test_data/pandeia_data-1.5.2rc2_roman
         export WEBBPSF_PATH=./test_data/webbpsf-data
         conda install pytest
-        $CONDA/envs/stips/bin/pytest -m "not veryslow" stips
+        pytest -m "not veryslow" stips
 
   docs_test:
     name: "docs_test"
@@ -115,16 +117,17 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - name: Set up python 3.7 on ubuntu-latest
-      uses: actions/setup-python@v2
+    - name: Set up environment
+      uses: conda-incubator/setup-miniconda@v2
       with:
-        python-version: 3.7
-    - name: Install base dependencies
-      run: |
-        $CONDA/bin/conda env update --file .rtd-environment.yml --name base
+        activate-environment: stips
+        environment-file: environment.yml
+        python-version: 3.8
+        auto-activate-base: false
     - name: Build Docs
+      shell: bash -l {0}
       run: |
-        $CONDA/bin/python setup.py build_docs -w
+        python setup.py build_docs -w
 
   slow_test:
     name: "slow_test"
@@ -134,13 +137,13 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - name: Set up python 3.7 on ubuntu-latest
-      uses: actions/setup-python@v2
+    - name: Set up environment
+      uses: conda-incubator/setup-miniconda@v2
       with:
-        python-version: 3.7
-    - name: Install base dependencies
-      run: |
-        $CONDA/bin/conda env update --file environment.yml --name base
+        activate-environment: stips
+        environment-file: environment.yml
+        python-version: 3.8
+        auto-activate-base: false
     - name: Install Required Data
       run: |
         mkdir test_data
@@ -160,11 +163,12 @@ jobs:
         wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O test_data/webbpsf_data.gz
         tar -xzvf test_data/webbpsf_data.gz -C test_data/
     - name: Test with pytest
+      shell: bash -l {0}
       run: |
         export stips_data=./test_data/stips_data
         export PYSYN_CDBS=./test_data/synphot/grp/hst/cdbs
         export pandeia_refdata=./test_data/pandeia_data-1.5.2rc2_roman
         export WEBBPSF_PATH=./test_data/webbpsf-data
-        $CONDA/bin/conda install pytest
-        $CONDA/bin/pytest stips
+        conda install pytest
+        pytest stips
 
