@@ -57,8 +57,7 @@ jobs:
         python-version: 3.8
     - name: Install base dependencies
       run: |
-        sudo chown 501:20 /usr/local/miniconda/pkgs/cache/31ce02e0.json
-        $CONDA/bin/conda env update --file environment.yml --name base
+        sudo $CONDA/bin/conda env update --file environment.yml --name base
     - name: Test with pytest
       run: |
         $CONDA/bin/conda install pytest
@@ -123,5 +122,5 @@ jobs:
         export pandeia_refdata=./test_data/pandeia_data-1.5.2rc2_roman
         export WEBBPSF_PATH=./test_data/webbpsf-data
         $CONDA/bin/conda install pytest
-        $CONDA/bin/pytest
+        $CONDA/bin/pytest stips
 
