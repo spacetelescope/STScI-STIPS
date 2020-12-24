@@ -1,0 +1,87 @@
+# GitHub Actions workflow for testing and continuous integration.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci_tests:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+
+          - name: Python 2.7
+            os: ubuntu-latest
+            python: 2.7
+
+          - name: Python 3.7
+            os: ubuntu-latest
+            python: 3.7
+
+          - name: Python 3.8
+            os: ubuntu-latest
+            python: 3.8
+
+          - name: OS X - Python 3.8
+            os: macos-latest
+            python: 3.8
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set up python ${{ matrix.python }} on ${{ matrix.os }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python }}
+    - name: Install base dependencies
+      run: |
+        $CONDA/bin/conda env update --file environment.yml --name base
+    - name: Test with pytest
+      run: |
+        $CONDA/bin/conda install pytest
+        $CONDA/bin/pytest -m "not veryslow"
+
+  docs_test:
+    name: "docs_test"
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set up python 3.7 on ubuntu-latest
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+    - name: Install base dependencies
+      run: |
+        $CONDA/bin/conda env update --file .rtd-environment.yml --name base
+    - name: Test with pytest
+      run: |
+        $CONDA/bin/python setup.py build_docs -w
+
+  slow_test:
+    name: "slow_test"
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set up python 3.7 on ubuntu-latest
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+    - name: Install base dependencies
+      run: |
+        $CONDA/bin/conda env update --file environment.yml --name base
+    - name: Test with pytest
+      run: |
+        $CONDA/bin/conda install pytest
+        $CONDA/bin/pytest
