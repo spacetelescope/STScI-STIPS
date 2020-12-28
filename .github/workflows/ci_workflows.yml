@@ -84,10 +84,10 @@ jobs:
     - name: Install Required Data
       shell: bash -l {0}
       run: |
-        mkdir ../test_data
         export TEST_DATA=${HOME}/test_data
+        mkdir ${TEST_DATA}
         wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O ${TEST_DATA}/stips_data_current.tar.gz
-        tar -xzvf ${TEST_DATA}/stips_data_current.tar.gz -C test_data
+        tar -xzvf ${TEST_DATA}/stips_data_current.tar.gz -C ${TEST_DATA}
         export stips_data=${TEST_DATA}/stips_data
         mkdir ${TEST_DATA}/synphot
         wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O ${TEST_DATA}/synphot1.tar.gz
