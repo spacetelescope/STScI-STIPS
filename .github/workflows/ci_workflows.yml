@@ -39,31 +39,36 @@ jobs:
         python-version: ${{ matrix.python }}
         auto-activate-base: false
     - name: Install Required Data
+      shell: bash -l {0}
       run: |
-        mkdir test_data
-        wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O test_data/stips_data_current.tar.gz
-        tar -xzvf test_data/stips_data_current.tar.gz -C test_data
-        mkdir test_data/synphot
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O test_data/synphot1.tar.gz
-        tar -xzvf test_data/synphot1.tar.gz -C test_data/synphot/
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O test_data/synphot2.tar.gz
-        tar -xzvf test_data/synphot2.tar.gz -C test_data/synphot/
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O test_data/synphot5.tar.gz
-        tar -xzvf test_data/synphot5.tar.gz -C test_data/synphot/
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O test_data/synphot6.tar.gz
-        tar -xzvf test_data/synphot6.tar.gz -C test_data/synphot/
-        wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O test_data/pandeia_data-1.5.2rc2_roman.gz
-        tar -xzvf test_data/pandeia_data-1.5.2rc2_roman.gz -C test_data/
-        wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O test_data/webbpsf_data.gz
-        tar -xzvf test_data/webbpsf_data.gz -C test_data/
+        export TEST_DATA=${HOME}/test_data
+        mkdir ${TEST_DATA}
+        wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O ${TEST_DATA}/stips_data_current.tar.gz
+        tar -xzvf ${TEST_DATA}/stips_data_current.tar.gz -C ${TEST_DATA}
+        export stips_data=${TEST_DATA}/stips_data
+        echo "stips_data=${TEST_DATA}/stips_data" >> $GITHUB_ENV
+        mkdir ${TEST_DATA}/synphot
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O ${TEST_DATA}/synphot1.tar.gz
+        tar -xzvf ${TEST_DATA}/synphot1.tar.gz -C ${TEST_DATA}/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O ${TEST_DATA}/synphot2.tar.gz
+        tar -xzvf ${TEST_DATA}/synphot2.tar.gz -C ${TEST_DATA}/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O ${TEST_DATA}/synphot5.tar.gz
+        tar -xzvf ${TEST_DATA}/synphot5.tar.gz -C ${TEST_DATA}/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O ${TEST_DATA}/synphot6.tar.gz
+        tar -xzvf ${TEST_DATA}/synphot6.tar.gz -C ${TEST_DATA}/synphot/
+        export PYSYN_CDBS=${TEST_DATA}/synphot/grp/hst/cdbs
+        echo "PYSYN_CDBS=${TEST_DATA}/synphot/grp/hst/cdbs" >> $GITHUB_ENV
+        wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz
+        tar -xzvf ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz -C ${TEST_DATA}
+        export pandeia_refdata=${TEST_DATA}/pandeia_data-1.5.2rc2_roman
+        echo "pandeia_refdata=${TEST_DATA}/pandeia_data-1.5.2rc2_roman" >> $GITHUB_ENV
+        wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O ${TEST_DATA}/webbpsf_data.gz
+        tar -xzvf ${TEST_DATA}/webbpsf_data.gz -C ${TEST_DATA}
+        export WEBBPSF_PATH=${TEST_DATA}/webbpsf-data
+        echo "WEBBPSF_PATH=${TEST_DATA}/webbpsf-data" >> $GITHUB_ENV
     - name: Test with pytest
       shell: bash -l {0}
       run: |
-        export stips_data=./test_data/stips_data
-        export PYSYN_CDBS=./test_data/synphot/grp/hst/cdbs
-        export pandeia_refdata=./test_data/pandeia_data-1.5.2rc2_roman
-        export WEBBPSF_PATH=./test_data/webbpsf-data
-        conda install pytest
         pytest -m "not veryslow" stips
 
   mac_ci_test:
@@ -82,7 +87,33 @@ jobs:
         python-version: 3.8
         auto-activate-base: false
     - name: Install Required Data
-      uses: setup_data/setup-stips-data-composite-run-setps-action
+      shell: bash -l {0}
+      run: |
+        export TEST_DATA=${HOME}/test_data
+        mkdir ${TEST_DATA}
+        wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O ${TEST_DATA}/stips_data_current.tar.gz
+        tar -xzvf ${TEST_DATA}/stips_data_current.tar.gz -C ${TEST_DATA}
+        export stips_data=${TEST_DATA}/stips_data
+        echo "stips_data=${TEST_DATA}/stips_data" >> $GITHUB_ENV
+        mkdir ${TEST_DATA}/synphot
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O ${TEST_DATA}/synphot1.tar.gz
+        tar -xzvf ${TEST_DATA}/synphot1.tar.gz -C ${TEST_DATA}/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O ${TEST_DATA}/synphot2.tar.gz
+        tar -xzvf ${TEST_DATA}/synphot2.tar.gz -C ${TEST_DATA}/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O ${TEST_DATA}/synphot5.tar.gz
+        tar -xzvf ${TEST_DATA}/synphot5.tar.gz -C ${TEST_DATA}/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O ${TEST_DATA}/synphot6.tar.gz
+        tar -xzvf ${TEST_DATA}/synphot6.tar.gz -C ${TEST_DATA}/synphot/
+        export PYSYN_CDBS=${TEST_DATA}/synphot/grp/hst/cdbs
+        echo "PYSYN_CDBS=${TEST_DATA}/synphot/grp/hst/cdbs" >> $GITHUB_ENV
+        wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz
+        tar -xzvf ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz -C ${TEST_DATA}
+        export pandeia_refdata=${TEST_DATA}/pandeia_data-1.5.2rc2_roman
+        echo "pandeia_refdata=${TEST_DATA}/pandeia_data-1.5.2rc2_roman" >> $GITHUB_ENV
+        wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O ${TEST_DATA}/webbpsf_data.gz
+        tar -xzvf ${TEST_DATA}/webbpsf_data.gz -C ${TEST_DATA}
+        export WEBBPSF_PATH=${TEST_DATA}/webbpsf-data
+        echo "WEBBPSF_PATH=${TEST_DATA}/webbpsf-data" >> $GITHUB_ENV
     - name: Test with pytest
       shell: bash -l {0}
       run: |
@@ -124,30 +155,35 @@ jobs:
         python-version: 3.8
         auto-activate-base: false
     - name: Install Required Data
+      shell: bash -l {0}
       run: |
-        mkdir test_data
-        wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O test_data/stips_data_current.tar.gz
-        tar -xzvf test_data/stips_data_current.tar.gz -C test_data
-        mkdir test_data/synphot
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O test_data/synphot1.tar.gz
-        tar -xzvf test_data/synphot1.tar.gz -C test_data/synphot/
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O test_data/synphot2.tar.gz
-        tar -xzvf test_data/synphot2.tar.gz -C test_data/synphot/
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O test_data/synphot5.tar.gz
-        tar -xzvf test_data/synphot5.tar.gz -C test_data/synphot/
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O test_data/synphot6.tar.gz
-        tar -xzvf test_data/synphot6.tar.gz -C test_data/synphot/
-        wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O test_data/pandeia_data-1.5.2rc2_roman.gz
-        tar -xzvf test_data/pandeia_data-1.5.2rc2_roman.gz -C test_data/
-        wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O test_data/webbpsf_data.gz
-        tar -xzvf test_data/webbpsf_data.gz -C test_data/
+        export TEST_DATA=${HOME}/test_data
+        mkdir ${TEST_DATA}
+        wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O ${TEST_DATA}/stips_data_current.tar.gz
+        tar -xzvf ${TEST_DATA}/stips_data_current.tar.gz -C ${TEST_DATA}
+        export stips_data=${TEST_DATA}/stips_data
+        echo "stips_data=${TEST_DATA}/stips_data" >> $GITHUB_ENV
+        mkdir ${TEST_DATA}/synphot
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O ${TEST_DATA}/synphot1.tar.gz
+        tar -xzvf ${TEST_DATA}/synphot1.tar.gz -C ${TEST_DATA}/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O ${TEST_DATA}/synphot2.tar.gz
+        tar -xzvf ${TEST_DATA}/synphot2.tar.gz -C ${TEST_DATA}/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O ${TEST_DATA}/synphot5.tar.gz
+        tar -xzvf ${TEST_DATA}/synphot5.tar.gz -C ${TEST_DATA}/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O ${TEST_DATA}/synphot6.tar.gz
+        tar -xzvf ${TEST_DATA}/synphot6.tar.gz -C ${TEST_DATA}/synphot/
+        export PYSYN_CDBS=${TEST_DATA}/synphot/grp/hst/cdbs
+        echo "PYSYN_CDBS=${TEST_DATA}/synphot/grp/hst/cdbs" >> $GITHUB_ENV
+        wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz
+        tar -xzvf ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz -C ${TEST_DATA}
+        export pandeia_refdata=${TEST_DATA}/pandeia_data-1.5.2rc2_roman
+        echo "pandeia_refdata=${TEST_DATA}/pandeia_data-1.5.2rc2_roman" >> $GITHUB_ENV
+        wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O ${TEST_DATA}/webbpsf_data.gz
+        tar -xzvf ${TEST_DATA}/webbpsf_data.gz -C ${TEST_DATA}
+        export WEBBPSF_PATH=${TEST_DATA}/webbpsf-data
+        echo "WEBBPSF_PATH=${TEST_DATA}/webbpsf-data" >> $GITHUB_ENV
     - name: Test with pytest
       shell: bash -l {0}
       run: |
-        export stips_data=./test_data/stips_data
-        export PYSYN_CDBS=./test_data/synphot/grp/hst/cdbs
-        export pandeia_refdata=./test_data/pandeia_data-1.5.2rc2_roman
-        export WEBBPSF_PATH=./test_data/webbpsf-data
-        conda install pytest
         pytest stips
 
