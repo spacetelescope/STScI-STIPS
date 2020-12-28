@@ -1,0 +1,49 @@
+name: 'Setup STIPS Data'
+description: 'Download and set up STIPS data'
+runs:
+  using: "composite"
+  steps:
+    - run: export TEST_DATA=${HOME}/test_data
+      shell: bash -l {0}
+      run: echo "TEST_DATA=${HOME}/test_data" >> $GITHUB_ENV
+      shell: bash -l {0}
+    - run: mkdir ${TEST_DATA}
+      shell: bash -l {0}
+    - run: wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O ${TEST_DATA}/stips_data_current.tar.gz
+      shell: bash -l {0}
+    - run: tar -xzvf ${TEST_DATA}/stips_data_current.tar.gz -C ${TEST_DATA}
+      shell: bash -l {0}
+    - run: echo "stips_data=${TEST_DATA}/stips_data" >> $GITHUB_ENV
+      shell: bash -l {0}
+    - run: mkdir ${TEST_DATA}/synphot
+      shell: bash -l {0}
+    - run: wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O ${TEST_DATA}/synphot1.tar.gz
+      shell: bash -l {0}
+    - run: tar -xzvf ${TEST_DATA}/synphot1.tar.gz -C ${TEST_DATA}/synphot/
+      shell: bash -l {0}
+    - run: wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O ${TEST_DATA}/synphot2.tar.gz
+      shell: bash -l {0}
+    - run: tar -xzvf ${TEST_DATA}/synphot2.tar.gz -C ${TEST_DATA}/synphot/
+      shell: bash -l {0}
+    - run: wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O ${TEST_DATA}/synphot5.tar.gz
+      shell: bash -l {0}
+    - run: tar -xzvf ${TEST_DATA}/synphot5.tar.gz -C ${TEST_DATA}/synphot/
+      shell: bash -l {0}
+    - run: wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O ${TEST_DATA}/synphot6.tar.gz
+      shell: bash -l {0}
+    - run: tar -xzvf ${TEST_DATA}/synphot6.tar.gz -C ${TEST_DATA}/synphot/
+      shell: bash -l {0}
+    - run: echo "PYSYN_CDBS=${TEST_DATA}/synphot/grp/hst/cdbs" >> $GITHUB_ENV
+      shell: bash -l {0}
+    - run: wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz
+      shell: bash -l {0}
+    - run: tar -xzvf ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz -C ${TEST_DATA}
+      shell: bash -l {0}
+    - run: echo "pandeia_refdata=${TEST_DATA}/pandeia_data-1.5.2rc2_roman" >> $GITHUB_ENV
+      shell: bash -l {0}
+    - run: wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O ${TEST_DATA}/webbpsf_data.gz
+      shell: bash -l {0}
+    - run: tar -xzvf ${TEST_DATA}/webbpsf_data.gz -C ${TEST_DATA}
+      shell: bash -l {0}
+    - run: echo "WEBBPSF_PATH=${TEST_DATA}/webbpsf-data" >> $GITHUB_ENV
+      shell: bash -l {0}
