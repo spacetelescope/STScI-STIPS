@@ -90,14 +90,14 @@ jobs:
         tar -xzvf ${TEST_DATA}/stips_data_current.tar.gz -C test_data
         export stips_data=${TEST_DATA}/stips_data
         mkdir ${TEST_DATA}/synphot
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O test_data/synphot1.tar.gz
-        tar -xzvf ${TEST_DATA}/synphot1.tar.gz -C test_data/synphot/
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O test_data/synphot2.tar.gz
-        tar -xzvf ${TEST_DATA}/synphot2.tar.gz -C test_data/synphot/
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O test_data/synphot5.tar.gz
-        tar -xzvf ${TEST_DATA}/synphot5.tar.gz -C test_data/synphot/
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O test_data/synphot6.tar.gz
-        tar -xzvf ${TEST_DATA}/synphot6.tar.gz -C test_data/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O ${TEST_DATA}/synphot1.tar.gz
+        tar -xzvf ${TEST_DATA}/synphot1.tar.gz -C ${TEST_DATA}/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O ${TEST_DATA}/synphot2.tar.gz
+        tar -xzvf ${TEST_DATA}/synphot2.tar.gz -C ${TEST_DATA}/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O ${TEST_DATA}/synphot5.tar.gz
+        tar -xzvf ${TEST_DATA}/synphot5.tar.gz -C ${TEST_DATA}/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O ${TEST_DATA}/synphot6.tar.gz
+        tar -xzvf ${TEST_DATA}/synphot6.tar.gz -C ${TEST_DATA}/synphot/
         export PYSYN_CDBS=${TEST_DATA}/synphot/grp/hst/cdbs
         wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz
         tar -xzvf ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz -C test_data/
