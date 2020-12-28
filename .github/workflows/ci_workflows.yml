@@ -1,0 +1,174 @@
+# GitHub Actions workflow for testing and continuous integration.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci_tests:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+
+          - name: Python 2.7
+            os: ubuntu-latest
+            python: 2.7
+
+          - name: Python 3.7
+            os: ubuntu-latest
+            python: 3.7
+
+          - name: Python 3.8
+            os: ubuntu-latest
+            python: 3.8
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set up environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: stips
+        environment-file: environment.yml
+        python-version: ${{ matrix.python }}
+        auto-activate-base: false
+    - name: Install Required Data
+      run: |
+        mkdir test_data
+        wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O test_data/stips_data_current.tar.gz
+        tar -xzvf test_data/stips_data_current.tar.gz -C test_data
+        mkdir test_data/synphot
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O test_data/synphot1.tar.gz
+        tar -xzvf test_data/synphot1.tar.gz -C test_data/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O test_data/synphot2.tar.gz
+        tar -xzvf test_data/synphot2.tar.gz -C test_data/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O test_data/synphot5.tar.gz
+        tar -xzvf test_data/synphot5.tar.gz -C test_data/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O test_data/synphot6.tar.gz
+        tar -xzvf test_data/synphot6.tar.gz -C test_data/synphot/
+        wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O test_data/pandeia_data-1.5.2rc2_roman.gz
+        tar -xzvf test_data/pandeia_data-1.5.2rc2_roman.gz -C test_data/
+        wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O test_data/webbpsf_data.gz
+        tar -xzvf test_data/webbpsf_data.gz -C test_data/
+    - name: Test with pytest
+      shell: bash -l {0}
+      run: |
+        export stips_data=./test_data/stips_data
+        export PYSYN_CDBS=./test_data/synphot/grp/hst/cdbs
+        export pandeia_refdata=./test_data/pandeia_data-1.5.2rc2_roman
+        export WEBBPSF_PATH=./test_data/webbpsf-data
+        conda install pytest
+        pytest -m "not veryslow" stips
+
+  mac_ci_test:
+    name: macOS - Python 3.8
+    runs-on: macos-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set up environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: stips
+        environment-file: environment.yml
+        python-version: 3.8
+        auto-activate-base: false
+    - name: Install Required Data
+      run: |
+        mkdir test_data
+        wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O test_data/stips_data_current.tar.gz
+        tar -xzvf test_data/stips_data_current.tar.gz -C test_data
+        mkdir test_data/synphot
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O test_data/synphot1.tar.gz
+        tar -xzvf test_data/synphot1.tar.gz -C test_data/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O test_data/synphot2.tar.gz
+        tar -xzvf test_data/synphot2.tar.gz -C test_data/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O test_data/synphot5.tar.gz
+        tar -xzvf test_data/synphot5.tar.gz -C test_data/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O test_data/synphot6.tar.gz
+        tar -xzvf test_data/synphot6.tar.gz -C test_data/synphot/
+        wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O test_data/pandeia_data-1.5.2rc2_roman.gz
+        tar -xzvf test_data/pandeia_data-1.5.2rc2_roman.gz -C test_data/
+        wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O test_data/webbpsf_data.gz
+        tar -xzvf test_data/webbpsf_data.gz -C test_data/
+    - name: Test with pytest
+      shell: bash -l {0}
+      run: |
+        export stips_data=./test_data/stips_data
+        export PYSYN_CDBS=./test_data/synphot/grp/hst/cdbs
+        export pandeia_refdata=./test_data/pandeia_data-1.5.2rc2_roman
+        export WEBBPSF_PATH=./test_data/webbpsf-data
+        conda install pytest
+        pytest -m "not veryslow" stips
+
+  docs_test:
+    name: "docs_test"
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set up environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: stips
+        environment-file: environment.yml
+        python-version: 3.8
+        auto-activate-base: false
+    - name: Build Docs
+      shell: bash -l {0}
+      run: |
+        python setup.py build_docs -w
+
+  slow_test:
+    name: "slow_test"
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set up environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: stips
+        environment-file: environment.yml
+        python-version: 3.8
+        auto-activate-base: false
+    - name: Install Required Data
+      run: |
+        mkdir test_data
+        wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O test_data/stips_data_current.tar.gz
+        tar -xzvf test_data/stips_data_current.tar.gz -C test_data
+        mkdir test_data/synphot
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O test_data/synphot1.tar.gz
+        tar -xzvf test_data/synphot1.tar.gz -C test_data/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O test_data/synphot2.tar.gz
+        tar -xzvf test_data/synphot2.tar.gz -C test_data/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O test_data/synphot5.tar.gz
+        tar -xzvf test_data/synphot5.tar.gz -C test_data/synphot/
+        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O test_data/synphot6.tar.gz
+        tar -xzvf test_data/synphot6.tar.gz -C test_data/synphot/
+        wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O test_data/pandeia_data-1.5.2rc2_roman.gz
+        tar -xzvf test_data/pandeia_data-1.5.2rc2_roman.gz -C test_data/
+        wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O test_data/webbpsf_data.gz
+        tar -xzvf test_data/webbpsf_data.gz -C test_data/
+    - name: Test with pytest
+      shell: bash -l {0}
+      run: |
+        export stips_data=./test_data/stips_data
+        export PYSYN_CDBS=./test_data/synphot/grp/hst/cdbs
+        export pandeia_refdata=./test_data/pandeia_data-1.5.2rc2_roman
+        export WEBBPSF_PATH=./test_data/webbpsf-data
+        conda install pytest
+        pytest stips
+
