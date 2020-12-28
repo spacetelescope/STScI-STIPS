@@ -100,10 +100,10 @@ jobs:
         tar -xzvf ${TEST_DATA}/synphot6.tar.gz -C ${TEST_DATA}/synphot/
         export PYSYN_CDBS=${TEST_DATA}/synphot/grp/hst/cdbs
         wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz
-        tar -xzvf ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz -C test_data/
+        tar -xzvf ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz -C ${TEST_DATA}
         export pandeia_refdata=${TEST_DATA}/pandeia_data-1.5.2rc2_roman
         wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O ${TEST_DATA}/webbpsf_data.gz
-        tar -xzvf ${TEST_DATA}/webbpsf_data.gz -C test_data/
+        tar -xzvf ${TEST_DATA}/webbpsf_data.gz -C ${TEST_DATA}
         export WEBBPSF_PATH=${TEST_DATA}/webbpsf-data
     - name: Test with pytest
       shell: bash -l {0}
