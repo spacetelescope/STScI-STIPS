@@ -24,7 +24,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: stips_data
-          path: ${TEST_DATA}/stips_data
+          path: ${TEST_DATA}/stips_data/*
 
   ci_tests:
     name: ${{ matrix.name }}
