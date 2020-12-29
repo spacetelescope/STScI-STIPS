@@ -12,20 +12,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up test directory
+        shell: bash -l {0}
         run: |
           mkdir -p test_data
           echo "TEST_DATA=${HOME}/test_data" >> $GITHUB_ENV
       - name: Download STIPS data
+        shell: bash -l {0}
         run: |
           wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O test_data/stips_data_current.tar.gz
           tar -xzvf test_data/stips_data_current.tar.gz -C test_data
-          echo "stips_data=${TEST_DATA}/stips_data" >> $GITHUB_ENV
+          echo "stips_data=${HOME}/test_data/stips_data" >> $GITHUB_ENV
       - name: Upload STIPS data artifact
         uses: actions/upload-artifact@v2
         with:
           name: stips_data
           if-no-files-found: error
           path: test_data/stips_data/
+      - name: Download synphot data
+        shell: bash -l {0}
+        run: |
+          mkdir -p test_data/synphot
+          wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O test_data/synphot1.tar.gz
+          tar -xzvf test_data/synphot1.tar.gz -C test_data/synphot/
+          wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O test_data/synphot2.tar.gz
+          tar -xzvf test_data/synphot2.tar.gz -C test_data/synphot/
+          wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O test_data/synphot5.tar.gz
+          tar -xzvf test_data/synphot5.tar.gz -C test_data/synphot/
+          wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O test_data/synphot6.tar.gz
+          tar -xzvf test_data/synphot6.tar.gz -C test_data/synphot/
+          echo "PYSYN_CDBS=${HOME}/test_data/synphot/grp/hst/cdbs" >> $GITHUB_ENV
+      - name: Upload synphot data artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: synphot_data
+          if-no-files-found: error
+          path: test_data/synphot/grp/hst/cdbs/
 
   ci_tests:
     name: ${{ matrix.name }}
@@ -70,7 +91,8 @@ jobs:
     - name: Install Required Data
       shell: bash -l {0}
       run: |
-        mkdir -p ${HOME}/test_data/synphot
+        export TEST_DATA=${HOME}/test_data
+        mkdir -p ${TEST_DATA}/synphot
         wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O ${TEST_DATA}/synphot1.tar.gz
         tar -xzvf ${TEST_DATA}/synphot1.tar.gz -C ${TEST_DATA}/synphot/
         wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O ${TEST_DATA}/synphot2.tar.gz
