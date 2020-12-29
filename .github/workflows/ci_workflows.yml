@@ -26,9 +26,7 @@ jobs:
         with:
           name: stips_data
           if-no-files-found: error
-          path: ${TEST_DATA}/stips_data/*
-        run: |
-          ls ${TEST_DATA}
+          path: ${HOME}/test_data/stips_data/
 
   ci_tests:
     name: ${{ matrix.name }}
