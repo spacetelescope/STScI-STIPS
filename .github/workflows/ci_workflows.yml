@@ -19,11 +19,13 @@ jobs:
         run: |
           wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O ${TEST_DATA}/stips_data_current.tar.gz
           tar -xzvf ${TEST_DATA}/stips_data_current.tar.gz -C ${TEST_DATA}
+          ls ${TEST_DATA}
           echo "stips_data=${TEST_DATA}/stips_data" >> $GITHUB_ENV
       - name: Upload STIPS data artifact
         uses: actions/upload-artifact@v2
         with:
           name: stips_data
+          if-no-files-found: error
           path: ${TEST_DATA}/stips_data/*
 
   ci_tests:
@@ -91,6 +93,7 @@ jobs:
 
   mac_ci_test:
     name: macOS - Python 3.8
+    needs: collect_data
     runs-on: macos-latest
     steps:
     - name: Checkout code
@@ -159,6 +162,7 @@ jobs:
 
   slow_test:
     name: "slow_test"
+    needs: collect_data
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
