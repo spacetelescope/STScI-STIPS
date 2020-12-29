@@ -21,7 +21,6 @@ channels:
   - conda-forge
   - astropy
   - http://ssb.stsci.edu/astroconda
-  - defaults
 
 dependencies:
   # Base dependencies
