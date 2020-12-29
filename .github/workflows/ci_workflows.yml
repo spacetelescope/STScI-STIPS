@@ -13,13 +13,16 @@ jobs:
     steps:
       - name: Set up test directory
         run: |
-          mkdir -p ${HOME}/test_data
+          mkdir -p test_data
           echo "TEST_DATA=${HOME}/test_data" >> $GITHUB_ENV
       - name: Download STIPS data
         run: |
-          wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O ${TEST_DATA}/stips_data_current.tar.gz
-          tar -xzvf ${TEST_DATA}/stips_data_current.tar.gz -C ${TEST_DATA}
-          ls ${TEST_DATA}
+          wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O test_data/stips_data_current.tar.gz
+          tar -xzvf test_data/stips_data_current.tar.gz -C test_data
+          echo "Current Directory"
+          ls
+          echo "Test Data Directory"
+          ls test_data
           echo "stips_data=${TEST_DATA}/stips_data" >> $GITHUB_ENV
       - name: Upload STIPS data artifact
         uses: actions/upload-artifact@v2
