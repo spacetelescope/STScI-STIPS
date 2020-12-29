@@ -21,7 +21,6 @@ jobs:
         run: |
           wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O test_data/stips_data_current.tar.gz
           tar -xzvf test_data/stips_data_current.tar.gz -C test_data
-          echo "stips_data=${HOME}/test_data/stips_data" >> $GITHUB_ENV
       - name: Upload STIPS data artifact
         uses: actions/upload-artifact@v2
         with:
@@ -91,6 +90,7 @@ jobs:
       shell: bash -l {0}
       run: |
         export TEST_DATA=${HOME}/test_data
+        export stips_data=${TEST_DATA}/stips_data
         mkdir -p ${TEST_DATA}/synphot
         wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O ${TEST_DATA}/synphot1.tar.gz
         tar -xzvf ${TEST_DATA}/synphot1.tar.gz -C ${TEST_DATA}/synphot/
@@ -113,6 +113,7 @@ jobs:
     - name: Test with pytest
       shell: bash -l {0}
       run: |
+        export stips_data=${HOME}/test_data/stips_data
         pytest -m "not veryslow" stips
 
   docs_test:
