@@ -68,7 +68,7 @@ jobs:
         tar -xzvf ${TEST_DATA}/webbpsf_data.gz -C ${TEST_DATA}
     - name: Test with pytest
       shell: bash -l {0}
-      if ${{ matrix.name != 'Python 3.8 Long' }}
+      if: ${{ matrix.name != 'Python 3.8 Long' }}
       run: |
         export stips_data=${HOME}/test_data/stips_data
         export PYSYN_CDBS=${HOME}/test_data/synphot/grp/hst/cdbs
@@ -77,7 +77,7 @@ jobs:
         pytest -m "not veryslow" stips
     - name: Test slow tests with pytest
       shell: bash -l {0}
-      if ${{ matrix.name == 'Python 3.8 Long' }}
+      if: ${{ matrix.name == 'Python 3.8 Long' }}
       run: |
         export stips_data=${HOME}/test_data/stips_data
         export PYSYN_CDBS=${HOME}/test_data/synphot/grp/hst/cdbs
