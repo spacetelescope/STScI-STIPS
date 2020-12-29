@@ -41,12 +41,11 @@ jobs:
           wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O test_data/synphot6.tar.gz
           tar -xzvf test_data/synphot6.tar.gz -C test_data/synphot/
           echo "PYSYN_CDBS=${HOME}/test_data/synphot/grp/hst/cdbs" >> $GITHUB_ENV
-      - name: Upload synphot data artifact
-        uses: actions/upload-artifact@v2
+      - name: Save synphot data
+        uses: nick-invision/persist-action-data@v1
         with:
-          name: synphot_data
-          if-no-files-found: error
-          path: test_data/synphot/grp/hst/cdbs/
+          data: ${HOME}/test_data/synphot_data/
+          variable: SYNPHOT_DATA
 
   ci_tests:
     name: ${{ matrix.name }}
@@ -114,7 +113,7 @@ jobs:
     - name: Test with pytest
       shell: bash -l {0}
       run: |
-        pytest -m "not veryslow"
+        pytest -m "not veryslow" stips
 
   docs_test:
     name: "docs_test"
