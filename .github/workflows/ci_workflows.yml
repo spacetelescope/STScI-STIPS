@@ -19,10 +19,6 @@ jobs:
         run: |
           wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O test_data/stips_data_current.tar.gz
           tar -xzvf test_data/stips_data_current.tar.gz -C test_data
-          echo "Current Directory"
-          ls
-          echo "Test Data Directory"
-          ls test_data
           echo "stips_data=${TEST_DATA}/stips_data" >> $GITHUB_ENV
       - name: Upload STIPS data artifact
         uses: actions/upload-artifact@v2
@@ -70,7 +66,7 @@ jobs:
     - name: Install Required Data
       shell: bash -l {0}
       run: |
-        mkdir -p ${TEST_DATA}/synphot
+        mkdir ${TEST_DATA}/synphot
         wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O ${TEST_DATA}/synphot1.tar.gz
         tar -xzvf ${TEST_DATA}/synphot1.tar.gz -C ${TEST_DATA}/synphot/
         wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O ${TEST_DATA}/synphot2.tar.gz
