@@ -7,8 +7,27 @@ on:
   pull_request:
 
 jobs:
+  collect_data:
+    name: download_data
+  steps:
+    - name: Set up test directory
+      run: |
+        mkdir -p ${HOME}/test_data
+        echo "TEST_DATA=${HOME}/test_data" >> $GITHUB_ENV
+    - name: Download STIPS data
+      run: |
+        wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O ${TEST_DATA}/stips_data_current.tar.gz
+        tar -xzvf ${TEST_DATA}/stips_data_current.tar.gz -C ${TEST_DATA}
+        echo "stips_data=${TEST_DATA}/stips_data" >> $GITHUB_ENV
+    - name: Upload STIPS data artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: stips_data
+        path: ${TEST_DATA}/stips_data
+
   ci_tests:
     name: ${{ matrix.name }}
+    needs: collect_data
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -38,16 +57,14 @@ jobs:
         environment-file: environment.yml
         python-version: ${{ matrix.python }}
         auto-activate-base: false
+    - name: Download STIPS data
+      uses: actions/download-artifact@v2
+      with:
+        name: stips_data
     - name: Install Required Data
       shell: bash -l {0}
       run: |
-        export TEST_DATA=${HOME}/test_data
-        mkdir ${TEST_DATA}
-        wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O ${TEST_DATA}/stips_data_current.tar.gz
-        tar -xzvf ${TEST_DATA}/stips_data_current.tar.gz -C ${TEST_DATA}
-        export stips_data=${TEST_DATA}/stips_data
-        echo "stips_data=${TEST_DATA}/stips_data" >> $GITHUB_ENV
-        mkdir ${TEST_DATA}/synphot
+        mkdir -p ${TEST_DATA}/synphot
         wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O ${TEST_DATA}/synphot1.tar.gz
         tar -xzvf ${TEST_DATA}/synphot1.tar.gz -C ${TEST_DATA}/synphot/
         wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O ${TEST_DATA}/synphot2.tar.gz
@@ -69,7 +86,7 @@ jobs:
     - name: Test with pytest
       shell: bash -l {0}
       run: |
-        pytest -m "not veryslow" stips
+        pytest -m "not veryslow"
 
   mac_ci_test:
     name: macOS - Python 3.8
