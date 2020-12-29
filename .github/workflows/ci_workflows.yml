@@ -46,7 +46,13 @@ jobs:
         environment-file: environment.yml
         python-version: ${{ matrix.python }}
         auto-activate-base: false
+    - name: Cache Data
+      uses: actions/cache@v2
+      with:
+        path: ${HOME}/test_data/
+        key: stips_test_data
     - name: Install Required Data
+      if: steps.cache-data.outputs.cache-hit != 'true'
       shell: bash -l {0}
       run: |
         export TEST_DATA=${HOME}/test_data
