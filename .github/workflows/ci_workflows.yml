@@ -9,6 +9,7 @@ on:
 jobs:
   collect_data:
     name: download_data
+    runs-on: ubuntu-latest
     steps:
       - name: Set up test directory
         run: |
