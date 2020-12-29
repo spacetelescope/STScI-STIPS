@@ -47,6 +47,7 @@ jobs:
         python-version: ${{ matrix.python }}
         auto-activate-base: false
     - name: Cache Data
+      id: cache-data
       uses: actions/cache@v2
       with:
         path: ${HOME}/test_data/
