@@ -47,6 +47,10 @@ jobs:
             os: ubuntu-latest
             python: 3.8
 
+          - name: Python 3.8
+            os: macos-latest
+            python: 3.8
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -66,7 +70,7 @@ jobs:
     - name: Install Required Data
       shell: bash -l {0}
       run: |
-        mkdir ${TEST_DATA}/synphot
+        mkdir -p ${HOME}/test_data/synphot
         wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O ${TEST_DATA}/synphot1.tar.gz
         tar -xzvf ${TEST_DATA}/synphot1.tar.gz -C ${TEST_DATA}/synphot/
         wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O ${TEST_DATA}/synphot2.tar.gz
@@ -89,55 +93,6 @@ jobs:
       shell: bash -l {0}
       run: |
         pytest -m "not veryslow"
-
-  mac_ci_test:
-    name: macOS - Python 3.8
-    needs: collect_data
-    runs-on: macos-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    - name: Set up environment
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        activate-environment: stips
-        environment-file: environment.yml
-        python-version: 3.8
-        auto-activate-base: false
-    - name: Install Required Data
-      shell: bash -l {0}
-      run: |
-        export TEST_DATA=${HOME}/test_data
-        mkdir ${TEST_DATA}
-        wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O ${TEST_DATA}/stips_data_current.tar.gz
-        tar -xzvf ${TEST_DATA}/stips_data_current.tar.gz -C ${TEST_DATA}
-        export stips_data=${TEST_DATA}/stips_data
-        echo "stips_data=${TEST_DATA}/stips_data" >> $GITHUB_ENV
-        mkdir ${TEST_DATA}/synphot
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O ${TEST_DATA}/synphot1.tar.gz
-        tar -xzvf ${TEST_DATA}/synphot1.tar.gz -C ${TEST_DATA}/synphot/
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O ${TEST_DATA}/synphot2.tar.gz
-        tar -xzvf ${TEST_DATA}/synphot2.tar.gz -C ${TEST_DATA}/synphot/
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O ${TEST_DATA}/synphot5.tar.gz
-        tar -xzvf ${TEST_DATA}/synphot5.tar.gz -C ${TEST_DATA}/synphot/
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O ${TEST_DATA}/synphot6.tar.gz
-        tar -xzvf ${TEST_DATA}/synphot6.tar.gz -C ${TEST_DATA}/synphot/
-        export PYSYN_CDBS=${TEST_DATA}/synphot/grp/hst/cdbs
-        echo "PYSYN_CDBS=${TEST_DATA}/synphot/grp/hst/cdbs" >> $GITHUB_ENV
-        wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz
-        tar -xzvf ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz -C ${TEST_DATA}
-        export pandeia_refdata=${TEST_DATA}/pandeia_data-1.5.2rc2_roman
-        echo "pandeia_refdata=${TEST_DATA}/pandeia_data-1.5.2rc2_roman" >> $GITHUB_ENV
-        wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O ${TEST_DATA}/webbpsf_data.gz
-        tar -xzvf ${TEST_DATA}/webbpsf_data.gz -C ${TEST_DATA}
-        export WEBBPSF_PATH=${TEST_DATA}/webbpsf-data
-        echo "WEBBPSF_PATH=${TEST_DATA}/webbpsf-data" >> $GITHUB_ENV
-    - name: Test with pytest
-      shell: bash -l {0}
-      run: |
-        pytest -m "not veryslow" stips
 
   docs_test:
     name: "docs_test"
