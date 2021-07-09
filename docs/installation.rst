@@ -115,7 +115,7 @@ You will need to download the data and add them to your environmental path
 3. Add the data paths to your bash environmental path. It is recommended that you add the path to your `.bashrc` file::
 
     export WEBBPSF_PATH=/<path_to_data_dir>/webbpsf-data
-    export PYSYN_CDBS=/<path_to_data_dir>/grp/hst/cdbs
+    export PYSYN_CDBS=/<path_to_data_dir>/grp/redcat/trds
     export pandeia_refdata=/<path_to_data_dir>/pandeia_data-x.x.x_roman
 
 Make sure that you have the correct version number for `pandeia_refdata` (replace the "x.x.x").
