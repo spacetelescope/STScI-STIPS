@@ -22,17 +22,17 @@ jobs:
             os: ubuntu-latest
             python: 3.7
 
-          - name: Python 3.8
-            os: ubuntu-latest
-            python: 3.8
+#          - name: Python 3.8
+#            os: ubuntu-latest
+#            python: 3.8
 
-          - name: Python 3.8 Mac
+          - name: Python 3.7 Mac
             os: macos-latest
-            python: 3.8
+            python: 3.7
 
-          - name: Python 3.8 Long
+          - name: Python 3.7 Long
             os: ubuntu-latest
-            python: 3.8
+            python: 3.7
 
     steps:
     - name: Checkout code
