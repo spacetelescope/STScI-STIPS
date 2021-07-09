@@ -21,30 +21,15 @@ channels:
   - conda-forge
   - astropy
   - http://ssb.stsci.edu/astroconda
-  - defaults
 
 dependencies:
   # Base dependencies
   - pip
   - python>=3.7
-  - Cython
-  - numpy>=1.13
-  - scipy
-  - matplotlib>=3.1.1
-  - astropy
-  - photutils
-  - healpy
-  - synphot
-  - stsynphot
-  - esutil
+#  - Cython
   - jupyter
 
-  # Major modules
-  - webbpsf>=0.9.0
-
   # Minor modules
-  - pyyaml
-  - mechanize
   - pyfftw
   - ConfigParser
 
@@ -59,11 +44,23 @@ dependencies:
 
   - pip:
     # Major modules
-    - pandeia.engine==1.5.2
+    - numpy
+    - scipy
+    - matplotlib
+    - astropy
+    - photutils
+    - healpy
+    - synphot
+    - stsynphot
+    - esutil
     - jwst_backgrounds
+    - webbpsf>=0.9.0
+    - pandeia.engine==1.5.2
 
     # Minor modules
     - montage-wrapper
+    - pyyaml
+    - mechanize
 
     # Docs
     - astropy_helpers
