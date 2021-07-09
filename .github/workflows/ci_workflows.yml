@@ -71,7 +71,7 @@ jobs:
       if: ${{ matrix.name != 'Python 3.8 Long' }}
       run: |
         export stips_data=${HOME}/test_data/stips_data
-        export PYSYN_CDBS=${HOME}/test_data/synphot/grp/hst/cdbs
+        export PYSYN_CDBS=${HOME}/test_data/synphot/grp/redcat/trds
         export pandeia_refdata=${HOME}/test_data/pandeia_data-1.5.2rc2_roman
         export WEBBPSF_PATH=${HOME}/test_data/webbpsf-data
         pytest -m "not veryslow" stips
@@ -80,7 +80,7 @@ jobs:
       if: ${{ matrix.name == 'Python 3.8 Long' }}
       run: |
         export stips_data=${HOME}/test_data/stips_data
-        export PYSYN_CDBS=${HOME}/test_data/synphot/grp/hst/cdbs
+        export PYSYN_CDBS=${HOME}/test_data/synphot/grp/redcat/trds
         export pandeia_refdata=${HOME}/test_data/pandeia_data-1.5.2rc2_roman
         export WEBBPSF_PATH=${HOME}/test_data/webbpsf-data
         pytest stips
