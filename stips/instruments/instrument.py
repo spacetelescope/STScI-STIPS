@@ -958,10 +958,15 @@ class Instrument(object):
     
     @property
     def zeropoint(self):
+        return self.zeropoint_unit.value
+    
+    @property
+    def zeropoint_unit(self):
         sp = syn.SourceSpectrum.from_vega()
         bp = self.bandpass
+        sp = sp.normalize(0.0*syn.units.VEGAMAG, band=bp, vegaspec=sp)
         obs = syn.Observation(sp, bp, binset=sp.waveset)
-        zeropoint = obs.effstim(flux_unit=u.ABmag).value
+        zeropoint = obs.effstim(flux_unit=syn.units.OBMAG, area=self.AREA)
         return zeropoint
     
     @property
