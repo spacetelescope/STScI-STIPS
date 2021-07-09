@@ -14,9 +14,9 @@ jobs:
       matrix:
         include:
 
-          - name: Python 2.7
-            os: ubuntu-latest
-            python: 2.7
+#          - name: Python 2.7
+#            os: ubuntu-latest
+#            python: 2.7
 
           - name: Python 3.7
             os: ubuntu-latest
