@@ -70,12 +70,6 @@ numpydoc_show_class_members = False
 # major.minor, call `check_sphinx_version("x.y.z")` here.
 # check_sphinx_version("1.2.1")
 
-# This is added to the end of RST files - a good place to put substitutions to
-# be used globally.
-rst_epilog += """
-"""
-
-
 # -- Project information ------------------------------------------------------
 
 # This does not *have* to match the package name, but typically does
