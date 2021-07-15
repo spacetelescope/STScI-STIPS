@@ -55,6 +55,7 @@ dependencies:
     - sphinx
     - sphinx_rtd_theme
     - stsci_rtd_theme
+    - sphinx_automodapi
     
     # Testing
     - tox
