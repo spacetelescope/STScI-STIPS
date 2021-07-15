@@ -961,12 +961,19 @@ class Instrument(object):
     
     @property
     def zeropoint_unit(self):
-        sp = syn.SourceSpectrum.from_vega()
-        bp = self.bandpass
-        sp = sp.normalize(0.0*syn.units.VEGAMAG, band=bp, vegaspec=sp)
-        obs = syn.Observation(sp, bp, binset=sp.waveset)
-        zeropoint = obs.effstim(flux_unit=syn.units.OBMAG, area=self.AREA)
-        return zeropoint
+        vega_path = os.path.join(os.environ["PYSYN_CDBS"], "calspec")
+        vega_files = glob.glob(os.path.join(vega_path, "alpha_lyr*.fits"))
+        if len(vega_files) > 0:
+            vega_file = sorted(vega_files)[-1]
+            sp = syn.SourceSpectrum.from_file(vega_file)
+            bp = self.bandpass
+            sp = sp.normalize(0.0*syn.units.VEGAMAG, band=bp, vegaspec=sp)
+            obs = syn.Observation(sp, bp, binset=sp.waveset)
+            zeropoint = obs.effstim(flux_unit=syn.units.OBMAG, area=self.AREA)
+            return zeropoint
+        else:
+            msg = "Unable to find vega in {}"
+            raise FileNotFoundError(msg.format(os.environ["PYSYN_CDBS"]))
     
     @property
     def photflam(self):
