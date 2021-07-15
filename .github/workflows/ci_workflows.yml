@@ -47,7 +47,7 @@ jobs:
       uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: stips
-        environment-file: environment.yml
+        environment-file: environment_dev.yml
         python-version: ${{ matrix.python }}
         auto-activate-base: false
 #    - name: Install Required Data
@@ -93,7 +93,7 @@ jobs:
       uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: stips
-        environment-file: environment.yml
+        environment-file: environment_dev.yml
         python-version: 3.7
         auto-activate-base: false
     - name: Build Docs
