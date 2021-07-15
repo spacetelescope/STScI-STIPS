@@ -30,15 +30,6 @@ import os
 import sys
 import stsci_rtd_theme
 
-try:
-    import astropy_helpers
-except ImportError:
-    # Building from inside the docs/ directory?
-    if os.path.basename(os.getcwd()) == 'docs':
-        a_h_path = os.path.abspath(os.path.join('..', 'astropy_helpers'))
-        if os.path.isdir(a_h_path):
-            sys.path.insert(1, a_h_path)
-
 def setup(app):
     app.add_css_file("stsci.css")
 
@@ -168,7 +159,6 @@ man_pages = [('index', project.lower(), project + u' Documentation',
 # -- Options for the edit_on_github extension ---------------------------------
 
 if eval(setup_cfg.get('edit_on_github')):
-    extensions += ['astropy_helpers.sphinx.ext.edit_on_github']
 
     versionmod = __import__(setup_cfg['name'] + '.version')
     edit_on_github_project = setup_cfg['github_project']

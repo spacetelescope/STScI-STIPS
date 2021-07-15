@@ -207,12 +207,12 @@ class AstroImage(object):
                 img._prepRaDec()
                 img._prepHeader()
                 img.updateHeader("ASTROIMAGEVALID", True)
-                img.addHistory("Created from FITS file %s" % (os.path.split(file)[1]))
-                img._log("info","Created AstroImage %s from FITS file %s" % (img.name,os.path.split(file)[1]))
+                img.addHistory("Created from FITS file {}".format(os.path.split(file)[1]))
+                img._log("info","Created AstroImage {} from FITS file {}".format(img.name,os.path.split(file)[1]))
             except IOError as e:
                 img.updateHeader("ASTROIMAGEVALID", False)
-                img.addHistory("Attempted to create from invalid FITS file %s" % (os.path.split(file)[1]))
-                img._log("warning","Attempted to create AstroImage %s from invalid FITS file %s" % (img.name,os.path.split(file)[1]))
+                img.addHistory("Attempted to create from invalid FITS file {}".format(os.path.split(file)[1]))
+                img._log("warning","Attempted to create AstroImage {} from invalid FITS file {}".format(img.name,os.path.split(file)[1]))
                 img._log("warning","Error is {}".format(e))
         return img
     
@@ -230,12 +230,12 @@ class AstroImage(object):
                 img._prepRaDec()
                 img._prepHeader()
                 img.updateHeader("ASTROIMAGEVALID", True)
-                img.addHistory("Data imported from FITS file %s" % (os.path.split(file)[1]))
-                img._log("info","Created AstroImage %s and imported data from FITS file %s" % (img.name,os.path.split(file)[1]))
+                img.addHistory("Data imported from FITS file {}".format(os.path.split(file)[1]))
+                img._log("info","Created AstroImage {} and imported data from FITS file {}".format(img.name,os.path.split(file)[1]))
             except IOError as e:
                 img.updateHeader("ASTROIMAGEVALID", False)
-                img.addHistory("Attempted to create from invalid FITS file %s" % (os.path.split(file)[1]))
-                img._log("warning","Attempted to create AstroImage %s from invalid FITS file %s" % (img.name,os.path.split(file)[1]))
+                img.addHistory("Attempted to create from invalid FITS file {}".format(os.path.split(file)[1]))
+                img._log("warning","Attempted to create AstroImage {} from invalid FITS file {}".format(img.name,os.path.split(file)[1]))
         return img
     
     @classmethod
@@ -249,7 +249,7 @@ class AstroImage(object):
     def initFromPoints(cls, xs, ys, rates, **kwargs):
         """Convenience to initialize a blank image and add a set of points to it"""
         img = cls(**kwargs)
-        img._log("info","Creating AstroImage %s from points" % (img.name))
+        img._log("info", "Creating AstroImage {} from points".format(img.name))
         if img.xsize < np.ceil(np.max(xs)) + 1:
             img.xsize = np.ceil(np.max(xs)) + 1
         if img.ysize < np.ceil(np.max(ys)) + 1:
@@ -261,7 +261,7 @@ class AstroImage(object):
     def initFromProfile(cls,posX,posY,flux,n,re,phi,axialRatio,**kwargs):
         """Convenience to initialize a blank image and add a sersic profile to it"""
         img = cls(**kwargs)
-        img._log("info","Creating AstroImage %s from Sersic Profile" % (img.name))
+        img._log("info","Creating AstroImage {} from Sersic Profile".format(img.name))
         img.addSersicProfile(posX, posY, flux, n, re, phi, axialRatio)
         return img
     
@@ -316,18 +316,18 @@ class AstroImage(object):
         elif self.wcs.wcs.lattyp == 'RA':
             return self.wcs.wcs.crval[self.wcs.wcs.lat]
         else:
-            raise ValueError("WCS has longitude %s and latitude %s. Can't get RA" % (self.wcs.wcs.lngtyp,self.wcs.wcs.lattyp))
+            raise ValueError("WCS has longitude {} and latitude {}. Can't get RA".format(self.wcs.wcs.lngtyp,self.wcs.wcs.lattyp))
     
     @ra.setter
     def ra(self,ra):
         if self.wcs.wcs.lngtyp == 'RA':
             self.wcs.wcs.crval[self.wcs.wcs.lng] = ra%360.
-            self.addHistory("Set RA to %f" % (ra))
+            self.addHistory("Set RA to {}".format(ra))
         elif self.wcs.wcs.lattyp == 'RA':
             self.wcs.wcs.crval[self.wcs.wcs.lat] = ra%360.
-            self.addHistory("Set RA to %f" % (ra))
+            self.addHistory("Set RA to {}".format(ra))
         else:
-            raise ValueError("WCS has longitude %s and latitude %s. Can't set RA" % (self.wcs.wcs.lngtyp,self.wcs.wcs.lattyp))
+            raise ValueError("WCS has longitude {} and latitude {}. Can't set RA".format(self.wcs.wcs.lngtyp,self.wcs.wcs.lattyp))
 
     @property
     def dec(self):
@@ -336,18 +336,18 @@ class AstroImage(object):
         elif self.wcs.wcs.lattyp == 'DEC':
             return self.wcs.wcs.crval[self.wcs.wcs.lat]
         else:
-            raise ValueError("WCS has longitude %s and latitude %s. Can't get DEC" % (self.wcs.wcs.lngtyp,self.wcs.wcs.lattyp))
+            raise ValueError("WCS has longitude {} and latitude {}. Can't get DEC".format(self.wcs.wcs.lngtyp,self.wcs.wcs.lattyp))
     
     @dec.setter
     def dec(self,dec):
         if self.wcs.wcs.lngtyp == 'DEC':
             self.wcs.wcs.crval[self.wcs.wcs.lng] = dec
-            self.addHistory("Set DEC to %f" % (dec))
+            self.addHistory("Set DEC to {}".format(dec))
         elif self.wcs.wcs.lattyp == 'DEC':
             self.wcs.wcs.crval[self.wcs.wcs.lat] = dec
-            self.addHistory("Set DEC to %f" % (dec))
+            self.addHistory("Set DEC to {}".format(dec))
         else:
-            raise ValueError("WCS has longitude %s and latitude %s. Can't set DEC" % (self.wcs.wcs.lngtyp,self.wcs.wcs.lattyp))
+            raise ValueError("WCS has longitude {} and latitude {}. Can't set DEC".format(self.wcs.wcs.lngtyp,self.wcs.wcs.lattyp))
  
     @property
     def pa(self):
@@ -359,7 +359,7 @@ class AstroImage(object):
         cpa = np.cos(np.radians(pa%360.))
         spa = np.sin(np.radians(pa%360.))
         self.wcs.wcs.pc = np.array([[cpa, -spa], [spa, cpa]])
-        self.addHistory("Set PA to %f" % (pa))
+        self.addHistory("Set PA to {}".format(pa))
 
     
     @property
@@ -398,13 +398,13 @@ class AstroImage(object):
                     hdu.header[k] = v
         for item in self.history:
             hdu.header.add_history(item)
-        self._log("info","Created Primary HDU from AstroImage %s" % (self.name))
+        self._log("info","Created Primary HDU from AstroImage {}".format(self.name))
         return hdu
     
     @property
     def imageHdu(self):
         """Output AstroImage as a FITS Extension HDU"""
-        self._log("info","Creating Extension HDU from AstroImage %s" % (self.name))
+        self._log("info","Creating Extension HDU from AstroImage {}".format(self.name))
         with ImageData(self.fname, self.shape, mode='r+', memmap=self.memmap) as dat:
             hdu = fits.ImageHDU(dat, header=self.wcs.to_header(relax=True), name=self.name)
         if 'CDELT1' not in hdu.header:
@@ -424,7 +424,7 @@ class AstroImage(object):
                 hdu.header[k] = v
         for item in self.history:
             hdu.header.add_history(item)
-        self._log("info","Created Extension HDU from AstroImage %s" % (self.name))
+        self._log("info","Created Extension HDU from AstroImage {}".format(self.name))
         return hdu
 
     @property
@@ -448,7 +448,7 @@ class AstroImage(object):
     
     def toFits(self, outFile):
         """Create a FITS file from the current state of the AstroImage data."""
-        self._log("info","Writing AstroImage %s to FITS" % (self.name))
+        self._log("info","Writing AstroImage {} to FITS".format(self.name))
         hdulist = fits.HDUList([self.hdu])
         hdulist.writeto(outFile, overwrite=True)
     
@@ -578,10 +578,10 @@ class AstroImage(object):
         """
         (path, catname) = os.path.split(cat)
         (catbase, catext) = os.path.splitext(catname)
-        self._log("info","Adding catalogue %s to AstroImage %s" % (catname, self.name))
+        self._log("info","Adding catalogue {} to AstroImage {}".format(catname, self.name))
         obs_file_name = "{}_observed_{}.{}".format(catbase, self.name, self.cat_type)
         obsname = os.path.join(self.out_path, obs_file_name)
-        self.addHistory("Adding items from catalogue %s" % (catname))
+        self.addHistory("Adding items from catalogue {}".format(catname))
         data = None
         in_data = StipsDataTable.dataTableFromFile(cat)
         out_data = StipsDataTable.dataTableFromFile(obsname)
@@ -598,13 +598,13 @@ class AstroImage(object):
             counter += table_length
             current_chunk = in_data.read_chunk()
         self.updateState(base_state)
-        self._log("info","Added catalogue %s to AstroImage %s" % (catname, self.name))
+        self._log("info","Added catalogue {} to AstroImage {}".format(catname, self.name))
         return obsname            
     
     def addPoints(self, xs, ys, rates, *args, **kwargs):
         """Adds a set of point sources to the image given their co-ordinates and count rates."""
-        self.addHistory("Adding %d point sources" % (len(xs)))
-        self._log("info","Adding %d point sources to AstroImage %s" % (len(xs),self.name))
+        self.addHistory("Adding {} point sources".format(len(xs)))
+        self._log("info","Adding {} point sources to AstroImage {}".format(len(xs),self.name))
         xs = np.floor(xs).astype(int)
         ys = np.floor(ys).astype(int)
         with ImageData(self.fname, self.shape, memmap=self.memmap) as dat:
@@ -624,7 +624,7 @@ class AstroImage(object):
         """
         if flux == 0.:
             return 0.
-        self.addHistory("Adding Sersic profile at (%f,%f) with flux %f, index %f, Re %f, Phi %f, and axial ratio %f" % (posX,posY,flux,n,re,phi,axialRatio))
+        self.addHistory("Adding Sersic profile at ({},{}) with flux {}, index {}, Re {}, Phi {}, and axial ratio {}".format(posX,posY,flux,n,re,phi,axialRatio))
         self._log("info","Adding Sersic: re={}, n={}, flux={}, phi={:.1f}, ratio={}".format(re, n, flux, phi, axialRatio))
         
         # Determine necessary parameters for the Sersic model -- the input radius, surface 
@@ -955,8 +955,8 @@ class AstroImage(object):
         
         ..warning:: This function is not necessarily flux-conserving
         """
-        self.addHistory("Rotating by %f degrees" % (angle))
-        self._log("info","Rotating AstroImage %s by %f degrees" % (self.name,angle))
+        self.addHistory("Rotating by {} degrees".format(angle))
+        self._log("info","Rotating AstroImage {} by {} degrees".format(self.name,angle))
         self.pa = (self.pa + angle)%360.%360.
         f = os.path.join(self.out_path, uuid.uuid4().hex+"_rotate.tmp")
         try:
@@ -988,8 +988,8 @@ class AstroImage(object):
         
         offset_n have units of pixels-of-self
         """
-        self.addHistory("Adding image with offset of (%f,%f) pixels" % (offset_x,offset_y))
-        self._log("info","Adding image %s with offset (%d,%d)" % (other.name,offset_x,offset_y))
+        self.addHistory("Adding image with offset of ({},{}) pixels".format(offset_x,offset_y))
+        self._log("info","Adding image {} with offset ({},{})".format(other.name,offset_x,offset_y))
         other_copy = other.copy()
         if abs(other.scale[0] - self.scale[0]) > 1.e-5 or abs(other.scale[1]-self.scale[1]) > 1.e-5:
             other_copy.rescale(self.scale)
@@ -1030,7 +1030,7 @@ class AstroImage(object):
             hy = hy - high_y + self.ysize
             high_y = self.ysize
         
-        self._log("info","Adding Other[%d:%d,%d:%d] to AstroImage %s[%d:%d,%d:%d]" % (ly,hy,lx,hx,self.name,low_y,high_y,low_x,high_x))
+        self._log("info","Adding Other[{}:{},{}:{}] to AstroImage {}[{}:{},{}:{}]".format(ly,hy,lx,hx,self.name,low_y,high_y,low_x,high_x))
         return int(lx), int(ly), int(hx), int(hy), int(low_x), int(low_y), int(high_x), int(high_y)
 
     def _filled(self, offset_x, offset_y, size_x, size_y):
@@ -1062,7 +1062,7 @@ class AstroImage(object):
                 dat[low_y:high_y, low_x:high_x] += other[ly:hy, lx:hx]
         else:
             self.addHistory("Added image is disjoint")
-            self._log("warning","%s: Image is disjoint" % (self.name))
+            self._log("warning","{}: Image is disjoint".format(self.name))
         
     def _addWithOffset(self, other, offset_x, offset_y):
         """
@@ -1078,18 +1078,18 @@ class AstroImage(object):
                 dat[low_y:high_y, low_x:high_x] += other_data[ly:hy, lx:hx]
         else:
             self.addHistory("Added image is disjoint")
-            self._log("warning","%s: Image is disjoint" % (self.name))
+            self._log("warning","{}: Image is disjoint".format(self.name))
         
     def addWithAlignment(self,other):
         """Adds other to self after aligning co-ordinates"""
         self.addHistory("Adding image aligned by WCS")
-        self._log("info","Adding image %s (RA,DEC,PA)=(%f,%f,%f) aligned by WCS" % (other.name,other.ra,other.dec,other.pa))
+        self._log("info","Adding image {} (RA,DEC,PA)=({},{},{}) aligned by WCS".format(other.name,other.ra,other.dec,other.pa))
         other_copy = other.copy()
         if abs(other.pa - self.pa) > 1.e-5:
-            self._log("info","Rotating other image by %f degrees" % ((self.pa-other.pa)))
+            self._log("info","Rotating other image by {} degrees".format((self.pa-other.pa)))
             other_copy.rotate((self.pa-other.pa), reshape=True)
         if abs(other.scale[0] - self.scale[0]) > 1.e-5 or abs(other.scale[1]-self.scale[1]) > 1.e-5:
-            self._log("info","Rescaling other from (%f,%f) to (%f,%f)" % (other.scale[0],other.scale[1],self.scale[0],self.scale[1]))
+            self._log("info","Rescaling other from ({},{}) to ({},{})".format(other.scale[0],other.scale[1],self.scale[0],self.scale[1]))
             other_copy.rescale(self.scale)
             self._log("info","Finished rescaling")
         ra = other.ra
@@ -1099,13 +1099,13 @@ class AstroImage(object):
         py = pix[1][0]
         offset_x = int(np.round(px - self.wcs.wcs.crpix[0]))
         offset_y = int(np.round(py - self.wcs.wcs.crpix[1]))
-        self._log("info","Other has centre co-ordinates (%f,%f) for offset (%d,%d)" % (px,py,offset_x,offset_y))
+        self._log("info","Other has centre co-ordinates ({},{}) for offset ({},{})".format(px,py,offset_x,offset_y))
         self._addWithOffset(other_copy, offset_x, offset_y)
 
     def rescale(self,scale):
         """Rescales the image to the provided plate scale."""
-        self.addHistory("Rescaling to (%f,%f) arcsec/pixel" % (scale[0],scale[1]))
-        self._log("info","Rescaling to (%f,%f) arcsec/pixel" % (scale[0],scale[1]))
+        self.addHistory("Rescaling to ({},{}) arcsec/pixel".format(scale[0],scale[1]))
+        self._log("info","Rescaling to ({},{}) arcsec/pixel".format(scale[0],scale[1]))
         f = os.path.join(self.out_path, uuid.uuid4().hex+"_scale.tmp")
         try:
             shape_x = int(round(self.shape[1] * self.scale[0] / scale[0]))
@@ -1279,8 +1279,8 @@ class AstroImage(object):
                 os.remove(self.fname)
             raise e
         self.updateHeader("RDNOISE", readnoise)
-        self.addHistory("Adding Read noise with mean %f and standard deviation %f" % (mean, std))
-        self._log("info","Adding readnoise with mean %f and STDEV %f" % (mean, std))
+        self.addHistory("Adding Read noise with mean {} and standard deviation {}".format(mean, std))
+        self._log("info","Adding readnoise with mean {} and STDEV {}".format(mean, std))
 
     def introduceFlatfieldResidual(self,flat):
         """
@@ -1294,8 +1294,8 @@ class AstroImage(object):
             err = flat_data[:self.ysize,:self.xsize]
             mean, std = err.mean(), err.std()
             dat *= err
-        self.addHistory("Adding Flatfield residual with mean %f and standard deviation %f" % (mean, std))
-        self._log("info","Adding Flatfield residual with mean %f and standard deviation %f" % (mean, std))
+        self.addHistory("Adding Flatfield residual with mean {} and standard deviation {}".format(mean, std))
+        self._log("info","Adding Flatfield residual with mean {} and standard deviation {}".format(mean, std))
 
     def introduceDarkResidual(self,dark):
         """
@@ -1309,8 +1309,8 @@ class AstroImage(object):
             err = dark_data[:self.ysize,:self.xsize]
             mean, std = err.mean(), err.std()
             dat += err
-        self.addHistory("Adding Dark residual with mean %f and standard deviation %f" % (mean, std))
-        self._log("info","Adding Dark residual with mean %f and standard deviation %f" % (mean, std))
+        self.addHistory("Adding Dark residual with mean {} and standard deviation {}".format(mean, std))
+        self._log("info","Adding Dark residual with mean {} and standard deviation {}".format(mean, std))
     
     def introduceCosmicRayResidual(self, pixel_size):
         """
@@ -1349,16 +1349,16 @@ class AstroImage(object):
             if os.path.exists(self.fname):
                 os.remove(self.fname)
             raise e
-        self.addHistory("Adding Cosmic Ray residual with mean %f and standard deviation %f" % (mean, std))
-        self._log("info","Adding Cosmic Ray residual with mean %f and standard deviation %f" % (mean, std))
+        self.addHistory("Adding Cosmic Ray residual with mean {} and standard deviation {}".format(mean, std))
+        self._log("info","Adding Cosmic Ray residual with mean {} and standard deviation {}".format(mean, std))
 
     def _prepHeader(self):
         """
         Prepare the header WCS based on instrument and filter. For now, set RA and DEC to be
         identically zero. 
         """
-        self.header['DATE-OBS'] = time.strftime("%Y-%m-%d")
-        self.header['TIME-OBS'] = time.strftime("%h:%m:%s")
+        self.header['DATE-OBS'] = time.strftime("%Y-%m-{}")
+        self.header['TIME-OBS'] = time.strftime("%h:%m:{}")
         self.header['EQUINOX'] = 2000.0
         self.header['PA_APER'] = self.pa
         self.header['VAFACTOR'] = 0.
@@ -1490,7 +1490,7 @@ class AstroImage(object):
             ranum = 0
             decnum = 1
         else:
-            raise ValueError("Lattype = %s and Lngtype = %s: can't get RA, DEC" % (w.wcs.lngtyp,w.wcs.lattyp))
+            raise ValueError("Lattype = {} and Lngtype = {}: can't get RA, DEC".format(w.wcs.lngtyp,w.wcs.lattyp))
         ra = w.wcs.crval[ranum]
         dec = w.wcs.crval[decnum]
         if w.wcs.has_cd():
@@ -1519,14 +1519,14 @@ class AstroImage(object):
             if k not in result.header:
                 result.header[k] = v
         for item in other.history:
-            result.history.append("%s: %s" (other.name,item))
-        result.history.append("Taken from %s and added %s" (self.name,other.name))
+            result.history.append("{}: {}".format(other.name, item))
+        result.history.append("Took {} and added {}".format(self.name,other.name))
         return result
 
     def __iadd__(self,other):
         """Adds an AstroImage to the current one. (i.e. the '+=' operator)"""
         if isinstance(other, int) or isinstance(other, float):
-            self.addHistory("Added constant %f/pixel" % (other))
+            self.addHistory("Added constant {}/pixel".format(other))
             with ImageData(self.fname, self.shape, memmap=self.memmap) as dat:
                 dat += other
             return self
@@ -1536,8 +1536,8 @@ class AstroImage(object):
                 if k not in self.header:
                     self.header[k] = v
             for item in other.history:
-                self.history.append("%s: %s" % (other.name,item))
-            self.history.append("Added %s" (other.name))
+                self.history.append("{}: {}".format(other.name,item))
+            self.history.append("Added {}".format(other.name))
             return self
 
     def __radd__(self,other):
@@ -1546,7 +1546,7 @@ class AstroImage(object):
         
         .. warning:: Assumes constant value per-pixel
         """
-        self.addHistory("Added %f/pixel" % (other))
+        self.addHistory("Added {}/pixel".format(other))
         with ImageData(self.fname, self.shape, memmap=self.memmap) as dat:
             dat += other
         return self
@@ -1556,12 +1556,12 @@ class AstroImage(object):
         result = self.copy()
         with ImageData(result.fname, result.shape, memmap=result.memmap) as dat:
             dat *= other
-        result.addHistory("Multiplied by %f" % (other))
+        result.addHistory("Multiplied by {}".format(other))
         return result
 
     def __imul__(self,other):
         """Multiples an integer or floating-point constant to the AstroImage"""
-        self.addHistory("Multiplied by %f" % (other))
+        self.addHistory("Multiplied by {}".format(other))
         with ImageData(self.fname, self.shape, memmap=self.memmap) as dat:
             dat *= other
         return self
@@ -1571,7 +1571,7 @@ class AstroImage(object):
         result = self.copy()
         with ImageData(result.fname, result.shape, memmap=result.memmap) as dat:
             dat *= other
-        result.addHistory("Multiplied by %f" % (other))
+        result.addHistory("Multiplied by {}".format(other))
         return result
 
     @property
@@ -1588,7 +1588,7 @@ class AstroImage(object):
         if hasattr(self,'logger'):
             getattr(self.logger,mtype)(message)
         else:
-            sys.stderr.write("%s: %s\n" % (mtype,message))
+            sys.stderr.write("{}: {}\n".format(mtype,message))
     
     def _init_dat(self, base_shape, psf_shape=(0,0), data=None):
         self.base_shape = base_shape

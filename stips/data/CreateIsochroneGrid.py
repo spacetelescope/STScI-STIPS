@@ -197,8 +197,8 @@ def getStars(age, zeta):
     #2 = sequence of isochrones, constant age, different metallicities
     form["isoc_val"] = ["0"]
     #Age for single-single
-    form["isoc_age"] = '%g' % (age)
-    form["isoc_zeta"] = '%g' % (zeta)
+    form["isoc_age"] = '{:g}'.format(age)
+    form["isoc_zeta"] = '{:g}'.format(zeta)
     request2 = form.click()
     response2 = mechanize.urlopen(request2)
     response_value = response2.read()

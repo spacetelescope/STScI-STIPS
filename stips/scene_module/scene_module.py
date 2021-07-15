@@ -148,7 +148,7 @@ class SceneModule(object):
             os.remove(outList) # No append
         data_table = StipsDataTable.dataTableFromFile(outList)
 
-        self._log("info","Creating catalogue %s" % (outList))
+        self._log("info","Creating catalogue {}".format(outList))
         n_stars = int(pop['n_stars'])
         age_l = age_bins[(np.abs(age_bins-float(pop['age_low']))).argmin()]
         age_h = age_bins[(np.abs(age_bins-float(pop['age_high']))).argmin()]
@@ -633,4 +633,4 @@ class SceneModule(object):
         if hasattr(self,'logger'):
             getattr(self.logger,mtype)(message)
         else:
-            sys.stderr.write("%s: %s\n" % (mtype,message))
+            sys.stderr.write("{}: {}\n".format(mtype,message))

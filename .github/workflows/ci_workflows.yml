@@ -22,17 +22,21 @@ jobs:
             os: ubuntu-latest
             python: 3.7
 
-#          - name: Python 3.8
-#            os: ubuntu-latest
-#            python: 3.8
+          - name: Python 3.8
+            os: ubuntu-latest
+            python: 3.8
 
-          - name: Python 3.7 Mac
+          - name: Python 3.9
+            os: ubuntu-latest
+            python: 3.9
+
+          - name: Python 3.8 Mac
             os: macos-latest
-            python: 3.7
+            python: 3.8
 
           - name: Python Long
             os: ubuntu-latest
-            python: 3.7
+            python: 3.8
 
     steps:
     - name: Checkout code
@@ -46,44 +50,36 @@ jobs:
         environment-file: environment.yml
         python-version: ${{ matrix.python }}
         auto-activate-base: false
-    - name: Install Required Data
-      shell: bash -l {0}
-      run: |
-        export TEST_DATA=${HOME}/test_data
-        mkdir -p ${TEST_DATA}
-        wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O ${TEST_DATA}/stips_data_current.tar.gz
-        tar -xzvf ${TEST_DATA}/stips_data_current.tar.gz -C ${TEST_DATA}
-        mkdir -p ${TEST_DATA}/synphot
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O ${TEST_DATA}/synphot1.tar.gz
-        tar -xzvf ${TEST_DATA}/synphot1.tar.gz -C ${TEST_DATA}/synphot/
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O ${TEST_DATA}/synphot2.tar.gz
-        tar -xzvf ${TEST_DATA}/synphot2.tar.gz -C ${TEST_DATA}/synphot/
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O ${TEST_DATA}/synphot5.tar.gz
-        tar -xzvf ${TEST_DATA}/synphot5.tar.gz -C ${TEST_DATA}/synphot/
-        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O ${TEST_DATA}/synphot6.tar.gz
-        tar -xzvf ${TEST_DATA}/synphot6.tar.gz -C ${TEST_DATA}/synphot/
-        wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz
-        tar -xzvf ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz -C ${TEST_DATA}
-        wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O ${TEST_DATA}/webbpsf_data.gz
-        tar -xzvf ${TEST_DATA}/webbpsf_data.gz -C ${TEST_DATA}
-    - name: Test with pytest
+#    - name: Install Required Data
+#      shell: bash -l {0}
+#      run: |
+#        export TEST_DATA=${HOME}/test_data
+#        mkdir -p ${TEST_DATA}
+#        wget https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz -O ${TEST_DATA}/stips_data_current.tar.gz
+#        tar -xzvf ${TEST_DATA}/stips_data_current.tar.gz -C ${TEST_DATA}
+#        mkdir -p ${TEST_DATA}/synphot
+#        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz -O ${TEST_DATA}/synphot1.tar.gz
+#        tar -xzvf ${TEST_DATA}/synphot1.tar.gz -C ${TEST_DATA}/synphot/
+#        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz -O ${TEST_DATA}/synphot2.tar.gz
+#        tar -xzvf ${TEST_DATA}/synphot2.tar.gz -C ${TEST_DATA}/synphot/
+#        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz -O ${TEST_DATA}/synphot5.tar.gz
+#        tar -xzvf ${TEST_DATA}/synphot5.tar.gz -C ${TEST_DATA}/synphot/
+#        wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz -O ${TEST_DATA}/synphot6.tar.gz
+#        tar -xzvf ${TEST_DATA}/synphot6.tar.gz -C ${TEST_DATA}/synphot/
+#        wget -qO- https://stsci.box.com/shared/static/7voehzi5krrpml5wgyg8bo954ew7arh2.gz -O ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz
+#        tar -xzvf ${TEST_DATA}/pandeia_data-1.5.2rc2_roman.gz -C ${TEST_DATA}
+#        wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz -O ${TEST_DATA}/webbpsf_data.gz
+#        tar -xzvf ${TEST_DATA}/webbpsf_data.gz -C ${TEST_DATA}
+    - name: Test with tox
       shell: bash -l {0}
       if: ${{ matrix.name != 'Python Long' }}
       run: |
-        export stips_data=${HOME}/test_data/stips_data
-        export PYSYN_CDBS=${HOME}/test_data/synphot/grp/redcat/trds
-        export pandeia_refdata=${HOME}/test_data/pandeia_data-1.5.2rc2_roman
-        export WEBBPSF_PATH=${HOME}/test_data/webbpsf-data
-        pytest -m "not veryslow" stips
+        tox -e devtest
     - name: Test slow tests with pytest
       shell: bash -l {0}
       if: ${{ matrix.name == 'Python Long' }}
       run: |
-        export stips_data=${HOME}/test_data/stips_data
-        export PYSYN_CDBS=${HOME}/test_data/synphot/grp/redcat/trds
-        export pandeia_refdata=${HOME}/test_data/pandeia_data-1.5.2rc2_roman
-        export WEBBPSF_PATH=${HOME}/test_data/webbpsf-data
-        pytest stips
+        tox -e devtest-all
 
   docs_test:
     name: "docs_test"
@@ -103,4 +99,4 @@ jobs:
     - name: Build Docs
       shell: bash -l {0}
       run: |
-        python setup.py build_docs -w
+        tox -e build_docs

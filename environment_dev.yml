@@ -15,7 +15,7 @@
 # To remove the environment entirely, run the following command:
 # $ conda env remove -n stips
 
-name: stips
+name: stips_dev
 
 channels:
   - conda-forge
@@ -25,22 +25,14 @@ channels:
 
 dependencies:
   # Base dependencies
-  - pip
   - python>=3.7
+  - pip
   - jupyter
-
-  # Minor modules
-  - pyfftw
-  - ConfigParser
-
-  # Docs
-  - sphinx
-  - docutils
-  - sphinx_rtd_theme
-  - stsci_rtd_theme
+  - Cython
 
   - pip:
     # Major modules
+    - ConfigParser
     - numpy
     - scipy
     - matplotlib
@@ -49,10 +41,10 @@ dependencies:
     - healpy
     - synphot
     - stsynphot
-    - esutil
+    - esutil --no-binary=esutil
     - jwst_backgrounds
     - webbpsf>=0.9.0
-    - pandeia.engine==1.5.2
+    - pandeia.engine==1.6
 
     # Minor modules
     - montage-wrapper
@@ -60,5 +52,14 @@ dependencies:
     - mechanize
 
     # Docs
-    - astropy_helpers
-    - sphinx_astropy
+    - sphinx
+    - sphinx_rtd_theme
+    - stsci_rtd_theme
+    
+    # Testing
+    - tox
+    - tox-conda
+    - pytest-astropy
+    
+    # Current package
+    - -e .

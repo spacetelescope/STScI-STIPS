@@ -17,18 +17,18 @@ def skip_page_ref(self, node):
     raise SkipNode
 
 def latex_visit_page_ref(self, node):
-    self.body.append("\\pageref{%s:%s}" % (node['refdoc'], node['reftarget']))
+    self.body.append("\\pageref\{{}:{}\}".format(node['refdoc'], node['reftarget']))
     raise SkipNode
 
 def latex_visit_num_ref(self, node):
     fields = node['reftarget'].split('#')
     if len(fields) > 1:
         label, target = fields
-        ref_link = '%s:%s' % (node['refdoc'], target)
-        latex = "\\hyperref[%s]{%s \\ref*{%s}}" % (ref_link, label, ref_link)
+        ref_link = '{}:{}'.format(node['refdoc'], target)
+        latex = "\\hyperref[{}]\{{} \\ref*\{{}\}\}".format(ref_link, label, ref_link)
         self.body.append(latex)
     else:
-        self.body.append('\\ref{%s:%s}' % (node['refdoc'], fields[0]))
+        self.body.append('\\ref\{{}:{}\}'.format(node['refdoc'], fields[0]))
 
     raise SkipNode
 
@@ -51,7 +51,7 @@ def doctree_resolved(app, doctree, docname):
     for figure_info in doctree.traverse(figure):
         if app.builder.name != 'latex' and app.config.number_figures:
             for cap in figure_info.traverse(caption):
-                cap[0] = Text("%s %d: %s" % (app.config.figure_caption_prefix, i, cap[0]))
+                cap[0] = Text("{} {}: {}".format(app.config.figure_caption_prefix, i, cap[0]))
 
         for id in figure_info['ids']:
             figids[id] = i
@@ -64,9 +64,9 @@ def doctree_resolved(app, doctree, docname):
         for ref_info in doctree.traverse(num_ref):
             if '#' in ref_info['reftarget']:
                 label, target = ref_info['reftarget'].split('#')
-                labelfmt = label + " %d"
+                labelfmt = label + " {}"
             else:
-                labelfmt = '%d'
+                labelfmt = '{}'
                 target = ref_info['reftarget']
 
             if target not in figids:
@@ -74,12 +74,12 @@ def doctree_resolved(app, doctree, docname):
 
             if app.builder.name == 'html':
                 target_doc = app.builder.env.figid_docname_map[target]
-                link = "%s#%s" % (app.builder.get_relative_uri(docname, target_doc),
+                link = "{}#{}".format(app.builder.get_relative_uri(docname, target_doc),
                                   target)
-                html = '<a class="pageref" href="%s">%s</a>' % (link, labelfmt %(figids[target]))
+                html = '<a class="pageref" href="{}">{}</a>'.format(link, labelfmt.format(figids[target]))
                 ref_info.replace_self(raw(html, html, format='html'))
             else:
-                ref_info.replace_self(Text(labelfmt % (figids[target])))
+                ref_info.replace_self(Text(labelfmt.format(figids[target])))
 
 
 def clean_env(app):
