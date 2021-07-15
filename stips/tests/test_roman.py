@@ -3,6 +3,7 @@ from stips.observation_module import ObservationModule
 
 import pytest
 
+from tempfile import TemporaryDirectory
 
 def create_catalogues():
     star_data = {
@@ -67,8 +68,10 @@ def test_roman_observation():
     stellar_cat_file, galaxy_cat_file = create_catalogues()
     
     obs = get_default_obs()
+    
+    dir_name = TemporaryDirectory()
 
-    obm = ObservationModule(obs)
+    obm = ObservationModule(obs, out_path=dir_name)
     obm.nextObservation()
     output_stellar_catalogues = obm.addCatalogue(stellar_cat_file)
     output_galaxy_catalogues = obm.addCatalogue(galaxy_cat_file)
@@ -85,7 +88,9 @@ def test_roman_observation_deluxe():
     obs['psf_grid_size'] = 3
     obs['oversample'] = 5
 
-    obm = ObservationModule(obs)
+    dir_name = TemporaryDirectory()
+
+    obm = ObservationModule(obs, out_path=dir_name)
     obm.nextObservation()
     output_stellar_catalogues = obm.addCatalogue(stellar_cat_file)
     output_galaxy_catalogues = obm.addCatalogue(galaxy_cat_file)
@@ -131,7 +136,9 @@ def test_obs_parameters(obs_changes):
     for key in obs_changes[0]:
         obs[key] = obs_changes[0][key]
 
-    obm = ObservationModule(obs)
+    dir_name = TemporaryDirectory()
+
+    obm = ObservationModule(obs, out_path=dir_name)
     obm.nextObservation()
     output_stellar_catalogues = obm.addCatalogue(stellar_cat_file)
     output_galaxy_catalogues = obm.addCatalogue(galaxy_cat_file)
