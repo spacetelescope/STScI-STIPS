@@ -33,9 +33,6 @@ import stsci_rtd_theme
 def setup(app):
     app.add_css_file("stsci.css")
 
-# Load all of the global Astropy configuration
-from sphinx_astropy.conf import *
-
 # Get configuration information from setup.cfg
 try:
     from ConfigParser import ConfigParser
