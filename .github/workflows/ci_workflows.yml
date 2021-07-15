@@ -47,7 +47,7 @@ jobs:
       uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: stips
-        environment-file: environment_dev.yml
+        environment-file: environment.yml
         python-version: ${{ matrix.python }}
         auto-activate-base: false
 #    - name: Install Required Data
@@ -74,12 +74,12 @@ jobs:
       shell: bash -l {0}
       if: ${{ matrix.name != 'Python Long' }}
       run: |
-        tox -e devtest
+        tox -e test
     - name: Test slow tests with pytest
       shell: bash -l {0}
       if: ${{ matrix.name == 'Python Long' }}
       run: |
-        tox -e devtest-all
+        tox -e test-all
 
   docs_test:
     name: "docs_test"
@@ -93,7 +93,7 @@ jobs:
       uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: stips
-        environment-file: environment_dev.yml
+        environment-file: environment.yml
         python-version: 3.7
         auto-activate-base: false
     - name: Build Docs
