@@ -71,7 +71,7 @@ def test_roman_observation():
     
     dir_name = TemporaryDirectory()
 
-    obm = ObservationModule(obs, out_path=dir_name)
+    obm = ObservationModule(obs, out_path=dir_name.name)
     obm.nextObservation()
     output_stellar_catalogues = obm.addCatalogue(stellar_cat_file)
     output_galaxy_catalogues = obm.addCatalogue(galaxy_cat_file)
@@ -90,7 +90,7 @@ def test_roman_observation_deluxe():
 
     dir_name = TemporaryDirectory()
 
-    obm = ObservationModule(obs, out_path=dir_name)
+    obm = ObservationModule(obs, out_path=dir_name.name)
     obm.nextObservation()
     output_stellar_catalogues = obm.addCatalogue(stellar_cat_file)
     output_galaxy_catalogues = obm.addCatalogue(galaxy_cat_file)
@@ -138,7 +138,7 @@ def test_obs_parameters(obs_changes):
 
     dir_name = TemporaryDirectory()
 
-    obm = ObservationModule(obs, out_path=dir_name)
+    obm = ObservationModule(obs, out_path=dir_name.name)
     obm.nextObservation()
     output_stellar_catalogues = obm.addCatalogue(stellar_cat_file)
     output_galaxy_catalogues = obm.addCatalogue(galaxy_cat_file)
