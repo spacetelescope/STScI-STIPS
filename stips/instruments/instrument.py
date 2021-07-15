@@ -876,7 +876,21 @@ class Instrument(object):
         try:
             norm_wave, norm_flux = norm.normalize(wave, flux)
         except DataConfigurationError as e:
-            norm = syn.SpectralElement.from_filter(bandpass)
+            try:
+                norm = syn.SpectralElement.from_filter(bandpass)
+            except FileNotFoundError as e:
+                band_path = os.path.join(os.environ["PYSYN_CDBS"], "comp", "nonhst")
+                band_name = "{}*syn.fits".format(bandpass.replace(",", "_"))
+                band_files = glob.glob(os.path.join(band_path, band_name))
+                if len(band_files) > 0:
+                    band_file = sorted(band_files)[-1]
+                    sp = syn.SpectralElement.from_file(band_file)
+                else:
+                    msg = "Unable to find local {} spectrum at {}\n"
+                    msg = msg.format(bandpass, os.environ["PYSYN_CDBS"])
+                    msg += "Original exception was {}".format(e)
+                    raise FileNotFoundError(msg)
+
             sp = syn.SourceSpectrum(syn.Empirical1D, points=wave, lookup_table=flux)
             norm_sp = sp.normalize(norm_flux*u.ABmag, band=norm)
             return norm_sp
@@ -961,19 +975,24 @@ class Instrument(object):
     
     @property
     def zeropoint_unit(self):
-        vega_path = os.path.join(os.environ["PYSYN_CDBS"], "calspec")
-        vega_files = glob.glob(os.path.join(vega_path, "alpha_lyr*.fits"))
-        if len(vega_files) > 0:
-            vega_file = sorted(vega_files)[-1]
-            sp = syn.SourceSpectrum.from_file(vega_file)
-            bp = self.bandpass
-            sp = sp.normalize(0.0*syn.units.VEGAMAG, band=bp, vegaspec=sp)
-            obs = syn.Observation(sp, bp, binset=sp.waveset)
-            zeropoint = obs.effstim(flux_unit=syn.units.OBMAG, area=self.AREA)
-            return zeropoint
-        else:
-            msg = "Unable to find vega in {}"
-            raise FileNotFoundError(msg.format(os.environ["PYSYN_CDBS"]))
+        try:
+            sp = syn.SourceSpectrum.from_vega()
+        except FileNotFoundError as e:
+            vega_path = os.path.join(os.environ["PYSYN_CDBS"], "calspec")
+            vega_files = glob.glob(os.path.join(vega_path, "alpha_lyr*.fits"))
+            if len(vega_files) > 0:
+                vega_file = sorted(vega_files)[-1]
+                sp = syn.SourceSpectrum.from_file(vega_file)
+            else:
+                msg = "Unable to find local Vega spectrum at {}\n"
+                msg = msg.format(os.environ["PYSYN_CDBS"])
+                msg += "Original exception was {}".format(e)
+                raise FileNotFoundError(msg)
+        bp = self.bandpass
+        sp = sp.normalize(0.0*syn.units.VEGAMAG, band=bp, vegaspec=sp)
+        obs = syn.Observation(sp, bp, binset=sp.waveset)
+        zeropoint = obs.effstim(flux_unit=syn.units.OBMAG, area=self.AREA)
+        return zeropoint
     
     @property
     def photflam(self):
