@@ -82,13 +82,13 @@ def test_roman_observation():
 @pytest.mark.veryslow
 def test_roman_observation_deluxe():
 
-    stellar_cat_file, galaxy_cat_file = create_catalogues()
+    dir_name = TemporaryDirectory()
+
+    stellar_cat_file, galaxy_cat_file = create_catalogues(dir_name.name)
 
     obs = get_default_obs()
     obs['psf_grid_size'] = 3
     obs['oversample'] = 5
-
-    dir_name = TemporaryDirectory()
 
     obm = ObservationModule(obs, out_path=dir_name.name, cat_path=dir_name.name)
     obm.nextObservation()
@@ -130,13 +130,13 @@ obs_data = [
 @pytest.mark.parametrize(("obs_changes"), obs_data)
 def test_obs_parameters(obs_changes):
     
-    stellar_cat_file, galaxy_cat_file = create_catalogues()
+    dir_name = TemporaryDirectory()
+
+    stellar_cat_file, galaxy_cat_file = create_catalogues(dir_name.name)
 
     obs = get_default_obs()
     for key in obs_changes[0]:
         obs[key] = obs_changes[0][key]
-
-    dir_name = TemporaryDirectory()
 
     obm = ObservationModule(obs, out_path=dir_name.name, cat_path=dir_name.name)
     obm.nextObservation()
