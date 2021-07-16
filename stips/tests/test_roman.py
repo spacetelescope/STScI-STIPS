@@ -5,7 +5,7 @@ import pytest
 
 from tempfile import TemporaryDirectory
 
-def create_catalogues():
+def create_catalogues(out_path):
     star_data = {
                     'n_stars': 100,
                     'age_low': 1.0e12, 'age_high': 1.0e12,
@@ -28,7 +28,7 @@ def create_catalogues():
                     'offset_ra': 0.0, 'offset_dec': 0.0
                   }
 
-    scm = SceneModule()
+    scm = SceneModule(out_path=out_path)
     stellar_cat_file = scm.CreatePopulation(star_data)
     galaxy_cat_file = scm.CreateGalaxies(galaxy_data)
     
@@ -65,13 +65,13 @@ def get_default_obs():
 
 def test_roman_observation():
 
-    stellar_cat_file, galaxy_cat_file = create_catalogues()
+    dir_name = TemporaryDirectory()
+
+    stellar_cat_file, galaxy_cat_file = create_catalogues(dir_name.name)
     
     obs = get_default_obs()
     
-    dir_name = TemporaryDirectory()
-
-    obm = ObservationModule(obs, out_path=dir_name.name)
+    obm = ObservationModule(obs, out_path=dir_name.name, cat_path=dir_name.name)
     obm.nextObservation()
     output_stellar_catalogues = obm.addCatalogue(stellar_cat_file)
     output_galaxy_catalogues = obm.addCatalogue(galaxy_cat_file)
@@ -90,7 +90,7 @@ def test_roman_observation_deluxe():
 
     dir_name = TemporaryDirectory()
 
-    obm = ObservationModule(obs, out_path=dir_name.name)
+    obm = ObservationModule(obs, out_path=dir_name.name, cat_path=dir_name.name)
     obm.nextObservation()
     output_stellar_catalogues = obm.addCatalogue(stellar_cat_file)
     output_galaxy_catalogues = obm.addCatalogue(galaxy_cat_file)
@@ -138,7 +138,7 @@ def test_obs_parameters(obs_changes):
 
     dir_name = TemporaryDirectory()
 
-    obm = ObservationModule(obs, out_path=dir_name.name)
+    obm = ObservationModule(obs, out_path=dir_name.name, cat_path=dir_name.name)
     obm.nextObservation()
     output_stellar_catalogues = obm.addCatalogue(stellar_cat_file)
     output_galaxy_catalogues = obm.addCatalogue(galaxy_cat_file)
