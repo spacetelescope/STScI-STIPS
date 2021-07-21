@@ -30,20 +30,8 @@ import os
 import sys
 import stsci_rtd_theme
 
-try:
-    import astropy_helpers
-except ImportError:
-    # Building from inside the docs/ directory?
-    if os.path.basename(os.getcwd()) == 'docs':
-        a_h_path = os.path.abspath(os.path.join('..', 'astropy_helpers'))
-        if os.path.isdir(a_h_path):
-            sys.path.insert(1, a_h_path)
-
 def setup(app):
     app.add_css_file("stsci.css")
-
-# Load all of the global Astropy configuration
-from sphinx_astropy.conf import *
 
 # Get configuration information from setup.cfg
 try:
@@ -81,16 +69,6 @@ numpydoc_show_class_members = False
 # To perform a Sphinx version check that needs to be more specific than
 # major.minor, call `check_sphinx_version("x.y.z")` here.
 # check_sphinx_version("1.2.1")
-
-# List of patterns, relative to source directory, that match files and
-# directories to ignore when looking for source files.
-exclude_patterns.append('_templates')
-
-# This is added to the end of RST files - a good place to put substitutions to
-# be used globally.
-rst_epilog += """
-"""
-
 
 # -- Project information ------------------------------------------------------
 
@@ -168,7 +146,6 @@ man_pages = [('index', project.lower(), project + u' Documentation',
 # -- Options for the edit_on_github extension ---------------------------------
 
 if eval(setup_cfg.get('edit_on_github')):
-    extensions += ['astropy_helpers.sphinx.ext.edit_on_github']
 
     versionmod = __import__(setup_cfg['name'] + '.version')
     edit_on_github_project = setup_cfg['github_project']

@@ -9,16 +9,45 @@ General CGI form functions.
 from __future__ import absolute_import,division
 
 # External modules
-import importlib, inspect, os, shutil, socket, struct, sys, urllib, uuid, yaml
+import glob, importlib, inspect, os, requests, shutil, socket, struct, sys, tarfile 
+import urllib, uuid, yaml
 import numpy as np
 import astropy.io.fits as pyfits
-from numpy.fft import fft2, ifft2
 from astropy.io import ascii
 from astropy.table import Table
 from jwst_backgrounds.jbt import background
+from numpy.fft import fft2, ifft2
+from pathlib import Path
 from photutils.psf.models import GriddedPSFModel
 
 from .. import __version__ as __stips__version__
+
+def remove_subfolder(tar_file, subfolder):
+    """
+    Utility function to take a tar file and remove a set of leading folders from each 
+    member in the tar file.
+    """
+    subfolder_len = len(subfolder)
+    for member in tar_file.getmembers():
+        if member.path.startswith(subfolder):
+            member.path = member.path[subfolder_len:]
+            yield member
+
+def get_compressed_file(url, file_name, path="", dirs_to_remove=""):
+    """
+    Utility function to retrieve a .tgz compressed file from a given URL, and extract it
+    to a provided path.
+    """
+    r = requests.get(url, allow_redirects=True)
+    with open(file_name, 'wb') as output_file:
+        output_file.write(r.content)
+    with tarfile.open(file_name) as input_file:
+        if len(dirs_to_remove) > 0:
+            members = remove_subfolder(input_file, dirs_to_remove)
+        else:
+            members = input_file.getmembers()
+        input_file.extractall(path=path, members=members)
+    os.remove(file_name)
 
 #-----------
 class classproperty(object):
@@ -321,6 +350,88 @@ class CachedJbtBackground(background, object):
                 'thermal_bg':self.thermal_bg, 'zodi_bg':zodi_bg, 'stray_light_bg':stray_light_bg, 'total_bg':total_bg} 
 
 #-----------
+def SetupDataPaths():
+    """
+    Set up the STIPS, synphot, webbpsf, and pandeia reference data environment variables.
+    """
+    for item in ["stips", "synphot", "webbpsf", "pandeia"]:
+        var_name = GetParameter(item+"_data_name", use_data=False)
+        if var_name not in os.environ:
+            var_path = GetParameter(item+"_data", use_data=False)
+#             print("Setting up {} to {}".format(var_name, var_path))
+            if var_path == "$local":
+                if item == "stips":
+                    file_dir = os.path.dirname(os.path.abspath(__file__))
+                    data_dir = os.path.join(file_dir, "..", "..", "ref_data", "stips_data")
+                else:
+                    data_dir = os.path.join(os.environ["stips_data"], "ref", var_name)
+                var_path = os.path.normpath(data_dir)
+            os.environ[var_name] = var_path
+#             print("Set {} to {}".format(var_name, var_path))
+
+#-----------
+def DownloadReferenceData():
+    """
+    Set up the STIPS, synphot, webbpsf, and pandeia reference data environment variables.
+    """
+    SetupDataPaths()
+    
+    # STIPS
+    print("Checking STIPS data")
+    stips_data_file = "stips_data-1.0.9.tgz"
+    stips_url = "https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz"
+    stips_data_path = os.environ[GetParameter("stips_data_name", use_data=False)]
+    if not os.path.isdir(stips_data_path):
+        print("Downloading STIPS data to {}".format(stips_data_path))
+        os.makedirs(stips_data_path)
+        get_compressed_file(stips_url, stips_data_file, stips_data_path, "stips_data/")
+    else:
+        print("Found at {}".format(stips_data_path))
+    
+    # synphot/stsynphot
+    print("Checking synphot data")
+    synphot_url = "https://ssb.stsci.edu/trds/tarfiles"
+    synphot_data_path = os.environ[GetParameter("synphot_data_name", use_data=False)]
+    if not os.path.isdir(synphot_data_path):
+        print("Downloading synphot data to {}".format(synphot_data_path))
+        os.makedirs(synphot_data_path)
+        for i in range(1, 8):
+            file_name = "synphot{}.tar.gz".format(i)
+            print("\tDownloading {}".format(file_name))
+            url = synphot_url+"/"+file_name
+            get_compressed_file(url, file_name, synphot_data_path, "grp/redcat/trds/")
+    else:
+        print("Found at {}".format(synphot_data_path))
+    
+    # webbpsf
+    print("Checking webbpsf data")
+    webbpsf_url = "https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz"
+    webbpsf_data_path = os.environ[GetParameter("webbpsf_data_name", use_data=False)]
+    webbpsf_data_file = "webbpsf_data.tar.gz"
+    if not os.path.isdir(webbpsf_data_path):
+        print("Downloading webbpsf data to {}".format(webbpsf_data_path))
+        os.makedirs(webbpsf_data_path)
+        get_compressed_file(webbpsf_url, webbpsf_data_file, webbpsf_data_path, 
+                            "webbpsf-data/")
+    else:
+        print("Found at {}".format(webbpsf_data_path))
+    
+    # pandeia
+    print("Checking pandeia data")
+    pandeia_data_file = "pandeia_data-1.6.tar.gz"
+    pandeia_url = "https://stsci.box.com/shared/static/ksg2b7whqgzmvuqoln6zj9u2usomsgfu.gz"
+    pandeia_data_path = os.environ[GetParameter("pandeia_data_name", use_data=False)]
+    if not os.path.isdir(pandeia_data_path):
+        print("Downloading pandeia data to {}".format(pandeia_data_path))
+        os.makedirs(pandeia_data_path)
+        get_compressed_file(pandeia_url, pandeia_data_file, pandeia_data_path, 
+                            "pandeia_data-1.6_roman/")
+    else:
+        print("Found at {}".format(pandeia_data_path))
+
+    #Done.
+
+#-----------
 def GetStipsDataDir():
     """
     Get the STIPS data directory path.
@@ -403,8 +514,7 @@ def SelectParameter(name, override_dict=None, config_file=None):
                         'out_path': 'output_location',
                         'oversample': 'observation_detector_oversample',
                         'psf_grid_size': 'psf_grid_default_size',
-                        'seed': 'random_seed',
-                        
+                        'seed': 'random_seed'
                     }
     
     if override_dict is not None:
@@ -450,33 +560,38 @@ def GetParameter(param, config_file=None, use_provided=True, use_cwd=True,
     file_used = "local"
     settings = None
     conf_file = None
-    stips_data_dir = GetStipsDataDir()
-    local_dir = os.path.abspath(__file__)
-    local_data_dir = os.path.join(local_dir, "..", "..", "data")
+    if use_data:
+        stips_data_dir = GetStipsDataDir()
+    local_dir = os.path.dirname(os.path.abspath(__file__))
+    local_data_dir = os.path.join(local_dir, "..", "data")
     local_config_file = os.path.join(local_data_dir, "stips_config.yaml")
-    local_config = os.path.abspath(local_config_file)
+    local_config = os.path.normpath(local_config_file)
     cwd_config = os.path.join(os.getcwd(), "stips_config.yaml")
-    data_config = os.path.join(stips_data_dir, "stips_config.yaml")
+    if use_data:
+        data_config = os.path.join(stips_data_dir, "stips_config.yaml")
     env_config = os.environ.get('stips_config', None)
+    if use_environ and env_config is not None:
+        if not os.path.isfile(env_config):
+            env_config = os.path.join(env_config, "stips_config.yaml")
     
-    if config_file is not None and os.path.isfile(config_file) and use_provided:
+    if use_provided and config_file is not None and os.path.isfile(config_file):
+#         print("Using provided file")
         conf_file = config_file
         file_used = "provided"
-    elif os.path.isfile(cwd_config) and use_cwd:
+    elif use_cwd and os.path.isfile(cwd_config):
+#         print("Using file in CWD")
         conf_file = cwd_config
         file_used = "cwd"
-    elif 'stips_config' in os.environ and use_environ:
-        conf_dir = os.environ['stips_config']
-        if os.path.isfile(conf_dir):
-            file_used = "environ"
-            conf_file = conf_dir
-        elif os.path.isfile(os.path.join(conf_dir, 'stips_config.yaml')):
-            file_used = "environ"
-            conf_file = os.path.join(conf_dir, 'stips_config.yaml')
-    elif os.path.isfile(data_config) and use_data:
+    elif use_environ and 'stips_config' in os.environ and os.path.isfile(env_config):
+#         print("Using file in stips_config envvar")
+        conf_file = env_config
+        file_used = "environ"
+    elif use_data and os.path.isfile(data_config):
+#         print("Using file in stips_data directory")
         file_used = "data"
         conf_file = data_config
     elif os.path.isfile(local_config):
+#         print("Using internal file")
         conf_file = local_config
     
     if conf_file is not None:
@@ -484,7 +599,7 @@ def GetParameter(param, config_file=None, use_provided=True, use_cwd=True,
             settings = yaml.safe_load(config)
     
     if settings is not None and param in settings:
-        return TranslateParameter(param, settings[param])
+        return TranslateParameter(param, settings[param], data_dir=use_data)
     elif param not in settings and file_used == "provided":
         # Try without the supplied config file in case it doesn't include
         #   the full set of parameters
@@ -506,7 +621,7 @@ def GetParameter(param, config_file=None, use_provided=True, use_cwd=True,
     return None
 
 #-----------
-def TranslateParameter(param, value):
+def TranslateParameter(param, value, data_dir=True):
     """
     Check if a parameter is in a dictionary of special values and, if so,
     substitute in the proper value.
@@ -526,10 +641,12 @@ def TranslateParameter(param, value):
     """
     translations = {
                     'input_location': {'$CWD': os.getcwd()},
-                    'output_location': {'$CWD': os.getcwd()},
-                    'psf_cache_location': {'$DATA': GetStipsDataDir()},
-                    
+                    'output_location': {'$CWD': os.getcwd()}
                    }
+    # It is possible that this function will be called before the STIPS data directory
+    # has been set up.
+    if data_dir:
+        translations['psf_cache_location'] = {'$DATA': GetStipsDataDir()}
 
     if param in translations:
         if value in translations[param]:

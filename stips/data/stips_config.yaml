@@ -103,3 +103,23 @@ residual_dark : true
 
 # Add Cosmic Ray residual
 residual_cosmic : true
+
+####
+# Environment Configuration
+####
+
+# Location of the STIPS data directory
+stips_data : "$local"
+stips_data_name : "stips_data"
+
+# Location of the synphot reference files
+synphot_data : "$local"
+synphot_data_name : "PYSYN_CDBS"
+
+# webbpsf data directory
+webbpsf_data : "$local"
+webbpsf_data_name : "WEBBPSF_PATH"
+
+# pandeia data directory
+pandeia_data : "$local"
+pandeia_data_name : "pandeia_refdata"

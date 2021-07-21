@@ -15,7 +15,7 @@
 # To remove the environment entirely, run the following command:
 # $ conda env remove -n stips
 
-name: stips
+name: stips_dev
 
 channels:
   - conda-forge
@@ -55,7 +55,6 @@ dependencies:
     - sphinx
     - sphinx_rtd_theme
     - stsci_rtd_theme
-    - sphinx_automodapi
     
     # Testing
     - tox

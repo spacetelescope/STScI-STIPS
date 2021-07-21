@@ -110,12 +110,12 @@ class Instrument(object):
             If units are present, does a unit conversion.
         """
         units = kwargs.get('unit', 'c')
-        self._log("info","Initializing from with units %s" % (units))
+        self._log("info","Initializing from with units {}".format(units))
         ins = cls(**kwargs)
         img = image * ins.convertToCounts(unit,scalex=image.scale[0],scaley=image.scale[1])
         self._log("info","Converted image units")
         for detector in ins.detectors:
-            self._log("info","Adding image to detector %s" % (detector.name))
+            self._log("info","Adding image to detector {}".format(detector.name))
             detector.addWithAlignment(img)
         self._log("info","Finished initialization")
         return ins
@@ -137,12 +137,12 @@ class Instrument(object):
             Obtaining the correct values for FLUX (if not done before initialization) is a job for
             the subclasses.
         """
-        self._log("info","Initializing with catalogue %s" % (catalogue))
+        self._log("info","Initializing with catalogue {}".format(catalogue))
         ins = cls(**kwargs)
         self._log("info","Converting catalogue to internal format")
         cat = ins.convertCatalogue(catalogue)
         for detector in ins.detectors:
-            self._log("info","Adding image to detector %s" % (detector.name))
+            self._log("info","Adding image to detector {}".format(detector.name))
             detector.addCatalogue(cat, dist=self.distortion)
         self._log("info","Finished initialization")
         return ins
@@ -205,11 +205,11 @@ class Instrument(object):
         self._log("info","Converting to FITS file")
         hdus = [pyfits.PrimaryHDU()]
         for detector in self.detectors:
-            self._log("info","Converting detector %s to FITS extension" % (detector.name))
+            self._log("info","Converting detector {} to FITS extension".format(detector.name))
             hdus.append(detector.imageHdu)
         hdulist = pyfits.HDUList(hdus)
         hdulist.writeto(outfile, overwrite=True)
-        self._log("info","Created FITS file %s" % (outfile))
+        self._log("info","Created FITS file {}".format(outfile))
     
     def toMosaic(self,outfile):
         """
@@ -233,7 +233,7 @@ class Instrument(object):
                 shutil.rmtree(tmp_out_dir)
             if os.path.exists(tmp_work_dir):
                 shutil.rmtree(tmp_work_dir)
-            self._log("info","Created FITS file %s and cleaned up" % (outfile))
+            self._log("info","Created FITS file {} and cleaned up".format(outfile))
             return [outfile]
         else:
             self._log("info","Not creating single-detector mosaic")
@@ -245,11 +245,11 @@ class Instrument(object):
             
             If units are present, does a unit conversion.
         """
-        self._log("info","Adding image with units %s" % (unit))
+        self._log("info","Adding image with units {}".format(unit))
         img = image * self.convertToCounts(unit,scalex=image.scale[0],scaley=image.scale[1])
         self._log("info","Converted image count rate")
         for detector in self.detectors:
-            self._log("info","Adding image to detector %s" % (detector.name))
+            self._log("info","Adding image to detector {}".format(detector.name))
             detector.addWithAlignment(img)
         self._log("info","Finished adding image")
     
@@ -270,14 +270,14 @@ class Instrument(object):
             the subclasses.
         """
         base_state = self.getState()
-        self._log("info","Adding catalogue %s" % (catalogue))
+        self._log("info","Adding catalogue {}".format(catalogue))
         self.updateState(base_state + "<br /><span class='indented'>Converting Catalogue to Internal Format</span>")
         cat = self.convertCatalogue(catalogue, obs_num)
         self._log("info","Finished converting catalogue to internal format")
         cats = [cat]
         for detector in self.detectors:
             self.updateState(base_state + "<br /><span class='indented'>Detector {}</span>".format(detector.name))
-            self._log("info","Adding catalogue to detector %s" % (detector.name))
+            self._log("info","Adding catalogue to detector {}".format(detector.name))
             cats.append(detector.addCatalogue(cat, dist=self.distortion, *args, **kwargs))
             self.updateState(base_state)
         return cats
@@ -298,7 +298,7 @@ class Instrument(object):
         self._log("info","Finished converting table to internal format")
         tables = [internal_table]
         for detector in self.detectors:
-            self._log("info","Adding table to detector %s" % (detector.name))
+            self._log("info","Adding table to detector {}".format(detector.name))
             tables.append(detector.addTable(internal_table, dist=self.distortion))
         self._log("info","Finished Adding Catalogue")        
         return tables
@@ -314,7 +314,7 @@ class Instrument(object):
         returns: factor (multiplicative conversion factor)
         """
         units = ('p','e','c','j','s')
-        if unit not in units: raise ValueError("Unit %s is not one of %s" % (unit,units))
+        if unit not in units: raise ValueError("Unit {} is not one of {}".format(unit,units))
         
         if unit == 'c':
             return 1.
@@ -804,7 +804,7 @@ class Instrument(object):
             if 'initial' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_initial.fits".format(self.obs_count, detector.name))
             self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Background</span>".format(detector.name))
-            self._log("info","Adding error to detector %s" % (detector.name))
+            self._log("info","Adding error to detector {}".format(detector.name))
             self._log("info","Adding background")
             self._log("info","Background is {} counts/s/pixel".format(self.pixel_background))
             detector.addBackground(self.pixel_background)
@@ -876,7 +876,21 @@ class Instrument(object):
         try:
             norm_wave, norm_flux = norm.normalize(wave, flux)
         except DataConfigurationError as e:
-            norm = syn.SpectralElement.from_filter(bandpass)
+            try:
+                norm = syn.SpectralElement.from_filter(bandpass)
+            except FileNotFoundError as e:
+                band_path = os.path.join(os.environ["PYSYN_CDBS"], "comp", "nonhst")
+                band_name = "{}*syn.fits".format(bandpass.replace(",", "_"))
+                band_files = glob.glob(os.path.join(band_path, band_name))
+                if len(band_files) > 0:
+                    band_file = sorted(band_files)[-1]
+                    sp = syn.SpectralElement.from_file(band_file)
+                else:
+                    msg = "Unable to find local {} spectrum at {}\n"
+                    msg = msg.format(bandpass, os.environ["PYSYN_CDBS"])
+                    msg += "Original exception was {}".format(e)
+                    raise FileNotFoundError(msg)
+
             sp = syn.SourceSpectrum(syn.Empirical1D, points=wave, lookup_table=flux)
             norm_sp = sp.normalize(norm_flux*u.ABmag, band=norm)
             return norm_sp
@@ -929,8 +943,7 @@ class Instrument(object):
     
         translate_instrument = {
                                     #**WFIRST_REMNANT**
-                                    'wfi': 'wfirstimager',
-#                                     'wfi': 'romanimager',
+#                                    'wfi': 'wfirstimager',
                                     'nircamlong': 'nircam',
                                     'nircamshort': 'nircam',
                                     'miri': 'miri'
@@ -940,7 +953,7 @@ class Instrument(object):
             instrument = translate_instrument[instrument]
         
         translate_telescope = {
-                                'roman': 'wfirst'
+#                                'roman': 'wfirst'
                               }
         telescope = self.TELESCOPE.lower()
         if telescope in translate_telescope:
@@ -962,7 +975,19 @@ class Instrument(object):
     
     @property
     def zeropoint_unit(self):
-        sp = syn.SourceSpectrum.from_vega()
+        try:
+            sp = syn.SourceSpectrum.from_vega()
+        except FileNotFoundError as e:
+            vega_path = os.path.join(os.environ["PYSYN_CDBS"], "calspec")
+            vega_files = glob.glob(os.path.join(vega_path, "alpha_lyr*.fits"))
+            if len(vega_files) > 0:
+                vega_file = sorted(vega_files)[-1]
+                sp = syn.SourceSpectrum.from_file(vega_file)
+            else:
+                msg = "Unable to find local Vega spectrum at {}\n"
+                msg = msg.format(os.environ["PYSYN_CDBS"])
+                msg += "Original exception was {}".format(e)
+                raise FileNotFoundError(msg)
         bp = self.bandpass
         sp = sp.normalize(0.0*syn.units.VEGAMAG, band=bp, vegaspec=sp)
         obs = syn.Observation(sp, bp, binset=sp.waveset)
@@ -1088,7 +1113,7 @@ class Instrument(object):
         if hasattr(self,'logger'):
             getattr(self.logger,mtype)(message)
         else:
-            sys.stderr.write("%s: %s\n" % (mtype,message))
+            sys.stderr.write("{}: {}\n".format(mtype,message))
     
     def updateState(self, state):
         if self.set_celery is not None:

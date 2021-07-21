@@ -236,7 +236,7 @@ class StarGenerator(object):
         return masses
     
     def get_star_info(self):
-        stmt = "SELECT m_ini,Te,log_g,johnson_i_abs FROM star_info WHERE star_info.age = %f AND star_info.Z = %f" % (self.age,self.metallicity)
+        stmt = "SELECT m_ini,Te,log_g,johnson_i_abs FROM star_info WHERE star_info.age = {} AND star_info.Z = {}".format(self.age,self.metallicity)
         sc = sqlite_util.SqliteConnection(self.dbname)
         arr = sc.execute(stmt,asarray=True)
         return arr['m_ini'],arr['te'],arr['log_g'],arr['johnson_i_abs']
@@ -290,7 +290,7 @@ class StarGenerator(object):
     def make_cluster_mags(self,masses):
         db = sqlite3.connect(self.dbname)
         sc = sqlite_util.SqliteConnection(self.dbname)
-        stmt = "SELECT m_ini,johnson_i_abs,Te,log_g FROM star_info WHERE star_info.age = %f AND star_info.Z = %f" % (self.age,self.metallicity)
+        stmt = "SELECT m_ini,johnson_i_abs,Te,log_g FROM star_info WHERE star_info.age = {} AND star_info.Z = {}".format(self.age,self.metallicity)
         arr = sc.execute(stmt, asarray=True)
         star_masses = arr['m_ini']
         star_i = arr['johnson_i_abs']

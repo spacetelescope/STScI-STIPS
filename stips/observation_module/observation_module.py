@@ -127,7 +127,7 @@ class ObservationModule(object):
                                             offset['offset_dec'], 
                                             offset['offset_pa']))
                 self.observations.append({'filter':filter,'offset':offset})
-        self._log("info","Added %d observations" % (len(self.observations)))
+        self._log("info","Added {} observations".format(len(self.observations)))
 
         # Initially
         self.obs_count = -1
@@ -208,10 +208,10 @@ class ObservationModule(object):
         same calculated PSF.
         """
         self.obs_count += 1
-        self._log("info","Initializing Observation %d of %d" % (self.obs_count,len(self.observations)))
+        self._log("info","Initializing Observation {} of {}".format(self.obs_count,len(self.observations)))
         if self.obs_count < len(self.observations):
             filter = self.observations[self.obs_count]['filter']
-            self._log("info","Observation Filter is %s" % (filter))
+            self._log("info","Observation Filter is {}".format(filter))
             offset_ra = float(self.observations[self.obs_count]['offset']['offset_ra'])/3600.
             offset_dec = float(self.observations[self.obs_count]['offset']['offset_dec'])/3600.
             offset_pa = float(self.observations[self.obs_count]['offset']['offset_pa'])
@@ -223,7 +223,7 @@ class ObservationModule(object):
                 offset_pa = self.instrument.INSTRUMENT_OFFSET[2]
                 ra,dec = OffsetPosition(ra,dec,offset_ra,offset_dec)
                 pa = (pa + offset_pa)%360.
-            self._log("info","Observation (RA,DEC) = (%f,%f) with PA=%f" % (ra,dec,pa))
+            self._log("info","Observation (RA,DEC) = ({},{}) with PA={}".format(ra,dec,pa))
             self.instrument.reset(ra, dec, pa, filter, self.obs_count)
             self._log("info","Reset Instrument")
             self.initParams()
@@ -245,13 +245,13 @@ class ObservationModule(object):
         catalogue: string
             Name of catalogue file
         """
-        self._log("info","Running catalogue %s" % (catalogue))
+        self._log("info","Running catalogue {}".format(catalogue))
         if 'parallel' not in kwargs:
             kwargs['parallel'] = self.parallel
         if 'cores' not in kwargs:
             kwargs['cores'] = self.cores
         cats = self.instrument.addCatalogue(catalogue, self.id, *args, **kwargs)
-        self._log("info",'Finished catalogue %s' % (catalogue))
+        self._log("info",'Finished catalogue {}'.format(catalogue))
         return cats
 
     #-----------
@@ -297,7 +297,7 @@ class ObservationModule(object):
         units: string
             Unit type of file
         """
-        self._log("info",'Adding image %s to observation' % (file))
+        self._log("info",'Adding image {} to observation'.format(file))
 #        if True:
         if self.images[img].header["ASTROIMAGEVALID"]:
             self.instrument.addImage(self.images[img], units, *args, **kwargs)
@@ -344,11 +344,11 @@ class ObservationModule(object):
         self: obj
             Class instance.
         """
-        self.instrument.toFits("%s_%d.fits" % (self.imgbase, self.obs_count), *args, **kwargs)
+        self.instrument.toFits("{}_{}.fits".format(self.imgbase, self.obs_count), *args, **kwargs)
         mosaics = None
         if mosaic:
-            mosaics = self.instrument.toMosaic("%s_%d_mosaic.fits"%(self.imgbase, self.obs_count), *args, **kwargs)
-        return "%s_%d.fits"%(self.imgbase, self.obs_count), mosaics, self.params
+            mosaics = self.instrument.toMosaic("{}_{}_mosaic.fits".format(self.imgbase, self.obs_count), *args, **kwargs)
+        return "{}_{}.fits".format(self.imgbase, self.obs_count), mosaics, self.params
     
     #-----------
     def totalObservations(self):
@@ -364,7 +364,7 @@ class ObservationModule(object):
         if hasattr(self,'logger'):
             getattr(self.logger,mtype)(message)
         else:
-            sys.stderr.write("%s: %s\n" % (mtype,message))
+            sys.stderr.write("{}: {}\n".format(mtype,message))
     
     def updateState(self, state):
         if self.set_celery is not None:
