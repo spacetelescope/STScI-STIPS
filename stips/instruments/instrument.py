@@ -685,11 +685,11 @@ class Instrument(object):
         rates = table['flux']
         units = table['units']
         idxp = np.where(units == 'p')
-        rates[idxp] *= convertToCounts('p')
+        rates[idxp] *= self.convertToCounts('p')
         idxe = np.where(units == 'e')
-        rates[idxe] *= convertToCounts('e')
+        rates[idxe] *= self.convertToCounts('e')
         idxj = np.where(units == 'j')
-        rates[idxj] *= convertToCounts('j')
+        rates[idxj] *= self.convertToCounts('j')
         t = Table()
         t['ra'] = Column(data=ras)
         t['dec'] = Column(data=decs)

@@ -57,6 +57,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
     'sphinx_automodapi.automodapi',
+    'autoapi.extension',
     ]
 
 numpydoc_show_class_members = False
@@ -142,6 +143,20 @@ latex_documents = [('index', project + '.tex', project + u' Documentation',
 man_pages = [('index', project.lower(), project + u' Documentation',
               [author], 1)]
 
+# -- autoapi configuration ---------------------------------------------------
+#
+# Directory to look in for the abscal source:
+autoapi_dirs = ["../stips"]
+
+# STIPS uses what is technically a circular import, in that stips.utilities.utilities 
+# imports __version__ from the top STIPS __init__.py. That said, __version__.py is already
+# installed by the time utilities are ever imported, so in practice is does not impede
+# STIPS running. It *does*, however, prevent AutoAPI from resolving the STIPS code files.
+# As such, I'm adding it to the suppress_warnings item.
+#
+# NOTE that this will also suppress module-not-found errors, but hopefully the run tests 
+# will handle anything of the sort.
+suppress_warnings = ["autoapi.python_import_resolution"]
 
 # -- Options for the edit_on_github extension ---------------------------------
 
