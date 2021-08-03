@@ -6,7 +6,7 @@ import pytest
 
 import numpy as np
 
-from stips import AstroImage
+from stips.astro_image import AstroImage
 from stips import stips_data_base
 from stips.utilities.testing import makeWCS, makeGaussian, verifyPoint, verifyParameters, verifyImage, verifyData
 

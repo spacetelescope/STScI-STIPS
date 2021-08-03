@@ -12,8 +12,8 @@ from .observation_module import ObservationModule
 from .scene_module import SceneModule
 from .utilities import GetStipsData
 from .utilities import StipsEnvironment
-from .utilitiess import SetupDataPaths
-from .utilitiess import DownloadReferenceData
+from .utilities import SetupDataPaths
+from .utilities import DownloadReferenceData
 
 SetupDataPaths()
 

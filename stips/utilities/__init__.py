@@ -9,6 +9,7 @@ from .utilities import DownloadReferenceData
 from .utilities import GetStipsDataDir
 from .utilities import GetStipsData
 from .utilities import SelectParameter
+from .utilities import internet
 from .utilities import OffsetPosition
 from .utilities import InstrumentList
 from .utilities import overlapadd2
