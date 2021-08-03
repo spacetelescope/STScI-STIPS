@@ -2,35 +2,25 @@ from __future__ import absolute_import
 
 import os
 
-__all__ = ['astro_image', 'errors', 'galaxy_module', 'instruments',
-           'observation_module', 'scene_module', 'stellar_module',
-           'utilities', 'version', 'test']
+__all__ = ['observation_module', 'scene_module']
 
-try:
-    from .version import version as __version__
-except ImportError:
-    __version__ = 'dev'
+__version__ = "1.0.9dev1"
 version = __version__
 
 # Local Definitions
-
-from .astro_image import AstroImage
-from .instruments import Instrument
 from .observation_module import ObservationModule
 from .scene_module import SceneModule
-from .utilities import __grid__
-from .utilities import CachedJbtBackground
 from .utilities import GetStipsData
-from .utilities import internet
 from .utilities import StipsEnvironment
-from .utilities.utilities import SetupDataPaths
+from .utilities import SetupDataPaths
+from .utilities import DownloadReferenceData
+
+SetupDataPaths()
 
 __grid__pandeia__version__ = StipsEnvironment.__pandeia__version__
 __grid__stips__version__ = StipsEnvironment.__stips__grid__version__
 __env__report__ = StipsEnvironment.__stips__environment__report__pretty__
 __env__dict__ = StipsEnvironment.__stips__environment__dict__
-
-SetupDataPaths()
 
 try:
     stips_data_base = os.environ["stips_data"]

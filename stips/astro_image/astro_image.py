@@ -22,7 +22,7 @@ else:
     from cStringIO import StringIO
 
 #Local Modules
-from .. import __version__ as stips_version
+from ..utilities import StipsEnvironment
 from ..utilities import OffsetPosition
 from ..utilities import overlapadd2
 from ..utilities import overlapaddparallel
@@ -32,6 +32,8 @@ from ..utilities import Percenter
 from ..utilities import StipsDataTable
 from ..utilities import SelectParameter
 from ..errors import GetCrProbs, GetCrTemplate, MakeCosmicRay
+
+stips_version = StipsEnvironment.__stips__version__
 
 
 class AstroImage(object):
@@ -118,6 +120,13 @@ class AstroImage(object):
             self.get_celery = lambda: ""
         if self.set_celery is None:
             self.set_celery = lambda x: None
+        
+        # documentation says
+        #   - 1 for FITS/Fortran
+        #   - 0 for numpy/C
+        # although the ultimate output format is FITS, within an AstroImage data is stored
+        # as a numpy array, so origin=0 is the way to go.
+        self.wcs_origin = 0
 
         #Set unique ID and figure out where the numpy memmap will be stored
         self.name = kwargs.get('detname', default['detector'][self.instrument])
@@ -487,9 +496,11 @@ class AstroImage(object):
         decs = t['dec']
         self._log("info", "Determining pixel co-ordinates")
         if dist and self.distorted:
-            xs, ys = self.wcs.all_world2pix(t['ra'], t['dec'],1, quiet=True, adaptive=True, detect_divergence=True)
+            xs, ys = self.wcs.all_world2pix(t['ra'], t['dec'], self.wcs_origin, 
+                                            quiet=True, adaptive=True, 
+                                            detect_divergence=True)
         else:
-            xs, ys = self.wcs.wcs_world2pix(t['ra'], t['dec'],1)
+            xs, ys = self.wcs.wcs_world2pix(t['ra'], t['dec'], self.wcs_origin)
         to_keep = np.where((xs >= 0) & (xs <= self.xsize) & (ys >= 0) & (ys <= self.ysize))
         self._log("info", "Keeping {} items".format(len(xs[to_keep])))
         ot = None
@@ -1094,7 +1105,7 @@ class AstroImage(object):
             self._log("info","Finished rescaling")
         ra = other.ra
         dec = other.dec
-        pix = self.wcs.wcs_world2pix([ra],[dec],1,ra_dec_order=True)
+        pix = self.wcs.wcs_world2pix([ra], [dec], self.wcs_origin, ra_dec_order=True)
         px = pix[0][0]
         py = pix[1][0]
         offset_x = int(np.round(px - self.wcs.wcs.crpix[0]))
@@ -1148,9 +1159,11 @@ class AstroImage(object):
         offset_value = np.array([offset_x,offset_y])
         pix_coords = np.array(offset_value+self.wcs.wcs.crpix)
         if self.distorted:
-            world_coords = self.wcs.all_pix2world(pix_coords[0],pix_coords[1],1,ra_dec_order=True)
+            world_coords = self.wcs.all_pix2world(pix_coords[0], pix_coords[1], 
+                                                  self.wcs_origin, ra_dec_order=True)
         else:
-            world_coords = self.wcs.wcs_pix2world(pix_coords[0],pix_coords[1],1,ra_dec_order=True)
+            world_coords = self.wcs.wcs_pix2world(pix_coords[0], pix_coords[1], 
+                                                  self.wcs_origin, ra_dec_order=True)
         self.wcs = self._wcs(world_coords[0],world_coords[1],self.pa,self.scale,self.wcs.sip)
         self._prepHeader()
     
@@ -1357,8 +1370,8 @@ class AstroImage(object):
         Prepare the header WCS based on instrument and filter. For now, set RA and DEC to be
         identically zero. 
         """
-        self.header['DATE-OBS'] = time.strftime("%Y-%m-{}")
-        self.header['TIME-OBS'] = time.strftime("%h:%m:{}")
+        self.header['DATE-OBS'] = time.strftime("%Y-%m-%d")
+        self.header['TIME-OBS'] = time.strftime("%h:%m:%s")
         self.header['EQUINOX'] = 2000.0
         self.header['PA_APER'] = self.pa
         self.header['VAFACTOR'] = 0.
@@ -1505,7 +1518,7 @@ class AstroImage(object):
         offset_value = np.array([0.,0.])
         offset_value[decnum] += 1./3600.
         world_coords = np.array((wcs.wcs.crval,wcs.wcs.crval+offset_value))
-        pix_coords = wcs.wcs_world2pix(world_coords, 1)
+        pix_coords = wcs.wcs_world2pix(world_coords, self.wcs_origin)
         offset = (pix_coords[1] - pix_coords[0])
 #         offset = offset / scale # Divide by scale to correct for non-square pixels
         pa_north = np.degrees(np.arctan2(offset[0],offset[1])) % 360. % 360.
