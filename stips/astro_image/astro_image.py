@@ -616,8 +616,10 @@ class AstroImage(object):
         """Adds a set of point sources to the image given their co-ordinates and count rates."""
         self.addHistory("Adding {} point sources".format(len(xs)))
         self._log("info","Adding {} point sources to AstroImage {}".format(len(xs),self.name))
-        xs = np.floor(xs).astype(int)
-        ys = np.floor(ys).astype(int)
+        # This acts essentially the same as rounding, but is substantially faster in
+        # most cases.
+        xs = np.floor(np.array(xs)+0.5).astype(int)
+        ys = np.floor(np.array(ys)+0.5).astype(int)
         with ImageData(self.fname, self.shape, memmap=self.memmap) as dat:
             dat[ys, xs] += rates
     
