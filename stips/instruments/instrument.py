@@ -10,7 +10,7 @@ import stsynphot as stsyn
 
 from astropy import units as u
 from astropy.io import fits as pyfits
-from astropy.table import Table, Column
+from astropy.table import Table, Column, MaskedColumn
 from functools import wraps
 from pandeia.engine.custom_exceptions import DataConfigurationError
 
@@ -453,15 +453,42 @@ class Instrument(object):
         if table is None:
             return None
         self._log("info","Converting Phoenix Table to Internal format")
-        ids = table['id']
-        datasets = table['dataset']
-        ras = table['ra']
-        decs = table['dec']
-        ages = table['age']
-        metallicities = table['metallicity']
-        masses = table['mass']
-        distances = table['distance']
-        binaries = table['binary']
+        if isinstance(table['id'], MaskedColumn):
+            ids = table['id'].filled()
+        else:
+            ids = table['id']
+        if isinstance(table['dataset'], MaskedColumn):
+            datasets = table['dataset'].filled()
+        else:
+            datasets = table['dataset']
+        if isinstance(table['ra'], MaskedColumn):
+            ras = table['ra'].filled()
+        else:
+            ras = table['ra']
+        if isinstance(table['dec'], MaskedColumn):
+            decs = table['dec'].filled()
+        else:
+            decs = table['dec']
+        if isinstance(table['age'], MaskedColumn):
+            ages = table['age'].filled()
+        else:
+            ages = table['age']
+        if isinstance(table['metallicity'], MaskedColumn):
+            metallicities = table['metallicity'].filled()
+        else:
+            metallicities = table['metallicity']
+        if isinstance(table['mass'], MaskedColumn):
+            masses = table['mass'].filled()
+        else:
+            masses = table['mass']
+        if isinstance(table['distance'], MaskedColumn):
+            distances = table['distance'].filled()
+        else:
+            distances = table['distance']
+        if isinstance(table['binary'], MaskedColumn):
+            binaries = table['binary'].filled()
+        else:
+            binaries = table['binary']
         rates = np.zeros_like(ras)
         all_datasets = np.unique(datasets)
         self._log("info","{} datasets".format(len(all_datasets)))
@@ -514,13 +541,34 @@ class Instrument(object):
         """
         if table is None:
             return None
-        ids = table['id']
-        ras = table['ra']
-        decs = table['dec']
-        temps = table['teff']
-        gravs = table['log_g']
-        metallicities = table['metallicity']
-        apparents = table['apparent']
+        if isinstance(table['id'], MaskedColumn):
+            ids = table['id'].filled()
+        else:
+            ids = table['id']
+        if isinstance(table['ra'], MaskedColumn):
+            ras = table['ra'].filled()
+        else:
+            ras = table['ra']
+        if isinstance(table['dec'], MaskedColumn):
+            decs = table['dec'].filled()
+        else:
+            decs = table['dec']
+        if isinstance(table['teff'], MaskedColumn):
+            temps = table['teff'].filled()
+        else:
+            temps = table['teff']
+        if isinstance(table['log_g'], MaskedColumn):
+            gravs = table['log_g'].filled()
+        else:
+            gravs = table['log_g']
+        if isinstance(table['metallicity'], MaskedColumn):
+            metallicities = table['metallicity'].filled()
+        else:
+            metallicities = table['metallicity']
+        if isinstance(table['apparent'], MaskedColumn):
+            apparents = table['apparent'].filled()
+        else:
+            apparents = table['apparent']
         norm_bp = table.meta['BANDPASS']
         self._log("info", "Normalization Bandpass is {} ({})".format(norm_bp, type(norm_bp)))
         if norm_bp == '' or norm_bp is None or norm_bp == 'None':
@@ -556,11 +604,26 @@ class Instrument(object):
         if table is None:
             return None
         from pandeia.engine.sed import SEDFactory
-        ids = table['id']
-        ras = table['ra']
-        decs = table['dec']
-        keys = table['key']
-        apparents = table['apparent']
+        if isinstance(table['id'], MaskedColumn):
+            ids = table['id'].filled()
+        else:
+            ids = table['id']
+        if isinstance(table['ra'], MaskedColumn):
+            ras = table['ra'].filled()
+        else:
+            ras = table['ra']
+        if isinstance(table['dec'], MaskedColumn):
+            decs = table['dec'].filled()
+        else:
+            decs = table['dec']
+        if isinstance(table['key'], MaskedColumn):
+            keys = table['key'].filled()
+        else:
+            keys = table['key']
+        if isinstance(table['apparent'], MaskedColumn):
+            apparents = table['apparent'].filled()
+        else:
+            apparents = table['apparent']
         norm_bp = table.meta['BANDPASS']
         self._log("info", "Normalization Bandpass is {} ({})".format(norm_bp, type(norm_bp)))
         if norm_bp == '' or norm_bp is None or norm_bp == 'None':
@@ -605,21 +668,51 @@ class Instrument(object):
         self._log("info", "Converting BC95 Catalogue")
         proflist = {"expdisk":1,"devauc":4}
         distance_type = "redshift"
-        ids = table['id']
-        ras = table['ra']
-        decs = table['dec']
+        if isinstance(table['id'], MaskedColumn):
+            ids = table['id'].filled()
+        else:
+            ids = table['id']
+        if isinstance(table['ra'], MaskedColumn):
+            ras = table['ra'].filled()
+        else:
+            ras = table['ra']
+        if isinstance(table['dec'], MaskedColumn):
+            decs = table['dec'].filled()
+        else:
+            decs = table['dec']
         try:
-            zs = table['redshift']
+            if isinstance(table['redshift'], MaskedColumn):
+                zs = table['redshift'].filled()
+            else:
+                zs = table['redshift']
         except KeyError: #distances instead
-            zs = table['distance']
+            if isinstance(table['distance'], MaskedColumn):
+                zs = table['distance'].filled()
+            else:
+                zs = table['distance']
             distance_type = "pc"
-        models = table['model']
-        ages = table['age']
-        profiles = table['profile']
+        if isinstance(table['model'], MaskedColumn):
+            models = table['model'].filled()
+        else:
+            models = table['model']
+        if isinstance(table['age'], MaskedColumn):
+            ages = table['age'].filled()
+        else:
+            ages = table['age']
+        if isinstance(table['profile'], MaskedColumn):
+            profiles = table['profile'].filled()
+        else:
+            profiles = table['profile']
         radii = table['radius']/self.SCALE[0] #at some point, may want to figure out multiple scales.
-        ratios = table['axial_ratio']
+        if isinstance(table['axial_ratio'], MaskedColumn):
+            ratios = table['axial_ratio'].filled()
+        else:
+            ratios = table['axial_ratio']
         pas = (table['pa'] + (self.pa*180./np.pi) )%360.
-        vmags = table['apparent_surface_brightness']
+        if isinstance(table['apparent_surface_brightness'], MaskedColumn):
+            vmags = table['apparent_surface_brightness'].filled()
+        else:
+            vmags = table['apparent_surface_brightness']
         norm_bp = table.meta['BANDPASS']
         self._log("info", "Normalization Bandpass is {} ({})".format(norm_bp, type(norm_bp)))
         if norm_bp == '' or norm_bp is None or norm_bp == 'None':
@@ -672,18 +765,51 @@ class Instrument(object):
         """
         if table is None:
             return None
-        ras = table['ra']
-        decs = table['dec']
-        types = table['type']
-        indices = table['n']
-        radii = table['re']
-        pas = table['phi']
-        ratios = table['ratio']
-        ids = table['id']
-        notes = table['notes']
+        if isinstance(table['ra'], MaskedColumn):
+            ras = table['ra'].filled()
+        else:
+            ras = table['ra']
+        if isinstance(table['dec'], MaskedColumn):
+            decs = table['dec'].filled()
+        else:
+            decs = table['dec']
+        if isinstance(table['type'], MaskedColumn):
+            types = table['type'].filled()
+        else:
+            types = table['type']
+        if isinstance(table['n'], MaskedColumn):
+            indices = table['n'].filled()
+        else:
+            indices = table['n']
+        if isinstance(table['re'], MaskedColumn):
+            radii = table['re'].filled()
+        else:
+            radii = table['re']
+        if isinstance(table['phi'], MaskedColumn):
+            pas = table['phi'].filled()
+        else:
+            pas = table['phi']
+        if isinstance(table['ratio'], MaskedColumn):
+            ratios = table['ratio'].filled()
+        else:
+            ratios = table['ratio']
+        if isinstance(table['id'], MaskedColumn):
+            ids = table['id'].filled()
+        else:
+            ids = table['id']
+        if isinstance(table['notes'], MaskedColumn):
+            notes = table['notes'].filled()
+        else:
+            notes = table['notes']
 
-        rates = table['flux']
-        units = table['units']
+        if isinstance(table['flux'], MaskedColumn):
+            rates = table['flux'].filled()
+        else:
+            rates = table['flux']
+        if isinstance(table['units'], MaskedColumn):
+            units = table['units'].filled()
+        else:
+            units = table['units']
         idxp = np.where(units == 'p')
         rates[idxp] *= self.convertToCounts('p')
         idxe = np.where(units == 'e')
@@ -710,15 +836,39 @@ class Instrument(object):
         """
         if table is None:
             return None
-        ras = table['ra']
-        decs = table['dec']
-        types = table['type']
-        indices = table['n']
+        if isinstance(table['ra'], MaskedColumn):
+            ras = table['ra'].filled()
+        else:
+            ras = table['ra']
+        if isinstance(table['dec'], MaskedColumn):
+            decs = table['dec'].filled()
+        else:
+            decs = table['dec']
+        if isinstance(table['type'], MaskedColumn):
+            types = table['type'].filled()
+        else:
+            types = table['type']
+        if isinstance(table['n'], MaskedColumn):
+            indices = table['n'].filled()
+        else:
+            indices = table['n']
         radii = table['re']/self.SCALE[0] #at some point, may want to figure out multiple scales.
-        pas = table['phi']
-        ratios = table['ratio']
-        ids = table['id']
-        notes = table['notes']
+        if isinstance(table['phi'], MaskedColumn):
+            pas = table['phi'].filled()
+        else:
+            pas = table['phi']
+        if isinstance(table['ratio'], MaskedColumn):
+            ratios = table['ratio'].filled()
+        else:
+            ratios = table['ratio']
+        if isinstance(table['id'], MaskedColumn):
+            ids = table['id'].filled()
+        else:
+            ids = table['id']
+        if isinstance(table['notes'], MaskedColumn):
+            notes = table['notes'].filled()
+        else:
+            notes = table['notes']
         rates = table[self.filter]
         t = Table()
         t['ra'] = Column(data=ras)
@@ -740,11 +890,20 @@ class Instrument(object):
         """
         if table is None:
             return None
-        ras = table['ra']
-        decs = table['dec']
+        if isinstance(table['ra'], MaskedColumn):
+            ras = table['ra'].filled()
+        else:
+            ras = table['ra']
+        if isinstance(table['dec'], MaskedColumn):
+            decs = table['dec'].filled()
+        else:
+            decs = table['dec']
         rates = table[self.filter.lower()]
         if 'id' in table:
-            ids = table['id']
+            if isinstance(table['id'], MaskedColumn):
+                ids = table['id'].filled()
+            else:
+                ids = table['id']
         else:
             ids = np.arange(len(ras),dtype=int)
         t = Table()

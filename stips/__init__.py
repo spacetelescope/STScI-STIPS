@@ -4,7 +4,7 @@ import os
 
 __all__ = ['observation_module', 'scene_module']
 
-__version__ = "1.0.9dev1"
+__version__ = "1.0.8b"
 version = __version__
 
 # Local Definitions
