@@ -57,7 +57,8 @@ dependencies:
     - stsci_rtd_theme
     - sphinx_automodapi
     - sphinx_autoapi
-    
+    - astropy_helpers
+
     # Testing
     - tox
     - tox-conda
