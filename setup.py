@@ -18,6 +18,6 @@ version = read_configuration('setup.cfg')['metadata']['version']
 
 setup(
         version=version, 
-        package_data={"": ['data/*']}#,
+        package_data={"stips": ['data/*']}#,
 #        scripts=glob.glob("stips/commands/*")
 )
