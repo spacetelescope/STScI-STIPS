@@ -35,6 +35,7 @@ from ..errors import GetCrProbs, GetCrTemplate, MakeCosmicRay
 
 stips_version = StipsEnvironment.__stips__version__
 
+rind = lambda x : np.round(x).astype(int)
 
 class AstroImage(object):
     """
@@ -870,7 +871,7 @@ class AstroImage(object):
                     fp_res = np.memmap(f, dtype='float32', mode='w+', shape=shape)
                 else:
                     fp_res = np.zeros(shape, dtype='float32')
-                centre = (fp_res.shape[0]//2, fp_res.shape[1]//2)
+                centre = (rind(fp_res.shape[0]/2), rind(fp_res.shape[1]/2))
                 max_y = min(max_size - other_y, self_y + other_y - 1)
                 max_x = min(max_size - other_x, self_x + other_x - 1)
                 sub_shape = (max_y, max_x)
@@ -912,7 +913,7 @@ class AstroImage(object):
             if crop:
                 msg = "Cropping convolved image down to detector size"
                 self._log('info', msg)
-                half = (self.base_shape[0]//2, self.base_shape[1]//2)
+                half = (rind(self.base_shape[0]/2), rind(self.base_shape[1]/2))
                 msg = "Image Centre: {}; Image Half-size: {}"
                 self._log('info', msg.format(centre, half))
                 ly, hy = centre[0]-half[0], centre[0]+half[0]
@@ -1174,7 +1175,7 @@ class AstroImage(object):
         if biny is None: biny = binx
         f = os.path.join(self.out_path, uuid.uuid4().hex+"_bin.tmp")
         try:
-            shape_x, shape_y = int(self.shape[1] // binx), int(self.shape[0] // biny)
+            shape_x, shape_y = rind(self.shape[1] / binx), rind(self.shape[0] / biny)
             with ImageData(self.fname, self.shape, mode='r+', memmap=self.memmap) as dat:
                 binned = dat.reshape(shape_y, biny, shape_x, binx).sum(axis=(1, 3))
                 if self.memmap:
@@ -1465,7 +1466,7 @@ class AstroImage(object):
         w.wcs.ctype[ranum] = "RA---TAN"
         w.wcs.ctype[decnum] = "DEC--TAN"
         if crpix is None:
-            w.wcs.crpix = [self.xsize//2, self.ysize//2]
+            w.wcs.crpix = [rind(self.xsize/2), rind(self.ysize/2)]
         else:
             w.wcs.crpix = crpix
         w.wcs.crval = [0.,0.]
@@ -1619,9 +1620,9 @@ class AstroImage(object):
             fp = np.zeros(t_shape, dtype='float32')
             self.fname = fp
         if data is not None:
-            centre = self.shape//2
+            centre = rind(self.shape/2)
             cy, cx = centre
-            half = base_shape//2
+            half = rind(base_shape/2)
             hy, hx = half
             fp[cy-hy:cy+base_shape[0]-hy, cx-hx:cx+base_shape[1]-hx] = data
         if self.memmap:
