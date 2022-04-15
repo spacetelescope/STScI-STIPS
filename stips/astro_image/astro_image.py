@@ -33,6 +33,8 @@ from ..utilities import StipsDataTable
 from ..utilities import SelectParameter
 from ..errors import GetCrProbs, GetCrTemplate, MakeCosmicRay
 
+from ..utilities.makePSF import *
+
 stips_version = StipsEnvironment.__stips__version__
 
 rind = lambda x : np.round(x).astype(int)
@@ -528,7 +530,8 @@ class AstroImage(object):
             if len(xs[stars_idx]) > 0:
                 self.updateState(base_state + "<br /><span class='indented'>Adding {} stars</span>".format(len(xs[stars_idx])))
                 self._log("info", "Writing {} stars".format(len(xs[stars_idx])))
-                self.addPoints(xs[stars_idx], ys[stars_idx], fluxes[stars_idx], *args, **kwargs)
+                #self.addPoints(xs[stars_idx], ys[stars_idx], fluxes[stars_idx], *args, **kwargs)
+                self.addPSFs(xs[stars_idx], ys[stars_idx], fluxes[stars_idx], *args, **kwargs)
                 fluxes_observed[stars_idx] = fluxes[stars_idx]
             gals_idx = np.where(types == 'sersic')
             if len(xs[gals_idx]) > 0:
@@ -612,7 +615,81 @@ class AstroImage(object):
         self.updateState(base_state)
         self._log("info","Added catalogue {} to AstroImage {}".format(catname, self.name))
         return obsname            
-    
+
+    def addPSFs(self, xs, ys, fluxes, *args, **kwargs):
+        """Adds a set of point sources to the image given their co-ordinates and count rates."""
+        self.addHistory("Adding {} point sources".format(len(xs)))
+        self._log("info","Adding {} point sources to AstroImage {}".format(len(xs),self.name))
+
+        # Open PSF file
+        psf = get_psf()
+        # Create ePSF from PSF
+        epsf = make_epsf(psf)
+
+        # Add each source to the image using the ePSF routines    
+        with ImageData(self.fname, self.shape, memmap=self.memmap) as image:
+            for xpix, ypix, flux in zip(xs, ys, fluxes):
+                #self.addHistory("Adding source at {},{}".format(xpix, ypix))
+                self._log("info","Adding {},{} point source to AstroImage".format(xpix, ypix))
+                image = place_source(xpix, ypix, flux, image, epsf)
+
+        #if max_size is None:
+        max_size = self.convolve_size
+
+        self_y, self_x = self.shape
+        other_y, other_x = psf.shape
+        max_y = min(max_size - other_y, self_y + other_y - 1)
+        max_x = min(max_size - other_x, self_x + other_x - 1)
+        sub_shape = (max_y, max_x)
+        shape = (self_y + other_y - 1, self_x + other_x - 1)
+
+        fp_res = image#np.zeros(shape, dtype='float32')
+        centre = (rind(fp_res.shape[0]/2), rind(fp_res.shape[1]/2))
+
+        g = os.path.join(self.out_path, uuid.uuid4().hex+"_convolve_02.tmp")
+
+        msg = "Cropping convolved image down to detector size"
+        self._log('info', msg)
+        half = (rind(self.base_shape[0]/2), rind(self.base_shape[1]/2))
+        msg = "Image Centre: {}; Image Half-size: {}"
+        self._log('info', msg.format(centre, half))
+        ly, hy = centre[0]-half[0], centre[0]+half[0]
+        lx, hx = centre[1]-half[1], centre[1]+half[1]
+        if hx-lx < self.base_shape[1]:
+            hx += 1
+        elif hx-lx > self.base_shape[1]:
+            hx -= 1
+        if hy-ly < self.base_shape[0]:
+            hy += 1
+        elif hy-ly > self.base_shape[0]:
+            hy -= 1
+        msg = "Taking [{}:{}, {}:{}]"
+        self._log('info', msg.format(ly, hy, lx, hx))
+        if self.memmap:
+            fp_crop = np.memmap(g, dtype='float32', mode='w+', 
+                                shape=tuple(self.base_shape))
+        else:
+            fp_crop = np.zeros(tuple(self.base_shape), dtype='float32')
+        fp_crop[:,:] = fp_res[ly:hy, lx:hx]
+        crpix = [half[0], half[1]]
+        if self.wcs.sip is not None:
+            sip = wcs.Sip(self.wcs.sip.a, self.wcs.sip.b, None, None, 
+                          crpix)
+        else:
+            sip = None
+        self.wcs = self._wcs(self.ra, self.dec, self.pa, self.scale, 
+                             crpix=crpix, sip=sip)
+        del fp_res
+        if self.memmap:
+            del fp_crop
+            if os.path.exists(self.fname):
+                os.remove(self.fname)
+            self.fname = g
+        else:
+            del self.fname
+            self.fname = fp_crop
+        self.shape = self.base_shape
+
     def addPoints(self, xs, ys, rates, *args, **kwargs):
         """Adds a set of point sources to the image given their co-ordinates and count rates."""
         self.addHistory("Adding {} point sources".format(len(xs)))

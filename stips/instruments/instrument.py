@@ -818,7 +818,7 @@ class Instrument(object):
             self._log("info","Convolving with PSF")
             convolve_state = base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name)
             self.updateState(convolve_state)
-            detector.convolve_psf(max_size=self.convolve_size-1, parallel=parallel, cores=cores)
+            #detector.convolve_psf(max_size=self.convolve_size-1, parallel=parallel, cores=cores)
             if 'convolve' in snapshots or 'all' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_convolve.fits".format(self.obs_count, detector.name))
             if self.oversample != 1:
