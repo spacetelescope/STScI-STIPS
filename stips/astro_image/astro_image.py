@@ -621,23 +621,23 @@ class AstroImage(object):
         self.addHistory("Adding {} point sources".format(len(xs)))
         self._log("info","Adding {} point sources to AstroImage {}".format(len(xs),self.name))
 
-        # Open PSF file
-        psf = get_psf()
-        # Create ePSF from PSF
-        epsf = make_epsf(psf)
-
         # Add each source to the image using the ePSF routines    
         with ImageData(self.fname, self.shape, memmap=self.memmap) as image:
-            for xpix, ypix, flux in zip(xs, ys, fluxes):
+            # Read input PSF files
+            psf_array = make_epsf_array(detector = 'SCA01', band = 'F087')
+            image_size = image.shape[0]
+            for k, (xpix, ypix, flux) in enumerate(zip(xs, ys, fluxes)):
+                # Create interpolated ePSF from input PSF files
+                epsf = interpolate_epsf(xpix, ypix, psf_array, image_size)
                 #self.addHistory("Adding source at {},{}".format(xpix, ypix))
-                self._log("info","Adding {},{} point source to AstroImage".format(xpix, ypix))
+                self._log("info","Adding point source {} to AstroImage {},{}".format(k+1, xpix, ypix))
                 image = place_source(xpix, ypix, flux, image, epsf)
 
         #if max_size is None:
         max_size = self.convolve_size
 
         self_y, self_x = self.shape
-        other_y, other_x = psf.shape
+        other_y, other_x = epsf.shape
         max_y = min(max_size - other_y, self_y + other_y - 1)
         max_x = min(max_size - other_x, self_x + other_x - 1)
         sub_shape = (max_y, max_x)

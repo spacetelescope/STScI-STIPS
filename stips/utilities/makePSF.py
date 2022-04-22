@@ -80,7 +80,6 @@ def make_epsf(psf_in):
     psf_out = ndimage.convolve(psf_in, epsf_array, mode='constant', cval=0.0)
 
     # Apply correct scaling to edges of the image
-    #for idy in range(0:size-1):
     psf_out[0:size,     0]=psf_in[0:size,0     ]*16.0
     psf_out[0:size,     1]=psf_in[0:size,1     ]*16.0
     psf_out[0:size,     2]=psf_in[0:size,2     ]*16.0
@@ -221,7 +220,7 @@ def real_psf(x,y,psf,psf_center=180):
                + ( fx )*( fy )*V4)
     return rpsf_phot
 
-def place_source(xpix, ypix, flux, image, psf, boxsize = 43):
+def place_source(xpix, ypix, flux, image, epsf, boxsize = 43):
     """
     Place a source into image.
 
@@ -235,7 +234,7 @@ def place_source(xpix, ypix, flux, image, psf, boxsize = 43):
         Flux of the source
     image : numpy.ndarray
         Empty (or not) 2D array of image where to place sources
-    psf : numpy.ndarray
+    epsf : numpy.ndarray
         2D array with ePSF
 
     Returns
@@ -256,7 +255,7 @@ def place_source(xpix, ypix, flux, image, psf, boxsize = 43):
                 if (i < 1) or (i > image_size) or (j < 1) or (j > image_size):
                     pass
                 else:
-                    ff = real_psf(dx,dy,psf)
+                    ff = real_psf(dx,dy,epsf)
                     ffa=(flux*ff)
                     image[j,i]+=ffa
 
@@ -264,8 +263,115 @@ def place_source(xpix, ypix, flux, image, psf, boxsize = 43):
 
 def get_psf(psf_file = 'working_psf.fits'):
     """
-    Read in a PSF file
+    Read in a PSF file and output the data in the 0th index.
     """
     psf_data = fits.open(psf_file)
     return psf_data[0].data
 
+def make_epsf_array(detector, band):
+    """
+    Import the 9 PSFs per detector, one in each corner and middle
+    of the detector. These 9 PSFs will be used to interpolate the
+    best PSF at the location of a source. An ePSF will be calculated
+    for each input PSF.
+
+    Parameters
+    ----------
+    detector : str
+        Name of WFI detector, e.g. 'SCA01'
+    band : str
+        Name of filter, e.g. 'F087'
+
+    Returns
+    -------
+    psf_array : list
+        3 x 3 list with the corresponding input ePSFs.
+    """
+
+    # Import PSF files
+    psf_1_1 = get_psf(f'{detector}/{detector}_{band}_1.1.fits')
+    psf_1_2 = get_psf(f'{detector}/{detector}_{band}_1.2.fits')
+    psf_1_3 = get_psf(f'{detector}/{detector}_{band}_1.3.fits')
+    psf_2_1 = get_psf(f'{detector}/{detector}_{band}_2.1.fits')
+    psf_2_2 = get_psf(f'{detector}/{detector}_{band}_2.2.fits')
+    psf_2_3 = get_psf(f'{detector}/{detector}_{band}_2.3.fits')
+    psf_3_1 = get_psf(f'{detector}/{detector}_{band}_3.1.fits')
+    psf_3_2 = get_psf(f'{detector}/{detector}_{band}_3.2.fits')
+    psf_3_3 = get_psf(f'{detector}/{detector}_{band}_3.3.fits')
+
+    # Create ePSF
+    epsf_1_1 = make_epsf(psf_1_1)
+    epsf_1_2 = make_epsf(psf_1_2)
+    epsf_1_3 = make_epsf(psf_1_3)
+    epsf_2_1 = make_epsf(psf_2_1)
+    epsf_2_2 = make_epsf(psf_2_2)
+    epsf_2_3 = make_epsf(psf_2_3)
+    epsf_3_1 = make_epsf(psf_3_1)
+    epsf_3_2 = make_epsf(psf_3_2)
+    epsf_3_3 = make_epsf(psf_3_3)
+
+    psf_array = [[epsf_1_1,epsf_1_2,epsf_1_3],
+                 [epsf_2_1,epsf_2_2,epsf_2_3],
+                 [epsf_3_1,epsf_3_2,epsf_3_3]]
+
+    return psf_array
+
+def interpolate_epsf(xpix, ypix, psf_array, image_size):
+    """
+    Interpolate the input ePSFs at the location of a specified
+    source.
+
+    Parameters
+    ----------
+    xpix : float
+        x location of source
+    ypix : float
+        y location of source
+    psf_array : list
+        3 x 3 list with input ePSFs
+    image_size : int
+        Image size in pixels
+    
+    Returns
+    -------
+    epsf : np.array
+        Interpolated ePSF at the location xpix, ypix
+    """
+
+    # If star is in Lower Left Quadrant
+    if (xpix <= round(image_size/2) and ypix <= round(image_size/2)):
+       xf =((xpix+4)/round(image_size/2.+4))
+       yf =((ypix+4)/round(image_size/2.+4))
+       epsf=(   xf *   yf *psf_array[1][1]+
+            (1-xf)*(1-yf)*psf_array[0][0]+
+            (  xf)*(1-yf)*psf_array[1][0]+
+            (1-xf)*(  yf)*psf_array[0][1])
+
+    # If star is in Lower Right Quadrant
+    elif (xpix > round(image_size/2) and ypix <= round(image_size/2)):
+        xf =((xpix+4-round(image_size/2+4))/round(image_size/2+4))
+        yf =((ypix+4)/round(image_size/2+4))
+        epsf=(   xf *   yf *psf_array[2][1]+
+             (1-xf)*(1-yf)*psf_array[1][0]+
+             (  xf)*(1-yf)*psf_array[2][0]+
+             (1-xf)*(  yf)*psf_array[1][1])
+
+    # If star is in Upper Left Quadrant
+    elif (xpix <= 1.0*round(image_size/2) and ypix > round(image_size/2)) :
+        xf =((xpix+4)/round(image_size/2+4))
+        yf =((ypix+4-round(image_size/2+4))/round(image_size/2+4))
+        epsf=(  xf *   yf *psf_array[1][2]+
+            (1-xf)*(1-yf)*psf_array[0][1]+
+            (  xf)*(1-yf)*psf_array[1][1]+
+            (1-xf)*(  yf)*psf_array[0][2])
+
+    # If star is in Upper Right Quadrant
+    elif (xpix > round(image_size/2) and ypix > round(image_size/2)) :
+        xf =((xpix+4-round(image_size/2+4))/round(image_size/2+4))
+        yf =((ypix+4-round(image_size/2+4))/round(image_size/2+4))
+        epsf=(  xf *   yf *psf_array[2][2]+
+            (1-xf)*(1-yf)*psf_array[1][1]+
+            (  xf)*(1-yf)*psf_array[2][1]+
+            (1-xf)*(  yf)*psf_array[1][2])
+
+    return epsf
