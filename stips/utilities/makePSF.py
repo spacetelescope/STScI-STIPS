@@ -16,8 +16,6 @@ Pending:
 - Implement error catching.
 - make_epsf() and real_psf() have not been optimized.
 - Write tests for all functions.
-- Allow sources in the edges of the image (those break the code).
-- Generate Webb PSFs as opposed to having this fixed one.
 
 :Author: Sebastian Gomez
 :Organization: Space Telescope Science Institute
@@ -29,18 +27,10 @@ from __future__ import absolute_import,division
 from astropy.io import fits
 import numpy as np
 from scipy import ndimage
-#import glob, importlib, inspect, os, requests, shutil, socket, struct, sys, tarfile 
-#import urllib, uuid, yaml
-#import numpy as np
-#import astropy.io.fits as pyfits
-#from astropy.io import ascii
-#from astropy.table import Table
-#from jwst_backgrounds.jbt import background
-#from numpy.fft import fft2, ifft2
-#from pathlib import Path
-#from photutils.psf.models import GriddedPSFModel
 
-#from .. import __version__ as __stips__version__
+from ..utilities import StipsEnvironment
+stips_version = StipsEnvironment.__stips__version__
+
 
 rind = lambda x : np.round(x).astype(int)
 
@@ -125,7 +115,7 @@ def make_epsf(psf_in):
 
     return psf_final
 
-def real_psf(x,y,psf,psf_center=180):
+def real_psf(x,y,psf,psf_center=177, boxsize = 44):
     """
     Calculate the fraction of light from a psf that should 
     fall on a given pixel (x, y). This function assumes the 
@@ -141,6 +131,8 @@ def real_psf(x,y,psf,psf_center=180):
         2D array with PSF image
     psf_center : int
         center of the input psf model
+    boxsize : int
+        size of PSF box.
 
     Returns
     -------
@@ -156,7 +148,7 @@ def real_psf(x,y,psf,psf_center=180):
     fy = ry-iy
     dd = np.sqrt(x**2+y**2)
     rpsf_phot = 0.
-    if (np.abs(x) > 44) or (np.abs(y) > 44):
+    if (np.abs(x) > boxsize) or (np.abs(y) > boxsize):
         return rpsf_phot
     if (dd > 4.0):
         rpsf_phot = ( (1-fx)*(1-fy)*psf[iy  ,ix  ]
@@ -220,7 +212,7 @@ def real_psf(x,y,psf,psf_center=180):
                + ( fx )*( fy )*V4)
     return rpsf_phot
 
-def place_source(xpix, ypix, flux, image, epsf, boxsize = 43):
+def place_source(xpix, ypix, flux, image, epsf, boxsize = 44, psf_center = 177):
     """
     Place a source into image.
 
@@ -247,74 +239,23 @@ def place_source(xpix, ypix, flux, image, epsf, boxsize = 43):
     image_size = image.shape[0]
 
     # Apply if source is within image and boxise
-    if (xpix > boxsize) & (xpix < image_size - boxsize) & (ypix > boxsize) & (ypix < image_size - boxsize):
-        for j in range(round(ypix-boxsize),round(ypix+boxsize)):
+    if (xpix > 0) & (xpix < image_size) & (ypix > 0) & (ypix < image_size):
+        max_y = min(round(ypix+boxsize), image_size)
+        min_y = max(0, round(ypix-boxsize))
+        for j in range(min_y,max_y):
             dy = j-ypix
-            for i in range(round(xpix-boxsize),round(xpix+boxsize)):
+            max_x = min(round(xpix+boxsize), image_size)
+            min_x = max(0, round(xpix-boxsize))
+            for i in range(min_x,max_x):
                 dx = i-xpix
                 if (i < 1) or (i > image_size) or (j < 1) or (j > image_size):
                     pass
                 else:
-                    ff = real_psf(dx,dy,epsf)
+                    ff = real_psf(dx,dy,epsf,psf_center = psf_center,boxsize = boxsize)
                     ffa=(flux*ff)
                     image[j,i]+=ffa
 
     return image
-
-def get_psf(psf_file = 'working_psf.fits'):
-    """
-    Read in a PSF file and output the data in the 0th index.
-    """
-    psf_data = fits.open(psf_file)
-    return psf_data[0].data
-
-def make_epsf_array(detector, band):
-    """
-    Import the 9 PSFs per detector, one in each corner and middle
-    of the detector. These 9 PSFs will be used to interpolate the
-    best PSF at the location of a source. An ePSF will be calculated
-    for each input PSF.
-
-    Parameters
-    ----------
-    detector : str
-        Name of WFI detector, e.g. 'SCA01'
-    band : str
-        Name of filter, e.g. 'F087'
-
-    Returns
-    -------
-    psf_array : list
-        3 x 3 list with the corresponding input ePSFs.
-    """
-
-    # Import PSF files
-    psf_1_1 = get_psf(f'{detector}/{detector}_{band}_1.1.fits')
-    psf_1_2 = get_psf(f'{detector}/{detector}_{band}_1.2.fits')
-    psf_1_3 = get_psf(f'{detector}/{detector}_{band}_1.3.fits')
-    psf_2_1 = get_psf(f'{detector}/{detector}_{band}_2.1.fits')
-    psf_2_2 = get_psf(f'{detector}/{detector}_{band}_2.2.fits')
-    psf_2_3 = get_psf(f'{detector}/{detector}_{band}_2.3.fits')
-    psf_3_1 = get_psf(f'{detector}/{detector}_{band}_3.1.fits')
-    psf_3_2 = get_psf(f'{detector}/{detector}_{band}_3.2.fits')
-    psf_3_3 = get_psf(f'{detector}/{detector}_{band}_3.3.fits')
-
-    # Create ePSF
-    epsf_1_1 = make_epsf(psf_1_1)
-    epsf_1_2 = make_epsf(psf_1_2)
-    epsf_1_3 = make_epsf(psf_1_3)
-    epsf_2_1 = make_epsf(psf_2_1)
-    epsf_2_2 = make_epsf(psf_2_2)
-    epsf_2_3 = make_epsf(psf_2_3)
-    epsf_3_1 = make_epsf(psf_3_1)
-    epsf_3_2 = make_epsf(psf_3_2)
-    epsf_3_3 = make_epsf(psf_3_3)
-
-    psf_array = [[epsf_1_1,epsf_1_2,epsf_1_3],
-                 [epsf_2_1,epsf_2_2,epsf_2_3],
-                 [epsf_3_1,epsf_3_2,epsf_3_3]]
-
-    return psf_array
 
 def interpolate_epsf(xpix, ypix, psf_array, image_size):
     """
