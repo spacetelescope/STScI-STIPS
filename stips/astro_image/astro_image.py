@@ -124,12 +124,10 @@ class AstroImage(object):
         if self.set_celery is None:
             self.set_celery = lambda x: None
         
-        # documentation says
-        #   - 1 for FITS/Fortran
-        #   - 0 for numpy/C
-        # although the ultimate output format is FITS, within an AstroImage data is stored
-        # as a numpy array, so origin=0 is the way to go.
+        # WCS origin is 0 for numpy/C and 1 for FITS/Fortran, do not change this one.
         self.wcs_origin = 0
+        # Will only be used for the output catalog file, you can change this one.
+        self.out_origin = 1
 
         #Set unique ID and figure out where the numpy memmap will be stored
         self.name = kwargs.get('detname', default['detector'][self.instrument])
@@ -561,8 +559,8 @@ class AstroImage(object):
                     counter += 1
                 self._log('info', 'Finishing Sersic Profiles at {}'.format(time.ctime()))
             ot = Table()
-            ot['x'] = Column(data=xfs, unit='pixel')
-            ot['y'] = Column(data=yfs, unit='pixel')
+            ot['x'] = Column(data=xfs+self.out_origin, unit='pixel')
+            ot['y'] = Column(data=yfs+self.out_origin, unit='pixel')
             ot['type'] = Column(data=types)
             ot['vegamag'] = Column(data=vegamags)
             ot['stmag'] = Column(data=stmags)
