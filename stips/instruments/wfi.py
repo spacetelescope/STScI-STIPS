@@ -188,7 +188,7 @@ class WFI(RomanInstrument):
     # N_DETECTORS is a set of options on how many of the instrument's detectors you want to use    
     N_DETECTORS = [1]
     INSTRUMENT_OFFSET = (0.,0.,0.) #Presumably there is one, but not determined
-    DETECTOR_SIZE = (4096,4096) #pixels
+    DETECTOR_SIZE = (4088,4088) #pixels
     PIXEL_SIZE = 10.0 #um (Assume for now)
     SCALE = [0.11,0.11] #Assume for now
     FILTERS = ('F062', 'F087', 'F106', 'F129', 'F158', 'F184', 'F146', 'F149') #W149 needs to go away at some point.

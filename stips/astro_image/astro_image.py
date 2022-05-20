@@ -717,6 +717,9 @@ class AstroImage(object):
             msg = "{}: Starting {}x{} PSF Grid creation at {}"
             self._log("info", msg.format(self.name, self.psf_grid_size, 
                                          self.psf_grid_size, time.ctime()))
+            # Supersample the pixel scale to get WebbPSF to output
+            # PSF models with even supersamplingcentered at the center of a pixel
+            ins.pixelscale = scale / 4
             self.psf = ins.psf_grid(all_detectors=False, num_psfs=num_psfs,
                                     fov_pixels=fov_pix, normalize='last',
                                     oversample=self.oversample, save=save,
@@ -1896,7 +1899,7 @@ class AstroImage(object):
                                             'NIRCam': "NRCA1",
                                             'MIRI': 'MIRI'
                                         },
-                            'shape': (4096, 4096),
+                            'shape': (4088, 4088),
                             'scale': [0.11,0.11],
                             'zeropoint': 21.0,
                             'photflam': 0.,
