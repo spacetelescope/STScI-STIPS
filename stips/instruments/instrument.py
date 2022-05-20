@@ -78,6 +78,8 @@ class Instrument(object):
         self.pa = kwargs.get('pa', 0.)
         self.distortion = SelectParameter('distortion', kwargs)
         self.exptime = kwargs.get('exptime', 1.)
+        self.bright_limit  = kwargs.get('bright_limit', kwargs)
+        self.xbright_limit = kwargs.get('xbright_limit', kwargs)
         self.small_subarray = kwargs.get('small_subarray', False)
         self.filter = None
         self.detectors = None
@@ -90,6 +92,9 @@ class Instrument(object):
         self.convolve_size = SelectParameter('convolve_size', kwargs)
         self.memmap = SelectParameter('memmap', kwargs)
         self.set_celery = kwargs.get('set_celery', None)
+        self.get_celery = kwargs.get('get_celery', None)
+
+        self.get_celery = kwargs.get('get_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
 
         #Adjust # of detectors based on keyword:

@@ -69,6 +69,8 @@ class AstroImage(object):
             self.instrument = self.parent.PSF_INSTRUMENT
             self.filter = self.parent.filter
             self.oversample = self.parent.oversample
+            self.bright_limit  = self.parent.bright_limit
+            self.xbright_limit = self.parent.xbright_limit
             self.shape = np.array(self.parent.DETECTOR_SIZE)*self.oversample
             self._scale = np.array(self.parent.SCALE)/self.oversample
             self.zeropoint = self.parent.zeropoint
@@ -98,6 +100,8 @@ class AstroImage(object):
                     self.logger.addHandler(stream_handler)
             self.out_path = SelectParameter('out_path', kwargs)
             self.oversample = SelectParameter('oversample', kwargs)
+            self.bright_limit  = SelectParameter('bright_limit', kwargs)
+            self.xbright_limit = SelectParameter('xbright_limit', kwargs)
             shape = kwargs.get('shape', default['shape'])
             self.shape = np.array(shape) * self.oversample
             self._scale = kwargs.get('scale', np.array(default['scale']))
@@ -755,8 +759,11 @@ class AstroImage(object):
         self._log("info","Adding {} point sources to AstroImage {}".format(len(xs),self.name))
 
         # HARD CODED RIGHT NOW, FIX
-        self.bright_limit  = 14
-        self.xbright_limit = 11
+        #self.bright_limit  = 3# 14
+        #self.xbright_limit = 3# 11
+        print('\n\n\n\n')
+        print(self.bright_limit, self.xbright_limit)
+        print('\n\n\n\n')
 
         # Add each source to the image using the ePSF routines    
         with ImageData(self.fname, self.shape, memmap=self.memmap) as image:
