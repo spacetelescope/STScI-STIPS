@@ -758,13 +758,6 @@ class AstroImage(object):
         self.addHistory("Adding {} point sources".format(len(xs)))
         self._log("info","Adding {} point sources to AstroImage {}".format(len(xs),self.name))
 
-        # HARD CODED RIGHT NOW, FIX
-        #self.bright_limit  = 3# 14
-        #self.xbright_limit = 3# 11
-        print('\n\n\n\n')
-        print(self.bright_limit, self.xbright_limit)
-        print('\n\n\n\n')
-
         # Add each source to the image using the ePSF routines    
         with ImageData(self.fname, self.shape, memmap=self.memmap) as image:
             # Force Default to be a 3x3 Grid:
