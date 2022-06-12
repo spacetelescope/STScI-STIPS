@@ -191,7 +191,7 @@ class WFI(RomanInstrument):
     DETECTOR_SIZE = (4088,4088) #pixels
     PIXEL_SIZE = 10.0 #um (Assume for now)
     SCALE = [0.11,0.11] #Assume for now
-    FILTERS = ('F062', 'F087', 'F106', 'F129', 'F158', 'F184', 'F146', 'F149') #W149 needs to go away at some point.
+    FILTERS = ('F062', 'F087', 'F106', 'F129', 'F158', 'F184', 'F146')
     DEFAULT_FILTER = 'F184' #Assume for now
     
     PSF_INSTRUMENT = "WFI"
@@ -201,9 +201,9 @@ class WFI(RomanInstrument):
     DARKFILE = 'err_rdrk_wfi.fits' # IREF, IHB (use for the moment)
 
     # Background Values
-    BACKGROUND = {  'none': {'F062': 0., 'F087': 0.,'F106': 0.,'F129': 0.,'F158': 0.,'F184': 0., 'F146': 0., 'F149': 0.},
+    BACKGROUND = {  'none': {'F062': 0., 'F087': 0.,'F106': 0.,'F129': 0.,'F158': 0.,'F184': 0., 'F146': 0.},
                     'avg':  {'F062': 1.401E+00, 'F087': 1.401E+00, 'F106': 1.401E+00, 'F129': 7.000E-01,
-                             'F158': 7.521E-01, 'F184': 8.500E-01, 'F146': 7.000E-01, 'F149': 7.000E-01}
+                             'F158': 7.521E-01, 'F184': 8.500E-01, 'F146': 7.000E-01}
                  }
     BACKGROUNDS_V = ['none', 'avg', 'med', 'max', 'min']
     BACKGROUNDS = ['None', 'Average zodiacal background', 'Median zodiacal background', 'Maximum zodiacal background', 'Minimum zodiacal background']
@@ -212,10 +212,10 @@ class WFI(RomanInstrument):
               'min': 'Minimum zodiacal background', 'custom': 'Custom thermal background rate'}
     #PHOTFNU has units of Jy
     #For now, just assuming similar PHOTFNU to WFC3IR.
-    PHOTFNU = {     'F062': 1.0e-8, 'F087':1.0e-8, 'F106':1.0e-8, 'F129':1.0e-8, 'F158':1.0e-8, 'F184':1.0e-8, 'F146':1.0e-8, 'F149':1.0e-8}
+    PHOTFNU = {     'F062':3.25e-08, 'F087':8.87e-08, 'F106':3.94e-08, 'F129':3.51e-08, 'F158':3.13e-08, 'F184':1.18e-07, 'F146':1.63e-08}
     #PHOTPLAM has units of um
     #For now, just put them in the middle
-    PHOTPLAM = {'F062': 0.6700, 'F087':0.8735, 'F106':1.0595, 'F129':1.2925, 'F158':1.577, 'F184':1.5815, 'F146':1.4635, 'F149':1.4635}
+    PHOTPLAM = {'F062': 0.6700, 'F087':0.8735, 'F106':1.0595, 'F129':1.2925, 'F158':1.577, 'F184':1.5815, 'F146':1.4635}
     #For now, just put in HST-style dithers.
     DITHERS = ("SUBPIXEL ONLY","BOX-UVIS","BLOB") #Assume for now
     DITHER_POINTS = {
