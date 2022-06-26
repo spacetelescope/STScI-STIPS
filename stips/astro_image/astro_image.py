@@ -798,7 +798,6 @@ class AstroImage(object):
                     epsf = interpolate_epsf(xpix, ypix, xbright_psf_array, image_size)
                     image = place_source(xpix, ypix, flux, image, epsf, boxsize = xbright_boxsize, psf_center = xbright_psf_middle)
 
-        #if max_size is None:
         max_size = self.convolve_size
 
         self_y, self_x = self.shape
@@ -808,7 +807,7 @@ class AstroImage(object):
         sub_shape = (max_y, max_x)
         shape = (self_y + other_y - 1, self_x + other_x - 1)
 
-        fp_res = image#np.zeros(shape, dtype='float32')
+        fp_res = image
         centre = (rind(fp_res.shape[0]/2), rind(fp_res.shape[1]/2))
 
         g = os.path.join(self.out_path, uuid.uuid4().hex+"_convolve_02.tmp")
