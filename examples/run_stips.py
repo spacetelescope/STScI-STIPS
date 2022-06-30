@@ -8,9 +8,9 @@ def AB2Jy(mag):
     jy = 10**(0.4*(8.9-mag))
     return jy
 
-def create_catalog(N,filename,ra,dec,fov,mags,band,overwrite=False,seed=None,output=None):
+def create_single(N,filename,ra,dec,fov,mags,band,overwrite=False,seed=None,output=None):
     """
-    Method to create a catalog of N point sources distributed 
+    Method to create a catalog of N point sources distributed
     uniformily over the detector (and beyond) around coordinates
     RA and DEC in degrees of size fov. The function will save an
     output .fits file that STIPS will be able to read.
@@ -38,7 +38,7 @@ def create_catalog(N,filename,ra,dec,fov,mags,band,overwrite=False,seed=None,out
     seed : int, default None
         Seed of random number generator.
     output : str, default None
-        Return either a 'fits' table or a 'astropy' table.
+        Return either a 'fits' table or a 'table' table.
 
     Returns
     -------
@@ -61,13 +61,13 @@ def create_catalog(N,filename,ra,dec,fov,mags,band,overwrite=False,seed=None,out
     cat['Dec']=np.random.uniform(low=dec-fov/2,high=dec+fov/2,size=N)
 
     # Create random magnitudes
-    cat['mag']=np.random.uniform(low=mags[0],high=mags[1],size=N)
+    cat['mag']=np.random.uniform(low=mags[0],high=mags[1],size=N) - np.random.uniform(0.3, 0.9, N)
 
     # Create the catalog in a format suitable for STIPS
     cols=[]
     cols.append(fits.Column(name='id'   ,array=np.arange(1,N+1,dtype=int),format='K' ))
     cols.append(fits.Column(name='ra'   ,array=cat['RA']                 ,format='E' ))
-    cols.append(fits.Column(name='dec'  ,array=cat['Dec']                ,format='D' ))   
+    cols.append(fits.Column(name='dec'  ,array=cat['Dec']                ,format='D' ))
     cols.append(fits.Column(name='flux' ,array=AB2Jy(cat['mag'])         ,format='D' ))
     cols.append(fits.Column(name='type' ,array=['point']*N               ,format='8A'))
     cols.append(fits.Column(name='n'    ,array=np.empty(N)               ,format='D' ))
@@ -76,7 +76,7 @@ def create_catalog(N,filename,ra,dec,fov,mags,band,overwrite=False,seed=None,out
     cols.append(fits.Column(name='ratio',array=np.empty(N)               ,format='D' ))
     cols.append(fits.Column(name='notes',array=['']*N                    ,format='8A'))
     cols.append(fits.Column(name='units',array=['j']*N                   ,format='8A'))
-   
+
     # Create output fits table
     hdut = fits.BinTableHDU.from_columns(cols)
 
@@ -99,35 +99,36 @@ def create_catalog(N,filename,ra,dec,fov,mags,band,overwrite=False,seed=None,out
     if output:
         if output == 'fits':
             return hdut
-        elif output == 'astropy':
+        elif output == 'table':
             return table.Table(hdut.data)
         else:
-            raise ValueError(f"param 'output' must be 'fits' or 'astropy', {output} not recognized.")
+            raise ValueError(f"param 'output' must be 'fits' or 'table', {output} not recognized.")
 
 # Scene Parameters
-filename = 'STIPS_cat.fits'
+filename = 'catalog.fits'
 RA, DEC    = 90, 30 # center of the field
-FILTER     = 'F129' # the name of the filter to use
-EXPTIME    = 1000.0 # exposure time in sec
+FILTER     = 'F129' # the name of the filter to use, J band if F129
+EXPTIME    = 300.0 # exposure time in sec
 BACKGROUND = 1.5    # background level in e/s
 
 # Create random sources catalog
-create_catalog(500,filename,RA,DEC,fov=0.15,mags=(15,22),band=FILTER,overwrite=True,seed=42)
+create_single(100,filename,RA,DEC,fov=0.15,mags=(15,22),band=FILTER,overwrite=True,seed=42)
+
 
 # Build observation parameters
-obs = {'instrument'       : 'WFI', 
-       'filters'          : [FILTER], 
+obs = {'instrument'       : 'WFI',
+       'filters'          : [FILTER],
        'detectors'        : 1,
-       'distortion'       : False, 
+       'distortion'       : False,
        'oversample'       : 1,
-       'pupil_mask'       : '', 
-       'background'       : 'custom', 
-       'custom_background': BACKGROUND, 
-       'observations_id'  : 1, 
+       'pupil_mask'       : '',
+       'background'       : 'custom',
+       'custom_background': BACKGROUND,
+       'observations_id'  : 3,
        'exptime'          : EXPTIME,
-       'offsets'          : [{'offset_id'    : 1    , 
+       'offsets'          : [{'offset_id'    : 1    ,
                               'offset_centre': False,
-                              'offset_ra'    : 0.0  , 
+                              'offset_ra'    : 0.0  ,
                               'offset_dec'   : 0.0  ,
                               'offset_pa'    : 0.0  }]}
 # Create observation object

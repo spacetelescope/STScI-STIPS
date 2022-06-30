@@ -26,14 +26,14 @@ channels:
 dependencies:
   # Base dependencies
   - pip
-  - python>=3.7
+  - python==3.10.4
   - jupyter
   - Cython
 
   - pip:
     # Major modules
     - ConfigParser
-    - numpy
+    - numpy==1.22.3
     - scipy
     - matplotlib
     - photutils
@@ -41,10 +41,10 @@ dependencies:
     - astropy==4.0.6
     - synphot
     - stsynphot
-    - esutil --no-binary=esutil
+    - esutil
     - jwst_backgrounds
     - webbpsf>=0.9.0
-    - pandeia.engine==1.6.2
+    - pandeia.engine==1.7
     - ipython==7.31.1
 
     # Minor modules
