@@ -407,7 +407,7 @@ def DownloadReferenceData():
     
     # webbpsf
     print("Checking webbpsf data")
-    webbpsf_url = "https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz"
+    webbpsf_url = "https://stsci.box.com/shared/static/34o0keicz2iujyilg4uz617va46ks6u9.gz"
     webbpsf_data_path = os.environ[GetParameter("webbpsf_data_name", use_data=False)]
     webbpsf_data_file = "webbpsf_data.tar.gz"
     if not os.path.isdir(webbpsf_data_path):
@@ -420,14 +420,14 @@ def DownloadReferenceData():
     
     # pandeia
     print("Checking pandeia data")
-    pandeia_data_file = "pandeia_data-1.6.tar.gz"
-    pandeia_url = "https://stsci.box.com/shared/static/ksg2b7whqgzmvuqoln6zj9u2usomsgfu.gz"
+    pandeia_data_file = "pandeia_data-1.7.tar.gz"
+    pandeia_url = "https://stsci.box.com/shared/static/ycbm34uxhzafgb7te74vyl2emnr1mdty.gz"
     pandeia_data_path = os.environ[GetParameter("pandeia_data_name", use_data=False)]
     if not os.path.isdir(pandeia_data_path):
         print("Downloading pandeia data to {}".format(pandeia_data_path))
         os.makedirs(pandeia_data_path)
         get_compressed_file(pandeia_url, pandeia_data_file, pandeia_data_path, 
-                            "pandeia_data-1.6_roman/")
+                            "pandeia_data-1.7_roman/")
     else:
         print("Found at {}".format(pandeia_data_path))
 

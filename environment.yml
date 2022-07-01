@@ -26,9 +26,10 @@ channels:
 dependencies:
   # Base dependencies
   - pip
-  - python==3.10.4
+  - python>=3.8
   - jupyter
   - Cython
+  - esutil
 
   - pip:
     # Major modules
@@ -38,12 +39,11 @@ dependencies:
     - matplotlib
     - photutils
     - healpy==1.14.0
-    - astropy==4.0.6
+    - astropy
     - synphot
     - stsynphot
-    - esutil
     - jwst_backgrounds
-    - webbpsf>=0.9.0
+    - webbpsf
     - pandeia.engine==1.7
     - ipython==7.31.1
 
