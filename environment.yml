@@ -42,10 +42,10 @@ dependencies:
     - astropy
     - photutils
     - ConfigParser
-    - numpy==1.22.3
+    - numpy
     - scipy
     - matplotlib
-    - ipython==7.31.1
+    - ipython
 
     # Minor modules
     - montage-wrapper
