@@ -22,6 +22,8 @@ from photutils.psf.models import GriddedPSFModel
 
 from .. import __version__ as __stips__version__
 
+rind = lambda x : np.round(x).astype(int)
+
 def remove_subfolder(tar_file, subfolder):
     """
     Utility function to take a tar file and remove a set of leading folders from each 
@@ -405,7 +407,7 @@ def DownloadReferenceData():
     
     # webbpsf
     print("Checking webbpsf data")
-    webbpsf_url = "https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz"
+    webbpsf_url = "https://stsci.box.com/shared/static/34o0keicz2iujyilg4uz617va46ks6u9.gz"
     webbpsf_data_path = os.environ[GetParameter("webbpsf_data_name", use_data=False)]
     webbpsf_data_file = "webbpsf_data.tar.gz"
     if not os.path.isdir(webbpsf_data_path):
@@ -418,14 +420,14 @@ def DownloadReferenceData():
     
     # pandeia
     print("Checking pandeia data")
-    pandeia_data_file = "pandeia_data-1.6.tar.gz"
-    pandeia_url = "https://stsci.box.com/shared/static/ksg2b7whqgzmvuqoln6zj9u2usomsgfu.gz"
+    pandeia_data_file = "pandeia_data-1.7.tar.gz"
+    pandeia_url = "https://stsci.box.com/shared/static/ycbm34uxhzafgb7te74vyl2emnr1mdty.gz"
     pandeia_data_path = os.environ[GetParameter("pandeia_data_name", use_data=False)]
     if not os.path.isdir(pandeia_data_path):
         print("Downloading pandeia data to {}".format(pandeia_data_path))
         os.makedirs(pandeia_data_path)
         get_compressed_file(pandeia_url, pandeia_data_file, pandeia_data_path, 
-                            "pandeia_data-1.6_roman/")
+                            "pandeia_data-1.7_roman/")
     else:
         print("Found at {}".format(pandeia_data_path))
 
@@ -924,7 +926,7 @@ def overlapaddparallel(Amat, amat_shape,
     start = [0, 0]
     endd = [0, 0]
 
-    total_boxes = (Na[XDIM] // L[XDIM] + 1) * (Na[YDIM] // L[YDIM] + 1)
+    total_boxes = rind(Na[XDIM] / L[XDIM] + 1) * rind(Na[YDIM] / L[YDIM] + 1)
     percent_done = Percenter(total_boxes)
     def closing_log(pos):
         print_lock.acquire()
@@ -1051,7 +1053,7 @@ def overlapadd2(Amat, amat_shape,
     (XDIM, YDIM) = (1, 0)
     start = [0, 0]
     endd = [0, 0]
-    total_boxes = (Na[XDIM] // L[XDIM] + 1) * (Na[YDIM] // L[YDIM] + 1)
+    total_boxes = rind(Na[XDIM] / L[XDIM] + 1) * rind(Na[YDIM] / L[YDIM] + 1)
     current_box = 0
     while start[XDIM] <= Na[XDIM]:
         endd[XDIM] = min(start[XDIM] + L[XDIM], Na[XDIM])
@@ -1070,10 +1072,10 @@ def overlapadd2(Amat, amat_shape,
             if isinstance(Hf, GriddedPSFModel):
                 # Generate PSF
                 yg, xg = np.mgrid[start[YDIM]:endd[YDIM],start[XDIM]:endd[XDIM]]
-                y_0 = (start[YDIM]+endd[YDIM])//2
-                x_0 = (start[XDIM]+endd[XDIM])//2
+                y_0 = rind((start[YDIM]+endd[YDIM])/2)
+                x_0 = rind((start[XDIM]+endd[XDIM])/2)
                 # Make a grid that's the size of the PSF fov_pix around its centre.
-                ys2, xs2 = hmat_shape[0]//2, hmat_shape[1]//2
+                ys2, xs2 = rind(hmat_shape[0]/2), rind(hmat_shape[1]/2)
                 yg, xg = np.mgrid[y_0-ys2:y_0+ys2, x_0-xs2:x_0+xs2]
                 psf = Hf.evaluate(x=xg, y=yg, flux=1, x_0=x_0, y_0=y_0)
                 yt = np.real(ifft2(fft2(psf, Nfft) * Af))

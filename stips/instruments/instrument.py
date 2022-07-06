@@ -78,6 +78,8 @@ class Instrument(object):
         self.pa = kwargs.get('pa', 0.)
         self.distortion = SelectParameter('distortion', kwargs)
         self.exptime = kwargs.get('exptime', 1.)
+        self.bright_limit  = kwargs.get('bright_limit', kwargs)
+        self.xbright_limit = kwargs.get('xbright_limit', kwargs)
         self.small_subarray = kwargs.get('small_subarray', False)
         self.filter = None
         self.detectors = None
@@ -90,6 +92,9 @@ class Instrument(object):
         self.convolve_size = SelectParameter('convolve_size', kwargs)
         self.memmap = SelectParameter('memmap', kwargs)
         self.set_celery = kwargs.get('set_celery', None)
+        self.get_celery = kwargs.get('get_celery', None)
+
+        self.get_celery = kwargs.get('get_celery', None)
         self.get_celery = kwargs.get('get_celery', None)
 
         #Adjust # of detectors based on keyword:
@@ -494,16 +499,16 @@ class Instrument(object):
         notes[np.where(binaries==1)] = 'Binary'
         notes[np.where(binaries!=1)] = 'None'
         t = Table()
-        t['ra'] = Column(data=ras)
-        t['dec'] = Column(data=decs)
-        t['flux'] = Column(data=rates)
+        t['ra'] = Column(data=ras.data)
+        t['dec'] = Column(data=decs.data)
+        t['flux'] = Column(data=rates.data)
         t['type'] = Column(data=np.full_like(ras,"point",dtype="S6"))
         t['n'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
         t['re'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
         t['phi'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
         t['ratio'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
-        t['id'] = Column(data=ids)
-        t['notes'] = Column(data=notes)
+        t['id'] = Column(data=ids.data)
+        t['notes'] = Column(data=notes.data)
         
         return t, cached
 
@@ -535,15 +540,15 @@ class Instrument(object):
             obs = syn.Observation(sp, bp, binset=sp.waveset)
             rates[index] = obs.countrate(area=self.AREA).value
         t = Table()
-        t['ra'] = Column(data=ras)
-        t['dec'] = Column(data=decs)
-        t['flux'] = Column(data=rates)
+        t['ra'] = Column(data=ras.data)
+        t['dec'] = Column(data=decs.data)
+        t['flux'] = Column(data=rates.data)
         t['type'] = Column(data=np.full_like(ras,"point",dtype="S6"))
         t['n'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
         t['re'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
         t['phi'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
         t['ratio'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
-        t['id'] = Column(data=ids)
+        t['id'] = Column(data=ids.data)
         t['notes'] = Column(data=np.full_like(ras,"None",dtype="S6"))
         
         return t, cached
@@ -575,15 +580,15 @@ class Instrument(object):
             obs = syn.Observation(sp, bp, binset=sp.wave)
             rates = np.append(rates, obs.countrate(area=self.AREA).value)
         t = Table()
-        t['ra'] = Column(data=ras)
-        t['dec'] = Column(data=decs)
-        t['flux'] = Column(data=rates)
+        t['ra'] = Column(data=ras.data)
+        t['dec'] = Column(data=decs.data)
+        t['flux'] = Column(data=rates.data)
         t['type'] = Column(data=np.full_like(ras,"point",dtype="S6"))
         t['n'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
         t['re'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
         t['phi'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
         t['ratio'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
-        t['id'] = Column(data=ids)
+        t['id'] = Column(data=ids.data)
         t['notes'] = Column(data=np.full_like(ras,"None",dtype="S6"))
         
         return t, cached
@@ -653,16 +658,16 @@ class Instrument(object):
             note = "BC95_{}_{}_{}".format(model, stringify(age), mag)
             notes = np.append(notes, note)
         t = Table()
-        t['ra'] = Column(data=ras, dtype=np.float)
-        t['dec'] = Column(data=decs)
-        t['flux'] = Column(data=rates)
+        t['ra'] = Column(data=ras.data, dtype=np.float)
+        t['dec'] = Column(data=decs.data)
+        t['flux'] = Column(data=rates.data)
         t['type'] = Column(data=np.full_like(ras, 'sersic', dtype='S7'))
-        t['n'] = Column(data=indices)
-        t['re'] = Column(data=radii)
-        t['phi'] = Column(data=pas)
-        t['ratio'] = Column(data=ratios)
-        t['id'] = Column(data=ids)
-        t['notes'] = Column(data=notes, dtype='S25')
+        t['n'] = Column(data=indices.data)
+        t['re'] = Column(data=radii.data)
+        t['phi'] = Column(data=pas.data)
+        t['ratio'] = Column(data=ratios.data)
+        t['id'] = Column(data=ids.data)
+        t['notes'] = Column(data=notes.data, dtype='S25')
         
         return t, cached
 
@@ -691,16 +696,16 @@ class Instrument(object):
         idxj = np.where(units == 'j')
         rates[idxj] *= self.convertToCounts('j')
         t = Table()
-        t['ra'] = Column(data=ras)
-        t['dec'] = Column(data=decs)
-        t['flux'] = Column(data=rates)
-        t['type'] = Column(data=types)
-        t['n'] = Column(data=indices)
-        t['re'] = Column(data=radii)
-        t['phi'] = Column(data=pas)
-        t['ratio'] = Column(data=ratios)
-        t['id'] = Column(data=ids)
-        t['notes'] = Column(data=notes)
+        t['ra'] = Column(data=ras.data)
+        t['dec'] = Column(data=decs.data)
+        t['flux'] = Column(data=rates.data)
+        t['type'] = Column(data=types.data)
+        t['n'] = Column(data=indices.data)
+        t['re'] = Column(data=radii.data)
+        t['phi'] = Column(data=pas.data)
+        t['ratio'] = Column(data=ratios.data)
+        t['id'] = Column(data=ids.data)
+        t['notes'] = Column(data=notes.data)
         
         return t, cached
     
@@ -721,16 +726,16 @@ class Instrument(object):
         notes = table['notes']
         rates = table[self.filter]
         t = Table()
-        t['ra'] = Column(data=ras)
-        t['dec'] = Column(data=decs)
-        t['flux'] = Column(data=rates)
-        t['type'] = Column(data=types)
-        t['n'] = Column(data=indices)
-        t['re'] = Column(data=radii)
-        t['phi'] = Column(data=pas)
-        t['ratio'] = Column(data=ratios)
-        t['id'] = Column(data=ids)
-        t['notes'] = Column(data=notes)
+        t['ra'] = Column(data=ras.data)
+        t['dec'] = Column(data=decs.data)
+        t['flux'] = Column(data=rates.data)
+        t['type'] = Column(data=types.data)
+        t['n'] = Column(data=indices.data)
+        t['re'] = Column(data=radii.data)
+        t['phi'] = Column(data=pas.data)
+        t['ratio'] = Column(data=ratios.data)
+        t['id'] = Column(data=ids.data)
+        t['notes'] = Column(data=notes.data)
         
         return t, cached
 
@@ -748,15 +753,15 @@ class Instrument(object):
         else:
             ids = np.arange(len(ras),dtype=int)
         t = Table()
-        t['ra'] = Column(data=ras)
-        t['dec'] = Column(data=decs)
-        t['flux'] = Column(data=rates)
+        t['ra'] = Column(data=ras.data)
+        t['dec'] = Column(data=decs.data)
+        t['flux'] = Column(data=rates.data)
         t['type'] = Column(data=np.full_like(ras,"point",dtype="S6"))
         t['n'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
         t['re'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
         t['phi'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
         t['ratio'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
-        t['id'] = Column(data=ids)
+        t['id'] = Column(data=ids.data)
         t['notes'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
         
         return t, cached
@@ -818,7 +823,7 @@ class Instrument(object):
             self._log("info","Convolving with PSF")
             convolve_state = base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name)
             self.updateState(convolve_state)
-            detector.convolve_psf(max_size=self.convolve_size-1, parallel=parallel, cores=cores)
+            #detector.convolve_psf(max_size=self.convolve_size-1, parallel=parallel, cores=cores)
             if 'convolve' in snapshots or 'all' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_convolve.fits".format(self.obs_count, detector.name))
             if self.oversample != 1:

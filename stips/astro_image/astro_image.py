@@ -33,8 +33,11 @@ from ..utilities import StipsDataTable
 from ..utilities import SelectParameter
 from ..errors import GetCrProbs, GetCrTemplate, MakeCosmicRay
 
+from ..utilities.makePSF import *
+
 stips_version = StipsEnvironment.__stips__version__
 
+rind = lambda x : np.round(x).astype(int)
 
 class AstroImage(object):
     """
@@ -66,6 +69,8 @@ class AstroImage(object):
             self.instrument = self.parent.PSF_INSTRUMENT
             self.filter = self.parent.filter
             self.oversample = self.parent.oversample
+            self.bright_limit  = self.parent.bright_limit
+            self.xbright_limit = self.parent.xbright_limit
             self.shape = np.array(self.parent.DETECTOR_SIZE)*self.oversample
             self._scale = np.array(self.parent.SCALE)/self.oversample
             self.zeropoint = self.parent.zeropoint
@@ -95,6 +100,8 @@ class AstroImage(object):
                     self.logger.addHandler(stream_handler)
             self.out_path = SelectParameter('out_path', kwargs)
             self.oversample = SelectParameter('oversample', kwargs)
+            self.bright_limit  = SelectParameter('bright_limit', kwargs)
+            self.xbright_limit = SelectParameter('xbright_limit', kwargs)
             shape = kwargs.get('shape', default['shape'])
             self.shape = np.array(shape) * self.oversample
             self._scale = kwargs.get('scale', np.array(default['scale']))
@@ -121,12 +128,10 @@ class AstroImage(object):
         if self.set_celery is None:
             self.set_celery = lambda x: None
         
-        # documentation says
-        #   - 1 for FITS/Fortran
-        #   - 0 for numpy/C
-        # although the ultimate output format is FITS, within an AstroImage data is stored
-        # as a numpy array, so origin=0 is the way to go.
+        # WCS origin is 0 for numpy/C and 1 for FITS/Fortran, do not change this one.
         self.wcs_origin = 0
+        # Will only be used for the output catalog file, you can change this one.
+        self.out_origin = 1
 
         #Set unique ID and figure out where the numpy memmap will be stored
         self.name = kwargs.get('detname', default['detector'][self.instrument])
@@ -138,8 +143,8 @@ class AstroImage(object):
         if self.psf_commands is None:
             self.psf_commands = ''
         psf = kwargs.get('psf', True)
-        if psf:
-            self.make_psf()
+        #if psf:
+        #    self.make_psf()
         
         data = kwargs.get('data', None)
         if data is not None:
@@ -527,7 +532,8 @@ class AstroImage(object):
             if len(xs[stars_idx]) > 0:
                 self.updateState(base_state + "<br /><span class='indented'>Adding {} stars</span>".format(len(xs[stars_idx])))
                 self._log("info", "Writing {} stars".format(len(xs[stars_idx])))
-                self.addPoints(xs[stars_idx], ys[stars_idx], fluxes[stars_idx], *args, **kwargs)
+                #self.addPoints(xs[stars_idx], ys[stars_idx], fluxes[stars_idx], *args, **kwargs)
+                self.addPSFs(xs[stars_idx], ys[stars_idx], fluxes[stars_idx], stmags[stars_idx], *args, **kwargs)
                 fluxes_observed[stars_idx] = fluxes[stars_idx]
             gals_idx = np.where(types == 'sersic')
             if len(xs[gals_idx]) > 0:
@@ -557,8 +563,8 @@ class AstroImage(object):
                     counter += 1
                 self._log('info', 'Finishing Sersic Profiles at {}'.format(time.ctime()))
             ot = Table()
-            ot['x'] = Column(data=xfs, unit='pixel')
-            ot['y'] = Column(data=yfs, unit='pixel')
+            ot['x'] = Column(data=xfs+self.out_origin, unit='pixel')
+            ot['y'] = Column(data=yfs+self.out_origin, unit='pixel')
             ot['type'] = Column(data=types)
             ot['vegamag'] = Column(data=vegamags)
             ot['stmag'] = Column(data=stmags)
@@ -611,7 +617,243 @@ class AstroImage(object):
         self.updateState(base_state)
         self._log("info","Added catalogue {} to AstroImage {}".format(catname, self.name))
         return obsname            
-    
+
+    def make_epsf_array(self, psf_type = 'normal'):
+        """
+        Import the 9 PSFs per detector, one in each corner and middle
+        of the detector. These 9 PSFs will be used to interpolate the
+        best PSF at the location of a source. An ePSF will be calculated
+        for each input PSF.
+
+        Parameters
+        ----------
+        detector : str
+            Name of WFI detector, e.g. 'SCA01'
+        band : str
+            Name of filter, e.g. 'F087'
+        psf_type : str
+            either 'normal', 'bright', or 'xbright' for
+            dim, bright, and extra bright sources.
+
+        Returns
+        -------
+        psf_array : list
+            3 x 3 list with the corresponding input ePSFs.
+        """
+
+        from webbpsf import __version__ as psf_version
+        have_psf = False
+
+        # Assign prefix based on PSF size
+        prefix = ''
+        if psf_type != 'normal':
+            prefix = psf_type+'_'
+
+        psf_name = "{}psf_{}_{}_{}_{}_{}_{}.fits".format(prefix, 
+                                                         self.instrument,
+                                                         stips_version, 
+                                                         self.filter,
+                                                         self.oversample,
+                                                         self.psf_grid_size,
+                                                         self.detector.lower())
+
+        psf_cache_dir = SelectParameter('psf_cache_location')
+        psf_cache_name = SelectParameter('psf_cache_directory')
+        if psf_cache_name not in psf_cache_dir:
+            psf_cache_dir = os.path.join(psf_cache_dir, psf_cache_name)
+        if SelectParameter('psf_cache_enable'):
+            if not os.path.exists(psf_cache_dir):
+                os.makedirs(psf_cache_dir)
+            psf_file = os.path.join(psf_cache_dir, psf_name)
+            self._log("info", "PSF File {} to be put at {}".format(psf_name, psf_cache_dir))
+            self._log("info", "PSF File is {}".format(psf_file))
+            if os.path.exists(psf_file):
+                from webbpsf.utils import to_griddedpsfmodel
+                if (self.psf_commands is None or self.psf_commands == ''):
+                    self.psf = to_griddedpsfmodel(psf_file)
+                    have_psf = True
+
+        if not have_psf:
+            base_state = self.celery_state
+            update_state = "<br /><span class='indented'>Generating PSF</span>"
+            self.celery_state = base_state + update_state
+            ins = self.psf_constructor
+            if self.psf_commands != '':
+                for attribute,value in self.psf_commands.iteritems():
+                    setattr(ins,attribute,value)
+            ins.filter = self.filter
+            ins.detector = self.detector
+            scale = self.scale[0]
+            # First limit -- PSF no larger than detector
+            ins_size = max(self.xsize, self.ysize) * self.oversample
+            # Second limit -- PSF no larger than half of max convolution area.
+            conv_size = self.convolve_size // (2*self.oversample)
+            # Third limit -- prevent aliasing
+            limit = 60.
+            if psf_type == 'bright': limit = 120.
+            elif psf_type == 'xbright': limit = 240.
+            safe_size = int(np.floor(limit * self.photplam / (2 * self.scale[0])))
+            if safe_size <= 0:
+                safe_size = max(self.xsize, self.ysize)
+            msg = "PSF choosing between {}, {} and {}"
+            self._log("info", msg.format(ins_size, conv_size, safe_size))
+            fov_pix = min(ins_size, conv_size, safe_size)
+            if fov_pix%2 == 0:
+                fov_pix += 1
+            num_psfs = self.psf_grid_size*self.psf_grid_size
+            #num_psfs = 9#self.psf_grid_size*self.psf_grid_size
+            if SelectParameter('psf_cache_enable'):
+                save = True
+                overwrite = True
+                psf_file = "{}psf_{}_{}_{}_{}_{}".format(prefix, 
+                                                         self.instrument,
+                                                         stips_version, 
+                                                         self.filter,
+                                                         self.oversample,
+                                                         self.psf_grid_size)
+            else:
+                save = False
+                overwrite = False
+                psf_dir = None
+                psf_file = None
+            msg = "{}: Starting {}x{} PSF Grid creation at {}"
+            self._log("info", msg.format(self.name, self.psf_grid_size, 
+                                         self.psf_grid_size, time.ctime()))
+            # Supersample the pixel scale to get WebbPSF to output
+            # PSF models with even supersamplingcentered at the center of a pixel
+            ins.pixelscale = scale / 4
+            self.psf = ins.psf_grid(all_detectors=False, num_psfs=num_psfs,
+                                    fov_pixels=fov_pix, normalize='last',
+                                    oversample=self.oversample, save=save,
+                                    outdir=psf_cache_dir, outfile=psf_file,
+                                    overwrite=overwrite)
+            msg = "{}: Finished PSF Grid creation at {}"
+            self._log("info", msg.format(self.name, time.ctime()))
+            self.celery_state = base_state
+
+        psf_data = self.psf.data
+
+        # Create ePSF
+        epsf_0_0 = make_epsf(psf_data[0])
+        epsf_0_1 = make_epsf(psf_data[1])
+        epsf_0_2 = make_epsf(psf_data[2])
+        epsf_1_0 = make_epsf(psf_data[3])
+        epsf_1_1 = make_epsf(psf_data[4])
+        epsf_1_2 = make_epsf(psf_data[5])
+        epsf_2_0 = make_epsf(psf_data[6])
+        epsf_2_1 = make_epsf(psf_data[7])
+        epsf_2_2 = make_epsf(psf_data[8])
+
+        # Reshape Array of ePSFs
+        psf_array = [[epsf_0_0,epsf_0_1,epsf_0_2],
+                     [epsf_1_0,epsf_1_1,epsf_1_2],
+                     [epsf_2_0,epsf_2_1,epsf_2_2]]
+
+        psf_middle = rind((psf_data[0].shape[0]-1) / 2)
+
+        return psf_array, psf_middle
+
+    def addPSFs(self, xs, ys, fluxes, mags, *args, **kwargs):
+        """Adds a set of point sources to the image given their co-ordinates and count rates."""
+        self.addHistory("Adding {} point sources".format(len(xs)))
+        self._log("info","Adding {} point sources to AstroImage {}".format(len(xs),self.name))
+
+        # Add each source to the image using the ePSF routines    
+        with ImageData(self.fname, self.shape, memmap=self.memmap) as image:
+            # Force Default to be a 3x3 Grid:
+            self.psf_grid_size = 3
+            image_size = image.shape[0]
+
+            # Read input PSF files
+            psf_array, psf_middle = self.make_epsf_array()
+            boxsize = np.floor(psf_middle)/4
+
+            # Are there bright stars?
+            are_bright  = np.any(mags < self.bright_limit)
+            are_xbright = np.any(mags < self.xbright_limit)
+            # If so, generate extra ePSF arrays
+            if are_bright:
+                bright_psf_array, bright_psf_middle = self.make_epsf_array('bright')
+                bright_boxsize = np.floor(bright_psf_middle)/4
+            if are_xbright:
+                xbright_psf_array, xbright_psf_middle = self.make_epsf_array('xbright')
+                xbright_boxsize = np.floor(xbright_psf_middle)/4
+
+            for k, (xpix, ypix, flux, mag) in enumerate(zip(xs, ys, fluxes, mags)):
+                self.addHistory("Adding point source {} at {},{}".format(k+1, xpix, ypix))
+                self._log("info","Adding point source {} to AstroImage {},{}".format(k+1, xpix, ypix))
+
+                # Create interpolated ePSF from input PSF files
+                if mag > self.bright_limit:
+                    epsf = interpolate_epsf(xpix, ypix, psf_array, image_size)
+                    image = place_source(xpix, ypix, flux, image, epsf, boxsize = boxsize, psf_center = psf_middle)
+                elif (self.xbright_limit < mag < self.bright_limit):
+                    self.addHistory("Placing Bright Source with mag = {}".format(mag))
+                    self._log("info","Placing Bright Source with mag = {}".format(mag))
+                    epsf = interpolate_epsf(xpix, ypix, bright_psf_array, image_size)
+                    image = place_source(xpix, ypix, flux, image, epsf, boxsize = bright_boxsize, psf_center = bright_psf_middle)
+                elif mag < self.xbright_limit:
+                    self.addHistory("Placing Extra Bright Source with mag = {}".format(mag))
+                    self._log("info","Placing Extra Bright Source with mag = {}".format(mag))
+                    epsf = interpolate_epsf(xpix, ypix, xbright_psf_array, image_size)
+                    image = place_source(xpix, ypix, flux, image, epsf, boxsize = xbright_boxsize, psf_center = xbright_psf_middle)
+
+        max_size = self.convolve_size
+
+        self_y, self_x = self.shape
+        other_y, other_x = epsf.shape
+        max_y = min(max_size - other_y, self_y + other_y - 1)
+        max_x = min(max_size - other_x, self_x + other_x - 1)
+        sub_shape = (max_y, max_x)
+        shape = (self_y + other_y - 1, self_x + other_x - 1)
+
+        fp_res = image
+        centre = (rind(fp_res.shape[0]/2), rind(fp_res.shape[1]/2))
+
+        g = os.path.join(self.out_path, uuid.uuid4().hex+"_convolve_02.tmp")
+
+        msg = "Cropping convolved image down to detector size"
+        self._log('info', msg)
+        half = (rind(self.base_shape[0]/2), rind(self.base_shape[1]/2))
+        msg = "Image Centre: {}; Image Half-size: {}"
+        self._log('info', msg.format(centre, half))
+        ly, hy = centre[0]-half[0], centre[0]+half[0]
+        lx, hx = centre[1]-half[1], centre[1]+half[1]
+        if hx-lx < self.base_shape[1]:
+            hx += 1
+        elif hx-lx > self.base_shape[1]:
+            hx -= 1
+        if hy-ly < self.base_shape[0]:
+            hy += 1
+        elif hy-ly > self.base_shape[0]:
+            hy -= 1
+        msg = "Taking [{}:{}, {}:{}]"
+        self._log('info', msg.format(ly, hy, lx, hx))
+        if self.memmap:
+            fp_crop = np.memmap(g, dtype='float32', mode='w+', 
+                                shape=tuple(self.base_shape))
+        else:
+            fp_crop = np.zeros(tuple(self.base_shape), dtype='float32')
+        fp_crop[:,:] = fp_res[ly:hy, lx:hx]
+        crpix = [half[0], half[1]]
+        if self.wcs.sip is not None:
+            sip = wcs.Sip(self.wcs.sip.a, self.wcs.sip.b, None, None, 
+                          crpix)
+        else:
+            sip = None
+        self.wcs = self._wcs(self.ra, self.dec, self.pa, self.scale, 
+                             crpix=crpix, sip=sip)
+        del fp_res
+        if self.memmap:
+            del fp_crop
+            if os.path.exists(self.fname):
+                os.remove(self.fname)
+            self.fname = g
+        else:
+            del self.fname
+            self.fname = fp_crop
+        self.shape = self.base_shape
+
     def addPoints(self, xs, ys, rates, *args, **kwargs):
         """Adds a set of point sources to the image given their co-ordinates and count rates."""
         self.addHistory("Adding {} point sources".format(len(xs)))
@@ -694,6 +936,7 @@ class AstroImage(object):
         return central_flux
 
     def make_psf(self):
+        # FUNCTION NOT USED IN THIS VERSION, use make_epsf_array instead
         from webbpsf import __version__ as psf_version
         have_psf = False
         psf_name = "psf_{}_{}_{}_{}_{}_{}.fits".format(self.instrument,
@@ -870,7 +1113,7 @@ class AstroImage(object):
                     fp_res = np.memmap(f, dtype='float32', mode='w+', shape=shape)
                 else:
                     fp_res = np.zeros(shape, dtype='float32')
-                centre = (fp_res.shape[0]//2, fp_res.shape[1]//2)
+                centre = (rind(fp_res.shape[0]/2), rind(fp_res.shape[1]/2))
                 max_y = min(max_size - other_y, self_y + other_y - 1)
                 max_x = min(max_size - other_x, self_x + other_x - 1)
                 sub_shape = (max_y, max_x)
@@ -912,7 +1155,7 @@ class AstroImage(object):
             if crop:
                 msg = "Cropping convolved image down to detector size"
                 self._log('info', msg)
-                half = (self.base_shape[0]//2, self.base_shape[1]//2)
+                half = (rind(self.base_shape[0]/2), rind(self.base_shape[1]/2))
                 msg = "Image Centre: {}; Image Half-size: {}"
                 self._log('info', msg.format(centre, half))
                 ly, hy = centre[0]-half[0], centre[0]+half[0]
@@ -1174,7 +1417,7 @@ class AstroImage(object):
         if biny is None: biny = binx
         f = os.path.join(self.out_path, uuid.uuid4().hex+"_bin.tmp")
         try:
-            shape_x, shape_y = int(self.shape[1] // binx), int(self.shape[0] // biny)
+            shape_x, shape_y = rind(self.shape[1] / binx), rind(self.shape[0] / biny)
             with ImageData(self.fname, self.shape, mode='r+', memmap=self.memmap) as dat:
                 binned = dat.reshape(shape_y, biny, shape_x, binx).sum(axis=(1, 3))
                 if self.memmap:
@@ -1465,7 +1708,7 @@ class AstroImage(object):
         w.wcs.ctype[ranum] = "RA---TAN"
         w.wcs.ctype[decnum] = "DEC--TAN"
         if crpix is None:
-            w.wcs.crpix = [self.xsize//2, self.ysize//2]
+            w.wcs.crpix = [rind(self.xsize/2), rind(self.ysize/2)]
         else:
             w.wcs.crpix = crpix
         w.wcs.crval = [0.,0.]
@@ -1619,9 +1862,9 @@ class AstroImage(object):
             fp = np.zeros(t_shape, dtype='float32')
             self.fname = fp
         if data is not None:
-            centre = self.shape//2
+            centre = rind(self.shape/2)
             cy, cx = centre
-            half = base_shape//2
+            half = rind(base_shape/2)
             hy, hx = half
             fp[cy-hy:cy+base_shape[0]-hy, cx-hx:cx+base_shape[1]-hx] = data
         if self.memmap:
@@ -1653,7 +1896,7 @@ class AstroImage(object):
                                             'NIRCam': "NRCA1",
                                             'MIRI': 'MIRI'
                                         },
-                            'shape': (4096, 4096),
+                            'shape': (4088, 4088),
                             'scale': [0.11,0.11],
                             'zeropoint': 21.0,
                             'photflam': 0.,

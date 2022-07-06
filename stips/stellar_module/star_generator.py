@@ -37,8 +37,6 @@ from astropy import units as u
 
 from scipy.interpolate import RegularGridInterpolator
 
-from esutil import sqlite_util
-
 from ..utilities import GetStipsData
 
 class StarGenerator(object):
@@ -236,6 +234,7 @@ class StarGenerator(object):
         return masses
     
     def get_star_info(self):
+        from esutil import sqlite_util
         stmt = "SELECT m_ini,Te,log_g,johnson_i_abs FROM star_info WHERE star_info.age = {} AND star_info.Z = {}".format(self.age,self.metallicity)
         sc = sqlite_util.SqliteConnection(self.dbname)
         arr = sc.execute(stmt,asarray=True)
@@ -288,6 +287,7 @@ class StarGenerator(object):
         return countrates
 
     def make_cluster_mags(self,masses):
+        from esutil import sqlite_util
         db = sqlite3.connect(self.dbname)
         sc = sqlite_util.SqliteConnection(self.dbname)
         stmt = "SELECT m_ini,johnson_i_abs,Te,log_g FROM star_info WHERE star_info.age = {} AND star_info.Z = {}".format(self.age,self.metallicity)
