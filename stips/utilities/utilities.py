@@ -15,7 +15,6 @@ import numpy as np
 import astropy.io.fits as pyfits
 from astropy.io import ascii
 from astropy.table import Table
-from jwst_backgrounds.jbt import background
 from numpy.fft import fft2, ifft2
 from pathlib import Path
 from photutils.psf.models import GriddedPSFModel
@@ -225,131 +224,6 @@ class ImageData(object):
     @property
     def data(self):
         return self.fp
-
-#-----------
-class CachedJbtBackground(background, object):
-    '''
-    Version of the JBT Background class intended to work with a local cached file. Repeats the 
-    entire __init__ function because there doesn't seem to be any way to give jbt a local file
-    path instead of a URL.
-    '''
-    def __init__(self, ra, dec, wavelength, thresh=1.1):
-        # global attributes
-        cache_location = GetParameter('observation_jbt_location')
-        if cache_location in ['$DATA', '$WEB']:
-            self.cache_path = GetStipsData("background")
-        else:
-            self.cache_path = cache_location
-        if sys.version_info[0] >= 3:
-            self.cache_url = "file://" + urllib.request.pathname2url(os.path.join(self.cache_path, "remote_cache/"))
-        else:
-            self.cache_url = urllib.pathname2url(os.path.join(self.cache_path, "remote_cache/"))
-        self.local_path = os.path.join(self.cache_path, 'jbt_refdata')
-        self.wave_file = 'std_spectrum_wavelengths.txt' # The wavelength grid of the background cache
-        self.thermal_file = 'thermal_curve_jwst_jrigby_cchen_1.1a.csv' # The constant (not time variable) thermal self-emission curve
-        self.nside = 128  # Healpy parameter, from generate_backgroundmodel_cache.c .  
-        self.wave_array,self.thermal_bg = self.read_static_data()
-        self.sl_nwave = self.wave_array.size  # Size of wavelength array
-        
-        # input parameters
-        self.ra = ra
-        self.dec = dec
-        self.wavelength = wavelength
-        self.thresh = thresh
-
-        # Load variable content
-        self.cache_file = self.myfile_from_healpix(ra, dec)
-        self.bkg_data = self.read_bkg_data(self.cache_file)
-                
-        # Interpolate bathtub curve and package it    
-        self.make_bathtub(wavelength)
-
-    def read_bkg_data(self, cache_file, verbose=False):
-        """
-        Method for reading one JWST background file, and parsing it.    
-        
-        Schema of each binary file in the cache:
-        ----------------------------------------
-        JRR verified the schema against the source code, generate_stray_light_with_threads.c. 
-        The cache uses a Healpix RING tesselation, with NSIDE=128.  Every point on the sky 
-        (tesselated tile) corresponds to one binary file, whose name includes its healpix 
-        pixel number, in a directory corresponding to the first 4 digits of the healpix number.  
-
-        - double RA
-        - double DEC
-        - double pos[3]
-        - double nonzodi_bg[SL_NWAVE]
-        - int[366] date_map  : This maps dates to indices.  NOTE: There are 366 days, not 365!
-        - for each day in FOR:
-            - double zodi_bg[SL_NWAVE]
-            - double stray_light_bg[SL_NWAVE]
-        
-        parameters
-        ----------
-        cache_file: string
-        
-        attributes
-        ----------
-        
-        """
-
-        # Read the background file via http 
-        if sys.version_info[0] >= 3:
-            # Python 3
-            # Read the background cache version
-            version_file = urllib.request.urlopen(self.cache_url + 'VERSION')
-            sbet_file = urllib.request.urlopen(self.cache_url + cache_file)
-        else:
-            # Python 2
-            # Read the background cache version
-            version_file = urllib.urlopen(self.cache_url + 'VERSION')
-            sbet_file = urllib.urlopen(self.cache_url + cache_file)
-
-        self.cache_version = version_file.readlines()[0].decode('utf-8')[:-1]
-        sbet_data = sbet_file.read()
-        
-        # Unpack the constant first part
-        if verbose: 
-            print("File has", len(sbet_data), "bytes, which is", len(sbet_data)/8., "doubles")
-            
-        size_calendar = struct.calcsize("366i") # bytes, not doubles
-        partA = struct.unpack(str(5 + self.sl_nwave)+'d', sbet_data[0: (5 + self.sl_nwave)*8])
-        ra = partA[0]
-        dec = partA[1]
-        pos = partA[2:5]
-        nonzodi_bg = np.array(partA[5:5+self.sl_nwave])
-
-        # Unpack the calendar dates - the dates go from 0 to 365 days.
-        date_map = np.array(struct.unpack('366i', sbet_data[(5 + self.sl_nwave)*8  : (5 + self.sl_nwave)*8 + size_calendar]))
-        if verbose: 
-            print("Out of", len(date_map), "days, these many are legal:", np.sum(date_map >=0))
-
-        calendar = np.where(date_map >=0)[0]
-
-        Ndays = len(calendar) 
-        if verbose: 
-            print(len(date_map), Ndays)
-
-        # Unpack part B, the time-variable part
-        zodi_bg        = np.zeros((Ndays,self.sl_nwave))
-        stray_light_bg = np.zeros((Ndays,self.sl_nwave))
-        perday = self.sl_nwave*2
-        partB= struct.unpack(str((len(calendar))*self.sl_nwave*2)+'d', sbet_data[perday*Ndays*-8 : ])
-
-        # The index dd in zodi_bg[dd, : ] corresponds to the calendar day lookup[dd]
-        for dd in range(0, int(Ndays)):
-            br1 = dd*perday
-            br2 = br1 + self.sl_nwave
-            br3 = br2 + self.sl_nwave
-            zodi_bg[dd, ] = partB[br1 : br2]
-            stray_light_bg[dd, ] = partB[br2 : br3]
-
-        # Expand static background components to the same shape as zodi_bg
-        total_bg = np.tile(nonzodi_bg + self.thermal_bg,(Ndays,1)) + stray_light_bg + zodi_bg
-
-        # pack everything up as a dict
-        return {'calendar':calendar, 'ra':ra, 'dec':dec, 'pos':pos, 'wave_array':self.wave_array, 'nonzodi_bg':nonzodi_bg, 
-                'thermal_bg':self.thermal_bg, 'zodi_bg':zodi_bg, 'stray_light_bg':stray_light_bg, 'total_bg':total_bg} 
 
 #-----------
 def SetupDataPaths():

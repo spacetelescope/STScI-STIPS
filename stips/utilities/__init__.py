@@ -3,7 +3,6 @@ __all__ = ['utilities']
 # Local Definitions
 from .utilities import StipsEnvironment
 from .utilities import ImageData 
-from .utilities import CachedJbtBackground
 from .utilities import SetupDataPaths
 from .utilities import DownloadReferenceData
 from .utilities import GetStipsDataDir

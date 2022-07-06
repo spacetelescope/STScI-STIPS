@@ -20,7 +20,6 @@ name: stips
 channels:
   - conda-forge
   - astropy
-  - http://ssb.stsci.edu/astroconda
   - defaults
 
 dependencies:
@@ -32,19 +31,20 @@ dependencies:
   - esutil
 
   - pip:
+    # Core Modules
+    - webbpsf==1.0.0
+    - poppy==1.0.3
+    - pandeia.engine==1.7
+    - synphot==1.1.1
+    - stsynphot==1.1.0
+  
     # Major modules
+    - astropy
+    - photutils
     - ConfigParser
     - numpy==1.22.3
     - scipy
     - matplotlib
-    - photutils
-    - healpy==1.14.0
-    - astropy
-    - synphot
-    - stsynphot
-    - jwst_backgrounds
-    - webbpsf
-    - pandeia.engine==1.7
     - ipython==7.31.1
 
     # Minor modules
@@ -67,4 +67,4 @@ dependencies:
     - pytest-astropy
     
     # Current package
-    #- -e .
+    - -e .
