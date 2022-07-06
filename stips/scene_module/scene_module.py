@@ -23,6 +23,8 @@ from ..utilities import OffsetPosition
 from ..utilities import SelectParameter
 from ..utilities import StipsDataTable
 
+rind = lambda x : np.round(x).astype(int)
+
 #-----------
 class SceneModule(object):
 

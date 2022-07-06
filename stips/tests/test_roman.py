@@ -49,7 +49,7 @@ def get_default_obs():
             'exptime': 1000,
             'memmap': True,
             'parallel': True,
-            'convolve_size': 4096,
+            'convolve_size': 4088,
             'offsets': [
                         {
                             'offset_id': 1, 

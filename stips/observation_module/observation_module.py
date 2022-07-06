@@ -64,6 +64,8 @@ class ObservationModule(object):
         self.detectors = int(obs.get('detectors', 1))
         self.excludes = obs.get('excludes', [])
         self.exptime = float(obs.get('exptime', 1.))
+        self.bright_limit  = obs.get('bright_limit', 14.)
+        self.xbright_limit = obs.get('xbright_limit', 3.)
         self.small_subarray = obs.get('small_subarray', False)
         if len(self.filters) == 0 and 'filter' in obs:
             self.filters.append(obs['filter'])

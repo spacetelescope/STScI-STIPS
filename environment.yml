@@ -25,26 +25,27 @@ channels:
 
 dependencies:
   # Base dependencies
-  - python>=3.7
   - pip
+  - python>=3.8
   - jupyter
   - Cython
+  - esutil
 
   - pip:
     # Major modules
     - ConfigParser
-    - numpy
+    - numpy==1.22.3
     - scipy
     - matplotlib
-    - astropy
     - photutils
-    - healpy
+    - healpy==1.14.0
+    - astropy
     - synphot
     - stsynphot
-    - esutil --no-binary=esutil
     - jwst_backgrounds
-    - webbpsf>=0.9.0
-    - pandeia.engine==1.6
+    - webbpsf
+    - pandeia.engine==1.7
+    - ipython==7.31.1
 
     # Minor modules
     - montage-wrapper
@@ -52,16 +53,18 @@ dependencies:
     - mechanize
 
     # Docs
+    - docutils
     - sphinx
     - sphinx_rtd_theme
     - stsci_rtd_theme
     - sphinx_automodapi
     - sphinx_autoapi
-    
+    - astropy_helpers
+
     # Testing
     - tox
     - tox-conda
     - pytest-astropy
     
     # Current package
-    - -e .
+    #- -e .

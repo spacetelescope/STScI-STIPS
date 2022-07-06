@@ -1,6 +1,7 @@
 import numpy as np
 from astropy import wcs
 
+rind = lambda x : np.round(x).astype(int)
 
 def makeGaussian(size, fwhm=3, center=None):
     x = np.arange(0, size, 1, float)
@@ -36,7 +37,7 @@ def verifyData(dat1,dat2):
             verifyPoint(dat1,dat2,x,y)
 
 
-def verifyPoint(dat1, dat2, x, y, threshold=1.e-3):
+def verifyPoint(dat1, dat2, x, y, threshold=1e3):
     if abs(dat1[y,x] - dat2[y,x]) > threshold:
         print(x, y, dat1[y,x], dat2[y,x], abs(dat1[y,x] - dat2[y,x]))
     assert abs(dat1[y,x] - dat2[y,x]) <= threshold

@@ -81,6 +81,42 @@ class WFI(RomanInstrument):
                 10: (0., 0., 0.), 11: (0., 0., 0.), 12: (0., 0., 0.), 
                 13: (0., 0., 0.), 14: (0., 0., 0.), 15: (0., 0., 0.), 
                 16: (0., 0., 0.), 17: (0., 0., 0.), 18: (0., 0., 0.)}
+
+    # Each detector is 450.56 x 450.56", and according to the WFIRST-STSCI-TR1506A
+    # Document, the offsets are (27.5”) in the long direction and (94.2" and 27.5")
+    # in the short direction. Assuming 0 offset for SCA01. Then RA offsets are equal
+    # to 478.06", and DEC offsets are 478.06" for the lower SCAs and 544.76 for the
+    # upper ones. Assuming no rotation offset.
+
+    # Offsets are in (arcseconds_ra,arcseconds_dec,degrees_angle)
+    '''
+    DETECTOR_OFFSETS = (# SCA01                                        SCA02                                         SCA03                                         SCA04
+                        ((2*27.5+478.06)*( 0),(478.06-27.5/2)*( 0),0.),            ((2*27.5+478.06)*( 0),(478.06-27.5/2)*( 1),0.),            ((2*27.5+478.06)*( 0),(478.06-27.5/2)*( 2)+66.7,0.),       ((2*27.5+478.06)*(-1),(478.06-27.5/2)*( 0)+188.2*0.7,0.), 
+                        # SCA05                                        SCA06                                         SCA07                                         SCA08
+                        ((2*27.5+478.06)*(-1),(478.06-27.5/2)*( 1)+188.2*0.7,0.),      ((2*27.5+478.06)*(-1),(478.06-27.5/2)*( 2)+66.7+188.2*0.7,0.), ((2*27.5+478.06)*(-2),(478.06-27.5/2)*( 0)+376.4*0.9,0.),      ((2*27.5+478.06)*(-2),(478.06-27.5/2)*( 1)+376.4*0.9,0.), 
+                        # SCA09                                        SCA10                                         SCA11                                         SCA12
+                        ((2*27.5+478.06)*(-2),(478.06-27.5/2)*( 2)+66.7+376.4*0.9,0.), ((2*27.5+478.06)*( 1),(478.06-27.5/2)*( 0),0.),            ((2*27.5+478.06)*( 1),(478.06-27.5/2)*( 1),0.),            ((2*27.5+478.06)*( 1),(478.06-27.5/2)*( 2)+66.7,0.), 
+                        # SCA13                                        SCA14                                         SCA15                                         SCA16
+                        ((2*27.5+478.06)*( 2),(478.06-27.5/2)*( 0)+188.2*0.7,0.),      ((2*27.5+478.06)*( 2),(478.06-27.5/2)*( 1)+188.2*0.7,0.),      ((2*27.5+478.06)*( 2),(478.06-27.5/2)*( 2)+66.7+188.2*0.7,0.), ((2*27.5+478.06)*( 3),(478.06-27.5/2)*( 0)+376.4*0.9,0.), 
+                        # SCA17                                        SCA18
+                        ((2*27.5+478.06)*( 3),(478.06-27.5/2)*( 1)+376.4*0.9,0.),      ((2*27.5+478.06)*( 3),(478.06-27.5/2)*( 2)+66.7+376.4*0.9,0.))
+    '''
+
+    DETECTOR_OFFSETS = (# SCA01                     SCA02                    SCA03                    SCA04
+                         (0.0, 0.0, 0.0)         , (0.0, 464.31, 0.0)     , (0.0, 995.32, 0.0)     , (-533.06, 131.74, 0.0),
+                        # SCA05                     SCA06                    SCA07                    SCA08
+                         (-533.06, 596.05, 0.0)  , (-533.06, 1127.06, 0.0), (-1066.12, 338.76, 0.0), (-1066.12, 803.07, 0.0),
+                        # SCA09                     SCA10                    SCA11                    SCA12
+                         (-1066.12, 1334.08, 0.0), (533.06, 0.0, 0.0)     , (533.06, 464.31, 0.0)  , (533.06, 995.32, 0.0),
+                        # SCA13                     SCA14                    SCA15                    SCA16
+                         (1066.12, 131.74, 0.0)  , (1066.12, 596.05, 0.0) , (1066.12, 1127.06, 0.0), (1599.18, 338.76, 0.0),
+                        # SCA17                     SCA18
+                         (1599.18, 803.07, 0.0)  , (1599.18, 1334.08, 0.0))
+
+    #       SCA09 SCA06 SCA03 SCA12 SCA15 SCA18
+    #       SCA08 SCA05 SCA02 SCA11 SCA14 SCA17
+    #       SCA07 SCA04 SCA01 SCA10 SCA13 SCA16
+
     #**WFIRST_REMNANT**
     # This is a set of offsets derived from "WFIRST-STSCI-TR1506A"
     #
@@ -152,10 +188,10 @@ class WFI(RomanInstrument):
     # N_DETECTORS is a set of options on how many of the instrument's detectors you want to use    
     N_DETECTORS = [1]
     INSTRUMENT_OFFSET = (0.,0.,0.) #Presumably there is one, but not determined
-    DETECTOR_SIZE = (4096,4096) #pixels
+    DETECTOR_SIZE = (4088,4088) #pixels
     PIXEL_SIZE = 10.0 #um (Assume for now)
     SCALE = [0.11,0.11] #Assume for now
-    FILTERS = ('F062', 'F087', 'F106', 'F129', 'F158', 'F184', 'F146', 'F149') #W149 needs to go away at some point.
+    FILTERS = ('F062', 'F087', 'F106', 'F129', 'F158', 'F184', 'F146')
     DEFAULT_FILTER = 'F184' #Assume for now
     
     PSF_INSTRUMENT = "WFI"
@@ -165,9 +201,9 @@ class WFI(RomanInstrument):
     DARKFILE = 'err_rdrk_wfi.fits' # IREF, IHB (use for the moment)
 
     # Background Values
-    BACKGROUND = {  'none': {'F062': 0., 'F087': 0.,'F106': 0.,'F129': 0.,'F158': 0.,'F184': 0., 'F146': 0., 'F149': 0.},
+    BACKGROUND = {  'none': {'F062': 0., 'F087': 0.,'F106': 0.,'F129': 0.,'F158': 0.,'F184': 0., 'F146': 0.},
                     'avg':  {'F062': 1.401E+00, 'F087': 1.401E+00, 'F106': 1.401E+00, 'F129': 7.000E-01,
-                             'F158': 7.521E-01, 'F184': 8.500E-01, 'F146': 7.000E-01, 'F149': 7.000E-01}
+                             'F158': 7.521E-01, 'F184': 8.500E-01, 'F146': 7.000E-01}
                  }
     BACKGROUNDS_V = ['none', 'avg', 'med', 'max', 'min']
     BACKGROUNDS = ['None', 'Average zodiacal background', 'Median zodiacal background', 'Maximum zodiacal background', 'Minimum zodiacal background']
@@ -176,10 +212,10 @@ class WFI(RomanInstrument):
               'min': 'Minimum zodiacal background', 'custom': 'Custom thermal background rate'}
     #PHOTFNU has units of Jy
     #For now, just assuming similar PHOTFNU to WFC3IR.
-    PHOTFNU = {     'F062': 1.0e-8, 'F087':1.0e-8, 'F106':1.0e-8, 'F129':1.0e-8, 'F158':1.0e-8, 'F184':1.0e-8, 'F146':1.0e-8, 'F149':1.0e-8}
+    PHOTFNU = {     'F062':3.25e-08, 'F087':8.87e-08, 'F106':3.94e-08, 'F129':3.51e-08, 'F158':3.13e-08, 'F184':1.18e-07, 'F146':1.63e-08}
     #PHOTPLAM has units of um
     #For now, just put them in the middle
-    PHOTPLAM = {'F062': 0.6700, 'F087':0.8735, 'F106':1.0595, 'F129':1.2925, 'F158':1.577, 'F184':1.5815, 'F146':1.4635, 'F149':1.4635}
+    PHOTPLAM = {'F062': 0.6700, 'F087':0.8735, 'F106':1.0595, 'F129':1.2925, 'F158':1.577, 'F184':1.5815, 'F146':1.4635}
     #For now, just put in HST-style dithers.
     DITHERS = ("SUBPIXEL ONLY","BOX-UVIS","BLOB") #Assume for now
     DITHER_POINTS = {
