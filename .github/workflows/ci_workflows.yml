@@ -22,10 +22,6 @@ jobs:
             os: ubuntu-latest
             python: 3.9
 
-          - name: Python 3.10
-            os: ubuntu-latest
-            python: 3.10
-
           - name: Python 3.9 Mac
             os: macos-latest
             python: 3.9
