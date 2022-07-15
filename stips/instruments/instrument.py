@@ -19,7 +19,6 @@ from ..stellar_module import StarGenerator
 from ..astro_image import AstroImage
 from ..utilities import GetStipsData
 from ..utilities import GetStipsDataDir
-from ..utilities import internet
 from ..utilities import OffsetPosition
 from ..utilities import read_metadata
 from ..utilities import read_table
@@ -1105,24 +1104,10 @@ class Instrument(object):
         from pandeia.engine.calc_utils import build_default_calc
         from pandeia.engine.instrument_factory import InstrumentFactory
     
-        translate_instrument = {
-                                    #**WFIRST_REMNANT**
-#                                    'wfi': 'wfirstimager',
-                                    'nircamlong': 'nircam',
-                                    'nircamshort': 'nircam',
-                                    'miri': 'miri'
-                                }
-        instrument = self.INSTRUMENT.lower()
-        if instrument in translate_instrument:
-            instrument = translate_instrument[instrument]
-        
-        translate_telescope = {
-#                                'roman': 'wfirst'
-                              }
+        instrument = self.INSTRUMENT.lower()        
         telescope = self.TELESCOPE.lower()
-        if telescope in translate_telescope:
-            telescope = translate_telescope[telescope]
-
+        
+        print("Creating pandeia instrument {}.{}.{}".format(telescope, instrument, self.MODE))
         calc = build_default_calc(telescope, instrument, self.MODE)
         conf = calc['configuration']
         conf['instrument']['filter'] = self.filter.lower()
@@ -1195,79 +1180,10 @@ class Instrument(object):
             msg = "Returning background {} for 'custom'"
             self._log("info", msg.format(self.custom_background))
             return self.custom_background*u.ct/u.s
-        elif "jbt" in self.background_value:
-            if ":" in self.background_value:
-                bg_type = self.background_value.split(":")[-1]
-            else:
-                bg_type = "mean"
-
-            bg = None
-            if internet() and self.background_location == '$WEB':
-                from jwst_backgrounds import jbt
-                try:
-                    bg = jbt.background(self.ra, self.dec, 
-                                        self.PHOTPLAM[self.filter])
-                except Exception as e:
-                    msg = "Accessing JBT background produced error {}"
-                    self._log("error", msg.format(e))
-                    self._log("warning", "Unable to connect to the JBT server")
-        
-            if os.path.exists(self.background_location):
-                self._log("info", "Using local JBT background cache.")
-                from ..utilities import CachedJbtBackground
-                try:
-                    bg = CachedJbtBackground(self.ra, self.dec, 
-                                             self.PHOTPLAM[self.filter])
-                except Exception as e:
-                    msg = "Retrieving local cache produced error {}"
-                    self._log("error", msg.format(e))
-                    self._log("info", "More complete error: {}".format(repr(e)))
-                    msg = "Unable to retrieve local cache. Returning "
-                    msg += "background 0.0 for '{}'"
-                    self._log("warning", msg.format(self.background_value))
-                    return 0.*u.ct/u.s
-
-            if bg is None:
-                msg = "Unable to retrieve JBT background data."
-                self._log("error", msg)
-                msg = "Falling back to zero background."
-                self._log("warning", msg)
-                return 0.*u.photon/u.second
-            
-            wave_array = bg.bkg_data['wave_array']
-            combined_bg_array = bg.bkg_data['total_bg']
-    
-            if bg_type in ['avg', 'mean']:
-                flux_array = np.mean(combined_bg_array, axis=0)
-            elif bg_type in ['med', 'median']:
-                flux_array = np.median(combined_bg_array, axis=0)
-            elif bg_type == 'max':
-                flux_array = np.max(combined_bg_array, axis=0)
-            elif bg_type == 'min':
-                flux_array = np.min(combined_bg_array, axis=0)
-            else:
-                flux_array = combined_bg_array[0]
-    
-            # Background Flux is MJy/sr^2
-            flux_data_array = 1e6 * flux_array * u.Jy / (u.sr * u.sr)
-            flux_data_array = flux_data_array.to(u.Jy/(1.e6*u.arcsec*u.arcsec))
-            
-            # convert from arcsec^-2 to pixel^-2
-            flux_data_array = flux_data_array * self.SCALE[0] * self.SCALE[1]
-    
-            sp = syn.SourceSpectrum(syn.Empirical1D, points=wave_array*u.micron, 
-                                    lookup_table=flux_array_pixels)
-            obs = syn.Observation(sp, self.bandpass, binset=sp.waveset, 
-                                  force='taper')
-            bg = obs.countrate(area=self.AREA)
-            
-            msg = "Returning background {} for '{}'"
-            self._log("info", msg.format(bg, self.background_value))
-            return bg
         
         msg = "Unknown Background {}. Returning 0."
         self._log("warning", msg.format(self.background_value))
-        return 0.*u.photon/u.second
+        return 0.*u.ct/u.second
 
 
     def _log(self,mtype,message):

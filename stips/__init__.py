@@ -4,18 +4,19 @@ import os
 
 __all__ = ['observation_module', 'scene_module']
 
-__version__ = "1.0.8b"
+__version__ = "2.0.0"
 version = __version__
+
+from .utilities import SetupDataPaths
+
+SetupDataPaths()
 
 # Local Definitions
 from .observation_module import ObservationModule
 from .scene_module import SceneModule
 from .utilities import GetStipsData
 from .utilities import StipsEnvironment
-from .utilities import SetupDataPaths
 from .utilities import DownloadReferenceData
-
-SetupDataPaths()
 
 __grid__pandeia__version__ = StipsEnvironment.__pandeia__version__
 __grid__stips__version__ = StipsEnvironment.__stips__grid__version__

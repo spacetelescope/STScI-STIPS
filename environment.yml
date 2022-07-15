@@ -28,6 +28,7 @@ dependencies:
   - python>=3.8
   - jupyter
   - Cython
+  # esutil is installed from conda because the pip version generates errors when called.
   - esutil
 
   - pip:

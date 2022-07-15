@@ -44,6 +44,23 @@ EPSF4 = np.array([[0.25, 0.5 , 0.5 , 0.5 , 0.25],
                   [0.5 , 1.  , 1.  , 1.  , 0.5 ],
                   [0.25, 0.5 , 0.5 , 0.5 , 0.25]])
 
+# The ePSF is *always* 4x upscaled
+PSF_UPSCALE = 4
+
+# There are 3 PSF sizes.
+#   - general PSF: 44 pixels
+#   - bright source PSF: 
+#   - very bright source PSF:
+PSF_BOXSIZE = 45
+PSF_BRIGHT_BOXSIZE = 91
+PSF_EXTRA_BRIGHT_BOXSIZE = 181
+
+# The PSF grid is always 3x3
+PSF_GRID_SIZE = 3
+
+# PSF Bright Limits
+
+
 rind = lambda x : np.round(x).astype(int)
 
 def make_epsf(psf_in):
@@ -85,36 +102,36 @@ def make_epsf(psf_in):
     psf_out[0:size,size-3]=psf_in[0:size,size-3]*16.0
     # Multiply rows x16, while excluding the corners that were
     # already multiplied in the previous step
-    psf_out[0     ,3:(size-4)+1]=psf_in[0     ,3:(size-4)+1]*16.0
-    psf_out[1     ,3:(size-4)+1]=psf_in[1     ,3:(size-4)+1]*16.0
-    psf_out[2     ,3:(size-4)+1]=psf_in[2     ,3:(size-4)+1]*16.0
-    psf_out[size-1,3:(size-4)+1]=psf_in[size-1,3:(size-4)+1]*16.0
-    psf_out[size-2,3:(size-4)+1]=psf_in[size-2,3:(size-4)+1]*16.0
-    psf_out[size-3,3:(size-4)+1]=psf_in[size-3,3:(size-4)+1]*16.0
+    psf_out[0     ,3:(size-PSF_UPSCALE)+1]=psf_in[0     ,3:(size-PSF_UPSCALE)+1]*16.0
+    psf_out[1     ,3:(size-PSF_UPSCALE)+1]=psf_in[1     ,3:(size-PSF_UPSCALE)+1]*16.0
+    psf_out[2     ,3:(size-PSF_UPSCALE)+1]=psf_in[2     ,3:(size-PSF_UPSCALE)+1]*16.0
+    psf_out[size-1,3:(size-PSF_UPSCALE)+1]=psf_in[size-1,3:(size-PSF_UPSCALE)+1]*16.0
+    psf_out[size-2,3:(size-PSF_UPSCALE)+1]=psf_in[size-2,3:(size-PSF_UPSCALE)+1]*16.0
+    psf_out[size-3,3:(size-PSF_UPSCALE)+1]=psf_in[size-3,3:(size-PSF_UPSCALE)+1]*16.0
 
     # Empty Array
     psf_final = np.zeros_like(psf_in)
 
     # Do calculation for every pixel in PSF image
-    x_range = range(4, size-5)
-    y_range = range(4, size-5)
+    x_range = range(PSF_UPSCALE, size-PSF_UPSCALE-1)
+    y_range = range(PSF_UPSCALE, size-PSF_UPSCALE-1)
 
     # Add IPC to output PSF
     for idx in x_range:
         for idy in y_range:
             pcen = psf_out[idy, idx]
 
-            psf_final[idy-4,idx-4] += pcen*IPC[0,0]
-            psf_final[idy-4,idx  ] += pcen*IPC[0,1]
-            psf_final[idy-4,idx+4] += pcen*IPC[0,2]
+            psf_final[idy-PSF_UPSCALE,idx-PSF_UPSCALE] += pcen*IPC[0,0]
+            psf_final[idy-PSF_UPSCALE,            idx] += pcen*IPC[0,1]
+            psf_final[idy-PSF_UPSCALE,idx+PSF_UPSCALE] += pcen*IPC[0,2]
 
-            psf_final[idy  ,idx-4] += pcen*IPC[1,0]
-            psf_final[idy  ,idx  ] += pcen*IPC[1,1]
-            psf_final[idy  ,idx+4] += pcen*IPC[1,2]
+            psf_final[idy  ,idx-PSF_UPSCALE] += pcen*IPC[1,0]
+            psf_final[idy  ,            idx] += pcen*IPC[1,1]
+            psf_final[idy  ,idx+PSF_UPSCALE] += pcen*IPC[1,2]
 
-            psf_final[idy+4,idx-4] += pcen*IPC[2,0]
-            psf_final[idy+4,idx  ] += pcen*IPC[2,1]
-            psf_final[idy+4,idx+4] += pcen*IPC[2,2]
+            psf_final[idy+PSF_UPSCALE,idx-PSF_UPSCALE] += pcen*IPC[2,0]
+            psf_final[idy+PSF_UPSCALE,            idx] += pcen*IPC[2,1]
+            psf_final[idy+PSF_UPSCALE,idx+PSF_UPSCALE] += pcen*IPC[2,2]
 
     return psf_final
 
@@ -210,7 +227,7 @@ def bicubic(epsf, iy, ix, fx, fy):
 
     return rpsf_phot
 
-def real_psf(dx,dy,epsf,psf_center=177, boxsize = 44):
+def real_psf(dx, dy, epsf, psf_center=177, boxsize=PSF_BOXSIZE):
     """
     Calculate the fraction of light from a epsf that should 
     fall on a given pixel (x, y). This function assumes the 
@@ -265,7 +282,7 @@ def real_psf(dx,dy,epsf,psf_center=177, boxsize = 44):
 
     return rpsf_phot
 
-def place_source(xpix, ypix, flux, image, epsf, boxsize = 44, psf_center = 177):
+def place_source(xpix, ypix, flux, image, epsf, boxsize=PSF_BOXSIZE, psf_center=177):
     """
     Place a source into image.
 

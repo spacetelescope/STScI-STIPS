@@ -1,3 +1,3 @@
-__all__ = ['hst_instrument', 'instrument', 'jwst_instrument', 'miri', 'nircam', 'wfc3ir', 'wfi', 'roman_instrument']
+__all__ = ['instrument', 'roman_instrument', 'wfi']
 # Local Import
 from .instrument import Instrument
