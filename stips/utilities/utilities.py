@@ -15,9 +15,8 @@ import numpy as np
 import astropy.io.fits as pyfits
 from astropy.io import ascii
 from astropy.table import Table
-from numpy.fft import fft2, ifft2
 from pathlib import Path
-from photutils.psf.models import GriddedPSFModel
+from scipy.special import gamma, gammaincinv, gammainc
 
 from .. import __version__ as __stips__version__
 
@@ -620,6 +619,19 @@ def read_table(filename, n_chunk=100000, format="ipac"):
             yield ascii.read(lines, format='no_header', names=names, guess=False)
         else:
             yield ascii.read(lines, format=format, guess=False)
+
+#-----------
+def b(n):
+    # Normalisation constant
+    return gammaincinv(2*n, 0.5)
+
+
+#-----------
+def sersic_lum(Ie, re, n):
+    # total luminosity (integrated to infinity)
+    bn = b(n)
+    g2n = gamma(2*n)
+    return Ie * re**2 * 2*np.pi*n * np.exp(bn)/(bn**(2*n)) * g2n
 
 
 if __name__ == '__main__':

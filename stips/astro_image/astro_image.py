@@ -8,6 +8,7 @@ import numpy as np
 
 from astropy import units as u
 from astropy import wcs
+from astropy.convolution import convolve_fft
 from astropy.io import fits
 from astropy.table import Table, Column
 from copy import deepcopy
@@ -29,6 +30,7 @@ from ..utilities import OffsetPosition
 from ..utilities import read_table
 from ..utilities import StipsDataTable
 from ..utilities import SelectParameter
+from ..utilities import sersic_lum
 # PSF making functions
 from ..utilities.makePSF import interpolate_epsf, make_epsf, place_source
 # PSF constants
@@ -57,8 +59,14 @@ class AstroImage(object):
         set to zero.
         """
         default = self.INSTRUMENT_DEFAULT
-        self.psf_shape = (PSF_BOXSIZE, PSF_BOXSIZE)
-        self.psf_grid_size = PSF_GRID_SIZE
+        if kwargs.get('psf', True):
+            self.psf_shape = (PSF_BOXSIZE, PSF_BOXSIZE)
+            self.has_psf = True
+            self.psf_grid_size = PSF_GRID_SIZE
+        else:
+            self.has_psf = False
+            self.psf_shape = (0, 0)
+            self.psf_grid_size = 0
 
         if 'parent' in kwargs:
             self.parent = kwargs['parent']
@@ -77,7 +85,6 @@ class AstroImage(object):
             self.photflam = self.parent.photflam
             self.photplam = self.parent.PHOTPLAM[self.filter]
             background = self.parent.background
-            small_subarray = self.parent.small_subarray
             self.cat_type = self.parent.cat_type
         else:
             self.parent = None
@@ -100,7 +107,6 @@ class AstroImage(object):
             self.prefix = kwargs.get('prefix', '')
             self.cat_type = SelectParameter('cat_type', kwargs)
             self.seed = SelectParameter('seed', kwargs)
-            small_subarray = kwargs.get('small_subarray', False)
             self.zeropoint = kwargs.get('zeropoint', default['zeropoint'])
             self.photflam = kwargs.get('photflam', default['photflam'])
             self.photplam = kwargs.get('photplam', default['photplam'])
@@ -122,11 +128,7 @@ class AstroImage(object):
         if data is not None:
             base_shape = np.array(data.shape)
         else:
-            #restrict data size to PSF size
-            if small_subarray:
-                base_shape = self.psf_shape
-            else:
-                base_shape = self.shape
+            base_shape = self.shape
         self._init_dat(base_shape, self.psf_shape, data)
         
         #Get WCS values if present, or set up a default
@@ -583,7 +585,12 @@ class AstroImage(object):
             self._log("info", "PSF File {} to be put at {}".format(psf_name, psf_cache_dir))
             self._log("info", "PSF File is {}".format(psf_file))
             if os.path.exists(psf_file):
-                from webbpsf.utils import to_griddedpsfmodel
+                try:
+                    from webbpsf.utils import to_griddedpsfmodel
+                    self.psf = to_griddedpsfmodel(psf_file)
+                    have_psf = True
+                except Exception as e:
+                    self._log("error", "Creating psf from file {}  failed with {}".format(psf_file, e))
 
         if not have_psf:
             ins = self.psf_constructor
@@ -670,6 +677,11 @@ class AstroImage(object):
         for k, (xpix, ypix, flux, mag) in enumerate(zip(xs, ys, fluxes, mags)):
             self.addHistory("Adding point source {} at {},{}".format(k+1, xpix, ypix))
             self._log("info","Adding point source {} to AstroImage {},{}".format(k+1, xpix, ypix))
+            
+            if not self.has_psf: # just add point source
+                self._log("warning", "No PSF found, adding as point source")
+                self.data[ypix, xpix] += flux
+                continue # break the loop
 
             # Create interpolated ePSF from input PSF files
             if mag > self.bright_limit:
@@ -685,7 +697,13 @@ class AstroImage(object):
                 self._log("info","Placing Extra Bright Source with mag = {}".format(mag))
                 epsf = interpolate_epsf(xpix, ypix, xbright_psf_array, image_size)
                 self.data = place_source(xpix, ypix, flux, self.data, epsf, boxsize = xbright_boxsize, psf_center = xbright_psf_middle)
-        
+    
+    def cropToBaseSize(self):
+        """
+        Crops out the PSF overlap on both sides of the detector
+        """
+        if not self.has_psf: #already done
+            return
         self_y, self_x = self.shape
         base_y, base_x = self.base_shape
         
@@ -714,6 +732,7 @@ class AstroImage(object):
         self.wcs = self._wcs(self.ra, self.dec, self.pa, self.scale, crpix=crpix, sip=sip)
         self.data = fp_crop
         self.shape = self.base_shape
+        self.has_psf = False
 
     def addSersicProfile(self, posX, posY, flux, n, re, phi, axialRatio, *args, **kwargs):
 #     def pandeiaSersic(id, gal_params, psf_params, xsize, ysize, dir, overrides, logger):
@@ -765,7 +784,7 @@ class AstroImage(object):
         central_flux: float
             The flux at the central pixel of the model
         """
-        ix, iy = rint(posX), rint(posY)
+        ix, iy = rind(posX), rind(posY)
         if flux == 0.:
             return 0.
 
@@ -792,10 +811,10 @@ class AstroImage(object):
         
         # Read input PSF files
         psf_array, psf_middle = self.make_epsf_array()
-        boxsize = np.floor(psf_middle)/PSF_UPSCALE
+        boxsize = rind(np.floor(psf_middle)/PSF_UPSCALE)
         epsf = interpolate_epsf(posX, posY, psf_array, self.shape[0])
         psf_data = np.zeros((boxsize, boxsize), dtype=np.float32)
-        psf_x, psf_y = rint(boxsize/2), rint(boxsize/2)
+        psf_x, psf_y = rind(boxsize/2), rind(boxsize/2)
         psf_data = place_source(psf_x, psf_y, 1., psf_data, epsf, boxsize = boxsize, psf_center = psf_middle)
         
         result = convolve_fft(img, psf_data)
@@ -811,10 +830,7 @@ class AstroImage(object):
         self.addHistory("Rotating by {} degrees".format(angle))
         self._log("info","Rotating AstroImage {} by {} degrees".format(self.name,angle))
         self.pa = (self.pa + angle)%360.%360.
-        t_shape = tuple(self.shape)
-        fp_result = np.zeros(t_shape, dtype='float32')
-        rotate(self.data, angle, order=5, reshape=reshape, output=fp_result)
-        self.data = fp_result
+        self.data = rotate(self.data, angle, order=5, reshape=reshape)
 
     def addWithOffset(self,other,offset_x,offset_y):
         """
@@ -936,8 +952,8 @@ class AstroImage(object):
         """Rescales the image to the provided plate scale."""
         self.addHistory("Rescaling to ({},{}) arcsec/pixel".format(scale[0],scale[1]))
         self._log("info","Rescaling to ({},{}) arcsec/pixel".format(scale[0],scale[1]))
-        shape_x = rint(self.shape[1] * self.scale[0] / scale[0])
-        shape_y = rint(self.shape[0] * self.scale[1] / scale[1])
+        shape_x = rind(self.shape[1] * self.scale[0] / scale[0])
+        shape_y = rind(self.shape[0] * self.scale[1] / scale[1])
         new_shape = (shape_y, shape_x)
         self._log("info","New shape will be {}".format(new_shape))
         fp_result = np.zeros(new_shape, dtype='float32')
@@ -1317,7 +1333,7 @@ class AstroImage(object):
     
     def _remap(self, xs, ys):
         # Step 1 -- compensate for PSF adjustments
-        adj = ((self.shape - self.base_shape)/2).astype(np.int32)
+        adj = ((np.array(self.shape) - np.array(self.base_shape))/2).astype(np.int32)
         out_y = ys - adj[0]
         out_x = xs - adj[1]
         return out_x, out_y

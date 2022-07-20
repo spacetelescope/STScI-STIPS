@@ -978,18 +978,8 @@ class Instrument(object):
             detector.setExptime(self.exptime)
             if 'exptime' in snapshots or 'all' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_exptime.fits".format(self.obs_count, detector.name))
-            self._log("info","Convolving with PSF")
-            convolve_state = base_state + "<br /><span class='indented'>Detector {}: Convolving PSF</span>".format(detector.name)
-            self.updateState(convolve_state)
-            #detector.convolve_psf(max_size=self.convolve_size-1, parallel=parallel, cores=cores)
-            if 'convolve' in snapshots or 'all' in snapshots:
-                detector.toFits(self.imgbase+"_{}_{}_snapshot_convolve.fits".format(self.obs_count, detector.name))
-            if self.oversample != 1:
-                self._log("info","Binning oversampled image")
-                self.updateState(base_state + "<br /><span class='indented'>Detector {}: Binning oversampled image</span>".format(detector.name))
-                detector.bin(self.oversample)
-                if 'bin' in snapshots or 'all' in snapshots:
-                    detector.toFits(self.imgbase+"_{}_{}_snapshot_bin.fits".format(self.obs_count, detector.name))
+            self._log("info","Cropping Down to base Detector Size")
+            detector.cropToBaseSize()
             if poisson: 
                 self._log("info","Adding poisson noise")
                 self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Poisson Noise</span>".format(detector.name))
