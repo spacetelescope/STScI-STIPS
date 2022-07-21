@@ -10,6 +10,7 @@ from ..utilities import InstrumentList
 from ..utilities import OffsetPosition
 from ..utilities import StipsDataTable
 from ..utilities import SelectParameter
+from ..utilities.makePSF import PSF_BOXSIZE, PSF_BRIGHT_BOXSIZE, PSF_EXTRA_BRIGHT_BOXSIZE, PSF_GRID_SIZE, PSF_UPSCALE
 
 #-----------
 class ObservationModule(object):
@@ -17,7 +18,7 @@ class ObservationModule(object):
     #-----------
     def __init__(self, obs, **kwargs):
         """
-        JWST instrument observation module
+        Observation module
 
         :Author: Brian York
 
@@ -38,6 +39,8 @@ class ObservationModule(object):
         kwargs: dictionary
             Contains the necessary instrument and scene parameters
         """
+        self.psf_grid_size = PSF_GRID_SIZE
+        
         # Initialize logger
         if 'logger' in kwargs:
             self.logger = kwargs['logger']
@@ -58,30 +61,21 @@ class ObservationModule(object):
         self._log('info', "Got offsets as {}".format(self.offsets))
         self.background = SelectParameter('background', obs)
         self.custom_background = obs.get('custom_background', 0.)
-        self.background_location = SelectParameter('jbt_location', obs)
-        self.psf_commands = obs.get('pupil_mask', "")
         self.id = obs.get('observations_id', '0')
         self.detectors = int(obs.get('detectors', 1))
         self.excludes = obs.get('excludes', [])
         self.exptime = float(obs.get('exptime', 1.))
         self.bright_limit  = obs.get('bright_limit', 14.)
         self.xbright_limit = obs.get('xbright_limit', 3.)
-        self.small_subarray = obs.get('small_subarray', False)
         if len(self.filters) == 0 and 'filter' in obs:
             self.filters.append(obs['filter'])
         
         #initialize parameters from the supplied keyword arguments
         self.prefix = kwargs.get('out_prefix', 'sim')
-        self.oversample = SelectParameter('oversample', kwargs)
         self.distortion = SelectParameter('distortion', kwargs)
         self.cat_path = SelectParameter('cat_path', kwargs)
         self.out_path = SelectParameter('out_path', kwargs)
         self.cat_type = SelectParameter('cat_type', kwargs)
-        self.convolve_size = SelectParameter('convolve_size', kwargs)
-        self.parallel = SelectParameter('parallel', kwargs)
-        self.cores = SelectParameter('cores', kwargs)
-        self.psf_grid_size = SelectParameter('psf_grid_size', kwargs)
-        self.memmap = SelectParameter('memmap', kwargs)
         
         if 'scene_general' in kwargs:
             self.ra = kwargs['scene_general'].get('ra', 0.0)
@@ -106,17 +100,10 @@ class ObservationModule(object):
             self.residual_dark = SelectParameter('residual_dark', kwargs)
             self.residual_cosmic = SelectParameter('residual_cosmic', kwargs)
             self.residual_poisson = SelectParameter('residual_poisson', kwargs)
-            self.residual_readnoise = SelectParameter('residual_readnoise', 
-                                                      kwargs)
+            self.residual_readnoise = SelectParameter('residual_readnoise', kwargs)
 
-        self.set_celery = kwargs.get('set_celery', None)
-        self.get_celery = kwargs.get('get_celery', None)
-
-        if sys.version_info[0] >= 3:
-            if isinstance(self.instrument_name, bytes):
-                self.instrument_name = self.instrument_name.decode('utf8')
-        else:
-            self.instrument_name = self.instrument_name.encode('ascii')
+        if isinstance(self.instrument_name, bytes):
+            self.instrument_name = self.instrument_name.decode('utf8')
         #**WFIRST_REMNANT**
         if self.instrument_name == 'WFIRST' or self.instrument_name == 'ROMAN':
             self.instrument_name = 'WFI'
@@ -248,10 +235,6 @@ class ObservationModule(object):
             Name of catalogue file
         """
         self._log("info","Running catalogue {}".format(catalogue))
-        if 'parallel' not in kwargs:
-            kwargs['parallel'] = self.parallel
-        if 'cores' not in kwargs:
-            kwargs['cores'] = self.cores
         cats = self.instrument.addCatalogue(catalogue, self.id, *args, **kwargs)
         self._log("info",'Finished catalogue {}'.format(catalogue))
         return cats
@@ -274,10 +257,6 @@ class ObservationModule(object):
             what type of table it is
         """
         self._log("info","Running {} table".format(table_type))
-        if 'parallel' not in kwargs:
-            kwargs['parallel'] = self.parallel
-        if 'cores' not in kwargs:
-            kwargs['cores'] = self.cores
         tables = self.instrument.addTable(table, table_type, *args, **kwargs)
         self._log("info", "Finished {} table".format(table_type))
         return tables
@@ -300,7 +279,6 @@ class ObservationModule(object):
             Unit type of file
         """
         self._log("info",'Adding image {} to observation'.format(file))
-#        if True:
         if self.images[img].header["ASTROIMAGEVALID"]:
             self.instrument.addImage(self.images[img], units, *args, **kwargs)
         self._log("info",'Image Added')
@@ -316,16 +294,9 @@ class ObservationModule(object):
         self: obj
             Class instance.
         """
-        psf_names = []
-        psf_path = os.path.join(SelectParameter('psf_cache_location'),
-                                SelectParameter('psf_cache_directory'))
         if os.path.exists(psf_path):
             psf_names = glob.glob(os.path.join(psf_path, "*.fits"))
         self._log("info", "Adding Error")
-        if 'parallel' not in kwargs:
-            kwargs['parallel'] = self.parallel
-        if 'cores' not in kwargs:
-            kwargs['cores'] = self.cores
         self.instrument.addError(residual_poisson=self.residual_poisson, 
                                  residual_readnoise=self.residual_readnoise, 
                                  residual_flat=self.residual_flat, 
@@ -333,7 +304,6 @@ class ObservationModule(object):
                                  residual_cosmic=self.residual_cosmic, 
                                  *args, **kwargs)
         self._log("info","Finished Adding Error")
-        return psf_names
         
     #-----------
     def finalize(self, mosaic=True, *args, **kwargs):
@@ -367,12 +337,3 @@ class ObservationModule(object):
             getattr(self.logger,mtype)(message)
         else:
             sys.stderr.write("{}: {}\n".format(mtype,message))
-    
-    def updateState(self, state):
-        if self.set_celery is not None:
-            self.set_celery(state)
-    
-    def getState(self):
-        if self.get_celery is not None:
-            return self.get_celery()
-        return ""

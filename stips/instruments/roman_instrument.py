@@ -6,9 +6,9 @@ from .instrument import Instrument
 
 class RomanInstrument(Instrument):
     """
-    The JwstInstrument class contains the necessary constants and modifications specific to JWST
+    The RomanInstrument class contains the necessary constants and modifications specific to Roman
         but independent of any specific instrument. This class is also not intended to be 
-        implemented directly, but rather through its children (e.g. NirCamShort, Miri, NirCamLong).
+        implemented directly, but rather through its children (e.g. WFI).
         It contains the following constants and the following new variables:
         
         detectors : array of detectors, each an AstroImage, and each with its own RA/DEC

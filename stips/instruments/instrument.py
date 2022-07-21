@@ -7,6 +7,8 @@ import glob, logging, os, shutil, sys, types, uuid
 import numpy as np
 import synphot as syn
 import stsynphot as stsyn
+import builtins
+from io import StringIO
 
 from astropy import units as u
 from astropy.io import fits as pyfits
@@ -24,14 +26,7 @@ from ..utilities import read_metadata
 from ..utilities import read_table
 from ..utilities import SelectParameter
 from ..utilities import StipsDataTable
-
-if sys.version_info[0] >= 3:
-    import builtins
-    from io import StringIO
-else:
-    import __builtin__
-    from cStringIO import StringIO
-
+from ..utilities.makePSF import PSF_BOXSIZE, PSF_BRIGHT_BOXSIZE, PSF_EXTRA_BRIGHT_BOXSIZE, PSF_GRID_SIZE, PSF_UPSCALE
 
 class Instrument(object):
     """
@@ -50,6 +45,7 @@ class Instrument(object):
         self.COMPFILES =  sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmc.fits")))
         self.GRAPHFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmg.fits")))
         self.THERMFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmt.fits")))
+        self.psf_grid_size = PSF_GRID_SIZE
 
         if 'logger' in kwargs:
             self.logger = kwargs['logger']
@@ -68,8 +64,6 @@ class Instrument(object):
         self.cat_type = SelectParameter('cat_type', kwargs)
         self.flatfile = GetStipsData(os.path.join("residual_files", self.FLATFILE))
         self.darkfile = GetStipsData(os.path.join("residual_files", self.DARKFILE))
-        self.oversample = SelectParameter('oversample', kwargs)
-        self.psf_grid_size = SelectParameter('psf_grid_size', kwargs)
         self.seed = SelectParameter('seed', kwargs)
         self.imgbase = kwargs.get('imgbase', '')
         self.ra = kwargs.get('ra', 0.)
@@ -82,19 +76,10 @@ class Instrument(object):
         self.small_subarray = kwargs.get('small_subarray', False)
         self.filter = None
         self.detectors = None
-        self.psf_commands = kwargs.get('psf_commands', None)
-        self.instrument = kwargs.get('instrument', "")
+        self.instrument = kwargs.get('instrument', 'wfi')
         self.background_value = SelectParameter('background', kwargs)
-        self.background_location = SelectParameter('jbt_location', kwargs)
         self.custom_background = kwargs.get('custom_background', 0.)
         self.CENTRAL_OFFSET = (0., 0., 0.)
-        self.convolve_size = SelectParameter('convolve_size', kwargs)
-        self.memmap = SelectParameter('memmap', kwargs)
-        self.set_celery = kwargs.get('set_celery', None)
-        self.get_celery = kwargs.get('get_celery', None)
-
-        self.get_celery = kwargs.get('get_celery', None)
-        self.get_celery = kwargs.get('get_celery', None)
 
         #Adjust # of detectors based on keyword:
         n_detectors = int(kwargs.get('detectors', len(self.DETECTOR_OFFSETS)))
@@ -273,17 +258,13 @@ class Instrument(object):
             Obtaining the correct values for FLUX (if not done before initialization) is a job for
             the subclasses.
         """
-        base_state = self.getState()
         self._log("info","Adding catalogue {}".format(catalogue))
-        self.updateState(base_state + "<br /><span class='indented'>Converting Catalogue to Internal Format</span>")
         cat = self.convertCatalogue(catalogue, obs_num)
         self._log("info","Finished converting catalogue to internal format")
         cats = [cat]
         for detector in self.detectors:
-            self.updateState(base_state + "<br /><span class='indented'>Detector {}</span>".format(detector.name))
             self._log("info","Adding catalogue to detector {}".format(detector.name))
             cats.append(detector.addCatalogue(cat, dist=self.distortion, *args, **kwargs))
-            self.updateState(base_state)
         return cats
         self._log("info","Finished Adding Catalogue")
     
@@ -945,17 +926,13 @@ class Instrument(object):
     def addError(self, *args, **kwargs):
         """Base function for adding in residual error"""
         self._log("info","Adding residual error")
-        cores = SelectParameter('cores', kwargs)
-        convolve = SelectParameter('convolve', kwargs)
         poisson = SelectParameter('residual_poisson', kwargs)
         readnoise = SelectParameter('residual_readnoise', kwargs)
         flat = SelectParameter('residual_flat', kwargs)
         dark = SelectParameter('residual_dark', kwargs)
         cosmic = SelectParameter('residual_cosmic', kwargs)
-        parallel = SelectParameter('parallel_enable', kwargs)
         snapshots = kwargs.get("snapshots", {})
 
-        base_state = self.getState()
         if flat:
             flat = AstroImage.initDataFromFits(self.flatfile,ext='COMPRESSED_IMAGE', psf=False, logger=self.logger)
         if dark:
@@ -966,7 +943,6 @@ class Instrument(object):
         for detector in self.detectors:
             if 'initial' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_initial.fits".format(self.obs_count, detector.name))
-            self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Background</span>".format(detector.name))
             self._log("info","Adding error to detector {}".format(detector.name))
             self._log("info","Adding background")
             self._log("info","Background is {} counts/s/pixel".format(self.pixel_background))
@@ -974,7 +950,6 @@ class Instrument(object):
             if 'background' in snapshots or 'all' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_background.fits".format(self.obs_count, detector.name))
             self._log("info","Inserting correct exposure time")
-            self.updateState(base_state + "<br /><span class='indented'>Detector {}: Applying Exposure Time</span>".format(detector.name))
             detector.setExptime(self.exptime)
             if 'exptime' in snapshots or 'all' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_exptime.fits".format(self.obs_count, detector.name))
@@ -982,35 +957,29 @@ class Instrument(object):
             detector.cropToBaseSize()
             if poisson: 
                 self._log("info","Adding poisson noise")
-                self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Poisson Noise</span>".format(detector.name))
                 detector.introducePoissonNoise()
                 if 'poisson' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_poisson.fits".format(self.obs_count, detector.name))
             if readnoise:
                 self._log("info","Adding readnoise")
-                self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Readnoise</span>".format(detector.name))
                 detector.introduceReadnoise(rn)
                 if 'readnoise' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_readnoise.fits".format(self.obs_count, detector.name))
             if flat:
                 self._log("info","Adding flatfield residual")
-                self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Flatfield Residual</span>".format(detector.name))
                 detector.introduceFlatfieldResidual(flat)
                 if 'flat' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_flat.fits".format(self.obs_count, detector.name))
             if dark:
                 self._log("info","Adding dark residual")
-                self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Dark Residual</span>".format(detector.name))
                 detector.introduceDarkResidual(dark)
                 if 'dark' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_dark.fits".format(self.obs_count, detector.name))
             if cosmic:
                 self._log("info","Adding cosmic ray residual")
-                self.updateState(base_state + "<br /><span class='indented'>Detector {}: Adding Cosmic Ray Residual</span>".format(detector.name))
                 detector.introduceCosmicRayResidual(self.PIXEL_SIZE)
                 if 'cr' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_cr.fits".format(self.obs_count, detector.name))
-            self.updateState(base_state)
         self._log("info","Finished adding error")
 
     def normalize(self, source_spectrum_or_wave_flux, norm_flux, bandpass):
@@ -1184,13 +1153,3 @@ class Instrument(object):
             getattr(self.logger,mtype)(message)
         else:
             sys.stderr.write("{}: {}\n".format(mtype,message))
-    
-    def updateState(self, state):
-        if self.set_celery is not None:
-            self.set_celery(state)
-    
-    def getState(self):
-        if self.get_celery is not None:
-            return self.get_celery()
-        return ""
-
