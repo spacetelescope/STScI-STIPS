@@ -8,11 +8,7 @@ import numpy as np
 from astropy.table import Table, Column
 from astropy.cosmology import WMAP9 as cosmo
 from astropy import units as u
-
-if sys.version_info[0] >= 3:
-    from io import StringIO
-else:
-    from cStringIO import StringIO
+from io import StringIO
 
 # Local modules
 from .convert_units import (DivideInterval, RadiiUnknown2Arcsec, RadiiUnknown2Parsec, RescaleArray)

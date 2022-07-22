@@ -78,34 +78,12 @@ random_seed (default *1234*)
 	be used instead of "random_seed" for historical reasons.
 
 
-Parallel Processing Keywords
-----------------------------
-
-parallel_enable (default *false*)
-	Whether parallel processing should be used if available. Currently parallel
-	processing is only used in stips.astro_image.AstroImage, and only in the
-	``AstroImage.convolve()`` and ``AstroImage.convolve_psf()`` functions.
-
-parallel_ncores (default *0*)
-	How many cores should be used if parallel processing is enabled. A value of
-	0 indicates that the number of cores detected by python should be used. If
-	used as a keyword argument, "cores" can be used instead of "parallel_ncores"
-	for historical reasons.
-
-
 Observation Keywords
 --------------------
 
-observation_detector_oversample (default *1*)
-	How much should the detectors be internally oversampled. If STIPS 
-	simulations are being made for use in testing reduction pipelines (or other
-	forms of data analysis), a value greater than 1 is recommended, and the best 
-	value range is 5-10. If used as a keyword argument, "oversample" can be used
-	instead of "observation_detector_oversample" for historical reasons.
-
 observation_default_background (default *0.0*)
-	The default sky background in counts/s/detector pixel (as opposed to 
-	oversampled pixel). Currently this keyword can be set to 
+	The default sky background in counts/s/detector pixel. Currently this keyword can be 
+	set to 
 	
 	* any integer or floating point value, in which case that value will be used
 	  directly
@@ -113,11 +91,6 @@ observation_default_background (default *0.0*)
 	  'none' is always treated as zero, and for any other keyword if the value
 	  is defined for the instrument/detector selected, that value will be used.
 	  If no such value can be found, the background will be set to 0.
-	* 'jbt' or 'jbt:value' where "value" is one of "min"/"mean"/"median"/"max".
-	  In this case, the jwst_background_tool will be used to create a background
-	  spectrum. If a value is provided, that value is used to select which of 
-	  the background spectra supplied is to be used (or how they are to be
-	  combined). If no value is provided, the mean spectrum will be used.
 
 	If used as a keyword argument, "background" can be used instead of
 	"observation_default_background" for historical reasons.
@@ -130,13 +103,6 @@ observation_jbt_location (default *$WEB*)
 	value should be the path to a directory containing a local cache of the 
 	data. If used as a keyword argument, "background_location" or "jbt_location" 
 	can be used instead of "observation_jbt_location" for historical reasons.
-
-observation_memory_map (default *true*)
-	Whether the stips.astro_image.AstroImage internal should be stored as a
-	memory-mapped file on disk (and loaded into memory only as needed). Setting
-	this to false will reduce calculation time but greatly increase memory 
-	usage. If used as a keyword argument, "memmap" can be used instead of 
-	"observation_memory_map" for historical reasons.
 
 observation_distortion_enable (default *false*)
 	Whether co-ordinate distortion information should be included in the

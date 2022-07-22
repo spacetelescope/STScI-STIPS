@@ -266,9 +266,9 @@ class StarGenerator(object):
                 mags_max = np.full_like(mags, max_mag)
                 countrates = interpolation_function(np.array((metals, gravs, temps, mags)).T)
                 countrates_min = interpolation_function(np.array((metals, gravs, temps, mags_min)).T)
-                countrates_min = countrates_min * np.power(10, -(mags-min_mag)/2.512)
+                countrates_min = countrates_min * np.power(10, -(mags-min_mag)/2.5)
                 countrates_max = interpolation_function(np.array((metals, gravs, temps, mags_max)).T)
-                countrates_max = countrates_max * np.power(10, -(mags-max_mag)/2.512)
+                countrates_max = countrates_max * np.power(10, -(mags-max_mag)/2.5)
                 countrates[np.where(mags < mags_min)] = countrates_min[np.where(mags < mags_min)]
                 countrates[np.where(mags > mags_max)] = countrates_max[np.where(mags > mags_max)]
         else:

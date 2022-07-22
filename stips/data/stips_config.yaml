@@ -22,23 +22,8 @@ log_level : 'INFO'
 random_seed : 1234
 
 ####
-# Parallel Processing Configuration
-####
-
-# Use parallel processing (if available)
-parallel_enable : false
-
-# Number of cores to use (0 means use the number detected by python)
-#   This value is only used if parallel processing is enabled, either in
-#   the configuration file or as a keyword argument.
-parallel_ncores : 0
-
-####
 # Observation Defaults
 ####
-
-# Default detector oversample
-observation_detector_oversample : 1
 
 # Default Background
 #   - can be none/low/avg/high as keywords
@@ -48,25 +33,12 @@ observation_detector_oversample : 1
 #   - can be a floating point
 observation_default_background : 0.0
 
-# JBT background location. Default is $DATA for stips_data. Only matters if
-#   the background is set to jbt. Can be
-#   - $WEB to use online JBT
-#   - $DATA to use the stips_data directory
-#   - a path to local JBT data
-observation_jbt_location : '$WEB'
-
-# Memory-map: should the AstroImage use memory mapping.
-observation_memory_map : true
-
 # Include distortion parameters (if available)
 observation_distortion_enable : false
 
 ####
 # PSF Convolution Configuration
 ####
-
-# Default PSF grid size
-psf_grid_default_size : 1
 
 # Enable PSF cache
 psf_cache_enable : true
@@ -79,8 +51,13 @@ psf_cache_location : "$DATA"
 # PSF cache directory name.
 psf_cache_directory : 'psf_cache'
 
-# PSF convolution maximum grid size (length of 1 side of 2D array)
-psf_convolution_max_size : 8192
+# PSF Source Magnitude Limits
+# Sources will be psf-convolved as follows:
+#   - magnitude >= psf_bright_limit: use default (45-pixel) PSF
+#   - magnitude < psf_bright_limit, magnitude >= psf_xbright_limit: use bright (91-pixel) PSF
+#   - magnitude < psf_xbright_limit: use extra-bright (181-pixel) PSF
+psf_bright_limit : 14.
+psf_xbright_limit : 3.
 
 ####
 # Residual Configuration

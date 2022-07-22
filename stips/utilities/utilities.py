@@ -362,9 +362,7 @@ def SelectParameter(name, override_dict=None, config_file=None):
                         'cores': 'parallel_ncores',
                         'distortion': 'observation_distortion_enable',
                         'jbt_location': 'observation_jbt_location',
-                        'memmap': 'observation_memory_map',
                         'out_path': 'output_location',
-                        'oversample': 'observation_detector_oversample',
                         'psf_grid_size': 'psf_grid_default_size',
                         'seed': 'random_seed'
                     }

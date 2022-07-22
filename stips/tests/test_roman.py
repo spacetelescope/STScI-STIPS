@@ -41,13 +41,10 @@ def get_default_obs():
             'filters': ['F158'],
             'detectors': 1,
             'distortion': False,
-            'oversample': 1,
-            'psf_grid_size': 1,
             'pupil_mask': '',
             'background': 'avg',
             'observations_id': 1,
             'exptime': 1000,
-            'memmap': True,
             'parallel': True,
             'convolve_size': 4088,
             'offsets': [
@@ -87,8 +84,6 @@ def test_roman_observation_deluxe():
     stellar_cat_file, galaxy_cat_file = create_catalogues(dir_name.name)
 
     obs = get_default_obs()
-    obs['psf_grid_size'] = 3
-    obs['oversample'] = 5
 
     obm = ObservationModule(obs, out_path=dir_name.name, cat_path=dir_name.name)
     obm.nextObservation()
@@ -101,27 +96,7 @@ def test_roman_observation_deluxe():
 obs_data = [
     (
         {
-            'psf_grid_size': 3,
-        },
-    ),
-    (
-        {
-            'oversample': 3,
-        },
-    ),
-    (
-        {
-            'memmap': False,
-        },
-    ),
-    (
-        {
             'filters': ['F106'],
-        },
-    ),
-    (
-        {
-            'parallel': False,
         },
     )
 ]

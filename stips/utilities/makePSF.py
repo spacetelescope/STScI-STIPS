@@ -1,7 +1,6 @@
 """
 This file contains all the functions required to create the ePSF. Including creating the 
-ePSF grid, IPC correction, and functions to place stars in the output images. No 
-oversampling is happening anymore, so the oversample keyword is meaningless.
+ePSF grid, IPC correction, and functions to place stars in the output images.
 
 ePSF functions translated here were originally written by Andrea Bellini in Fortran.
 

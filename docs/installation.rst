@@ -19,7 +19,7 @@ STIPS Requirements
 
 * `esutil`: Used for retrieving data from sqlite databases in the form of numpy arrays.
 * `montage_wrapper`: STIPS uses montage to generate mosaics. It is only imported if
-  STIPS is asked to generate a multi-detector image.
+  STIPS is asked to generate a multi-detector montage image.
 * `numpy`: STIPS uses numpy extensively for almost everything that it does.
 * `photutils`: STIPS uses photutils to determine the flux inside the half-light radius
   in generated Sersic profiles.
@@ -34,16 +34,14 @@ variable `stips_data`. The current version of the STIPS data is located on box a
 Downloading STIPS Data
 #######################
 
-STIPS needs data for reference and calibration. The latest version of the STIPS data can be downloaded as follows::
+STIPS needs data for reference and calibration. The latest version of the STIPS data can be downloaded as follows, from within
+an interactive python interpreter::
 
-    # Use wget ot curl to download the data
-    $ wget https://stsci.box.com/shared/static/iufbhsiu0lts16wmdsi12cun25888nrb.gz -O stips_data.tar.gz
-
-    # Unpack the data
-    $ tar -xzvf stips_data.tar.gz
-
-    # Point the stips environment variable in your bash profile or in terminal
-    $ export stips_data=<absolute_path_to_this_folder>/stips_data
+    # import STIPS
+    import stips
+    
+    # Download all required reference data:
+    stips.DownloadReferenceData()
 
 
 Installing Using Conda and Source
@@ -76,61 +74,18 @@ Installing
 
         conda env update --file environment.yml
 
-
-3. You can now install STIPS using the cloned source code as follows::
-
-    python setup.py install
+STIPS will automatically be installed by the environment file.
 
 
 Downloading Required Data
 *************************
 
-Pandeia and WebbPSF need the reference datasets.
-You will need to download the data and add them to your environmental path
+Pandeia and WebbPSF need the reference datasets. The appropriate versions of this 
+reference data for the version of STIPS you are using may be downloaded, along with the
+STIPS reference data, by the following convenience function, run from python::
 
-1. Check if wget is installed by running::
-
-    wget
-
-    # If it is not installed (usually on Mac OS),
-    # it can be downloaded using Conda
-
-    conda install wget
-
-2. `cd` into a directory you would like to store the data in and run the following commands::
-
-    # Synphot and STSynphot reference data
-    wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot1.tar.gz | tar xvz
-    wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot2.tar.gz | tar xvz
-    wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot5.tar.gz | tar xvz
-    wget -qO- https://ssb.stsci.edu/trds/tarfiles/synphot6.tar.gz | tar xvz
-
-
-    # Pandeia reference data
-    wget -qO- https://stsci.box.com/shared/static/5j506xzg9tem2l7ymaqzwqtxne7ts3sr.gz | tar -xvz
-
-    # WebbPSF reference data
-    wget -qO- https://stsci.box.com/shared/static/qcptcokkbx7fgi3c00w2732yezkxzb99.gz | tar xvz
-
-3. Add the data paths to your bash environmental path. It is recommended that you add the path to your `.bashrc` file::
-
-    export WEBBPSF_PATH=/<path_to_data_dir>/webbpsf-data
-    export PYSYN_CDBS=/<path_to_data_dir>/grp/redcat/trds
-    export pandeia_refdata=/<path_to_data_dir>/pandeia_data-x.x.x_roman
-
-Make sure that you have the correct version number for `pandeia_refdata` (replace the "x.x.x").
-
-.. note::
-    The URL we provide in this section and the suggested pandeia reference data directory name
-    are specifically for using STIPS with Roman. If you would like to use STIPS with JWST,
-    you need to download the regular pandeia reference data (and if you want to be able to use both,
-    you download both and either copy the 'wfirst' directory into the regular reference data, or the
-    'jwst' directory into the Roman reference data).
-    
-    **Important** The name "Nancy Grace Roman Space Telescope" (Roman) has been chosen for what
-    was previously the Wide Field Infrared Survey Telescope (WFIRST), and the tools provided for
-    interacting with Roman are in the process of being updated accordingly. As such, the above
-    directions *will* become out of date and the Roman directory will be renamed.
+    import stips
+    stips.DownloadReferenceData()
 
 Testing Installation
 *********************

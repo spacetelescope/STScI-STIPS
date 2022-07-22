@@ -294,8 +294,6 @@ class ObservationModule(object):
         self: obj
             Class instance.
         """
-        if os.path.exists(psf_path):
-            psf_names = glob.glob(os.path.join(psf_path, "*.fits"))
         self._log("info", "Adding Error")
         self.instrument.addError(residual_poisson=self.residual_poisson, 
                                  residual_readnoise=self.residual_readnoise, 

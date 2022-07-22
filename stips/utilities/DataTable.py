@@ -14,11 +14,7 @@ import copy, os, sys
 from astropy.io import ascii, fits
 from astropy.table import Table
 from collections import OrderedDict
-
-if sys.version_info[0] >= 3:
-    from io import StringIO
-else:
-    from cStringIO import StringIO
+from io import StringIO
 
 class StipsDataTable(object):
     def __init__(self, **kwargs):

@@ -12,16 +12,12 @@ from astropy.convolution import convolve_fft
 from astropy.io import fits
 from astropy.table import Table, Column
 from copy import deepcopy
+from io import StringIO
 from pandeia.engine import coords, profile, source
 from photutils import CircularAperture, aperture_photometry
 from photutils.psf.models import GriddedPSFModel
 
 from scipy.ndimage.interpolation import zoom, rotate
-
-if sys.version_info[0] >= 3:
-    from io import StringIO
-else:
-    from cStringIO import StringIO
 
 #Local Modules
 from ..errors import GetCrProbs, GetCrTemplate, MakeCosmicRay
@@ -100,8 +96,8 @@ class AstroImage(object):
                     stream_handler.setFormatter(logging.Formatter(format))
                     self.logger.addHandler(stream_handler)
             self.out_path = SelectParameter('out_path', kwargs)
-            self.bright_limit  = SelectParameter('bright_limit', kwargs)
-            self.xbright_limit = SelectParameter('xbright_limit', kwargs)
+            self.bright_limit  = SelectParameter('psf_bright_limit', kwargs)
+            self.xbright_limit = SelectParameter('psf_xbright_limit', kwargs)
             self.shape = kwargs.get('shape', default['shape'])
             self._scale = kwargs.get('scale', np.array(default['scale']))
             self.prefix = kwargs.get('prefix', '')
@@ -120,7 +116,6 @@ class AstroImage(object):
         # Will only be used for the output catalog file, you can change this one.
         self.out_origin = 1
 
-        #Set unique ID and figure out where the numpy memmap will be stored
         self.name = kwargs.get('detname', default['detector'][self.instrument])
         self.detector = self.name
 
@@ -450,7 +445,7 @@ class AstroImage(object):
             old_notes = t['notes'][to_keep]
             notes = np.empty_like(xs, dtype="S150")
             notes[:] = old_notes[:]
-            vegamags = -2.512 * np.log10(fluxes) - self.zeropoint
+            vegamags = -2.5 * np.log10(fluxes) - self.zeropoint
             stmags = -2.5 * np.log10(fluxes * self.photflam) - 21.10
             stars_idx = np.where(types == 'point')
             if len(xs[stars_idx]) > 0:
@@ -763,8 +758,6 @@ class AstroImage(object):
             
             psf_file: string
                 The name and location of the PSF file
-            psf_oversample: int
-                The PSF grid oversample value
         xsize, ysize: int
             The size of the detector
         dir: string
@@ -985,7 +978,9 @@ class AstroImage(object):
     
     def setExptime(self, exptime):
         """
-        Set the exposure time. Multiply data by new_exptime / old_exptime.
+        Set the exposure time. Because the data is kept in units of counts/s, this does 
+        not affect the data values, but it does affect errors residuals (e.g. dark 
+        current and cosmic ray count)
         """
         self.exptime = exptime
         self.updateHeader('exptime', self.exptime)
