@@ -18,7 +18,7 @@ Configuration File Strategy
 When the ``stips.utilities.SelectParameter()`` function is used to look for a
 configuration parameter, STIPS follows the following strategy to find that
 parameter (and will take whichever value it finds first). As such, if the user
-wishes only to override some STIPS configuration values, they can put a
+wishes to only override some STIPS configuration values, they can put a
 configuration file with only those values specified into the directory where
 STIPS is being run. Any other configuration will fall back to other files.
 
