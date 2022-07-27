@@ -1,7 +1,7 @@
 Additional STIPS Examples
 =========================
 
-Below is a brief condensed example of STIPS usage similar to the usage in the :doc: `Basic Tutorial <basic_tutorial>`.
+Below is a brief condensed example of STIPS usage, similar to the usage in the :doc: `Basic Tutorial <basic_tutorial>`.
 
 * Creating a scene from an existing source catalogue `input_sources.txt`, and observing it with the Roman WFI "F129" filter, offset by 0.5 degrees in RA, and rotated by 27 degrees:
 
