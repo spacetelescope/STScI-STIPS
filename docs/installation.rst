@@ -95,7 +95,7 @@ To test if all the required files have been installed, please import STIPS in py
 
     >>> import stips
 
-		>>> print(stips.__env__report__)
+		    print(stips.__env__report__)
 
 You should receive an output of the following form::
 
