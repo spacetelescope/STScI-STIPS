@@ -5,8 +5,8 @@ STIPS Catalog Formats
     If you use the STIPS Scene Module to create your observation scenes, then
     created catalogues will already be in supported formats (specifically the
     Phoenix format for stars and the BC95 format for galaxies). Alternately, if
-    you create new STIPS catalogues by editing existing catalogues then, as long
-    as you keep to the existing format any created catalogues should work.
+    you create new STIPS catalogues by editing existing catalogues, then, as long
+    as you keep to the existing format,any created catalogues should work.
 
 General Formatting
 ------------------

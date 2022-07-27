@@ -2,7 +2,7 @@ The STIPS PSF Grid
 ==================
 .. note::
 
-    The STIPS PSF Grid creation and configuration process is still in flux. At the moment there is a somewhat confusing conflation of PSF convolution size (which should be mostly to do with available memory and computation speed) and how many individual PSF interpolations are used from a given grid. In the future, these considerations will be split apart, so the documentation here is subject to change.
+    The STIPS PSF Grid creation and configuration process is still in flux. At the moment, there is a somewhat confusing conflation of PSF convolution size (which should be mostly to do with available memory and computation speed) and how many individual PSF interpolations are used from a given grid. In the future, these considerations will be split apart, so the documentation here is subject to change.
 
 Overview
 --------
