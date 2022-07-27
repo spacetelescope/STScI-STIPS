@@ -2,7 +2,7 @@
 STIPS Basic Tutorial
 ********************
 
-This page will take you through the process of creating a STIPS observation.  You must have STIPS installed –– if you do not, please see :doc:`installing STIPS <installation>`.
+This page will take you through the process of creating a basic STIPS observation.  You must have STIPS installed –– if you do not, please see :doc:`installing STIPS <installation>`.
 
 
 Importing STIPS and Checking the STIPS Environment
