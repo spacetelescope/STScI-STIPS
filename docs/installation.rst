@@ -2,9 +2,7 @@
 Installation
 ************
 
-STIPS is a simulation tool that depends on other modules such as PSF and exposure time calculators.
-These underlying submodules need to be installed for STIPS to function properly along with their supporting datasets.
-There are multiple options for installation and they are listed in this section along with instructions.
+STIPS is a simulation tool that depends on other modules such as PSF and exposure time calculators.  These underlying submodules need to be installed for STIPS to function properly along with their supporting datasets.  There are multiple options for installation and they are listed in this section along with instructions.
 
 STIPS Requirements
 ##################
@@ -19,43 +17,27 @@ STIPS Requirements
 
 * `esutil`: Used for retrieving data from sqlite databases in the form of numpy arrays.
 * `montage_wrapper`: STIPS uses montage to generate mosaics. It is only imported if
-  STIPS is asked to generate a multi-detector montage image.
+  STIPS is asked to generate a multi-detector image.
 * `numpy`: STIPS uses numpy extensively for almost everything that it does.
 * `photutils`: STIPS uses photutils to determine the flux inside the half-light radius
   in generated Sersic profiles.
-* `synphot` and `stsynphot`: STIPS uses synphot and stsynphot to generate 
+* `synphot` and `stsynphot`: STIPS uses synphot and stsynphot to generate
   bandpasses, count rates, and zero points. Note that the reference data must
   also be downloaded, as described below in "Doanloading Required Data".
 * `scipy`: STIPS uses scipy to manipulate its internal images (zoom and rotate).
 
-Finally, STIPS requires a set of data files whose location is marked by setting the environment
-variable `stips_data`. The current version of the STIPS data is located on box and can be downloaded via the link below.
-
-Downloading STIPS Data
-#######################
-
-STIPS needs data for reference and calibration. The latest version of the STIPS data can be downloaded as follows, from within
-an interactive python interpreter::
-
-    # import STIPS
-    import stips
-    
-    # Download all required reference data:
-    stips.DownloadReferenceData()
-
+Finally, STIPS requires a set of data files whose location is marked by setting the environment variable `stips_data`, which will be installed as part of these instructions.
 
 Installing Using Conda and Source
 ##################################
 
 STIPS can be installed using the source code and a Conda environment file.
-If you do not have anaconda or miniconda installed, please visit the `astroconda docs <https://astroconda.readthedocs.io/en/latest/getting_started.html>`_ for installation instructions.
-We have included a Conda environment file for easily installing or updating Conda packages to meet STIPS requirements.
-Please follow the steps below to install STIPS:
+If you do not have anaconda or miniconda installed, please visit the `anaconda docs <https://docs.anaconda.com/anaconda/install/>`_ for installation instructions.  We have included a Conda environment file for easily installing or updating Conda packages to meet STIPS requirements.  Please follow the steps below to install STIPS:
 
 Installing
 **********
 
-1. You will need to clone the STIPS source code from the `spacetelescope/STScI-STIPS <https://github.com/spacetelescope/STScI-STIPS.git>`_ repository.`cd` into the directory you would like to store the source code and run::
+1. You will need to clone the STIPS source code from the `spacetelescope/STScI-STIPS <https://github.com/spacetelescope/STScI-STIPS.git>`_ repository.  `cd` into the directory you would like to store the source code and run::
 
     git clone https://github.com/spacetelescope/STScI-STIPS.git
 
@@ -74,18 +56,33 @@ Installing
 
         conda env update --file environment.yml
 
-STIPS will automatically be installed by the environment file.
+
+3. You can now install STIPS using the cloned source code as follows::
+
+    python setup.py install
 
 
-Downloading Required Data
-*************************
+Downloading Required Reference Data
+************************************
 
-Pandeia and WebbPSF need the reference datasets. The appropriate versions of this 
-reference data for the version of STIPS you are using may be downloaded, along with the
-STIPS reference data, by the following convenience function, run from python::
+STIPS, Pandeia, and WebbPSF need the reference datasets.
+You will need to download the data and add them to your environmental path
 
-    import stips
-    stips.DownloadReferenceData()
+1. Add the following paths to your bash environmental path. It is recommended that you add the path to your `.bash_profile` file::
+
+		export stips_data="<absolute_path_to_this_folder>/ref_data/stips_data"
+		export WEBBPSF_PATH="<absolute_path_to_this_folder>/ref_data/webbpsf-data"
+		export PYSYN_CDBS="<absolute_path_to_this_folder>/ref_data/grp/redcat/trds"
+		export pandeia_refdata="<absolute_path_to_this_folder>/ref_data/pandeia_data-x.x.x_roman"
+
+Make sure that you have the correct version number for `pandeia_refdata` (replace the "x.x.x").
+
+2. `cd` into the "ref_data" directory in your STScI-STIPS clone
+
+3. Run the following code (ensuring your stips environment is active)::
+
+		python retrieve_stips_data.py
+
 
 Testing Installation
 *********************
@@ -99,52 +96,18 @@ To test if all the required files have been installed, please import STIPS in py
 
     >>> import stips
 
+		    print(stips.__env__report__)
+
+You should receive an output of the following form::
+
+		STIPS Version x.y.z with Data Version x.y.z at /Some/Path/To/stips_data
+
+		STIPS Grid Generated with x.y.z
+
+		Pandeia version a.b.c with Data Version a.b.c. at /Some/Path/To/pandeia_refdata
+
+		Webbpsf Version d.e.f with Data Version d.e.f at /Some/Path/To/webbpsf_data_path
+
 The following warning message can be ignored if it appears::
 
     WARNING: stips_data environment variable not found. Falling back on local STIPS data.
-
-
-Installing Using Docker
-#######################
-
-Installing
-**********
-
-1. Start by installing the free `Docker Community Edition <https://www.docker.com/community-edition>`_ locally.
-This will make the `docker` command available in your terminal. Note that after installing docker,
-you must open the application once for docker to be available from the command line.
-
-2. You will need to clone the STIPS source code from the `spacetelescope/STScI-STIPS <https://github.com/spacetelescope/STScI-STIPS.git>`_ repository.
-`cd` into the directory you would like to store the source code and run::
-
-    git clone https://github.com/spacetelescope/STScI-STIPS.git
-
-    cd STScI-STIPS
-
-3. Run the docker build command::
-
-    docker build -t stips .
-
-
-
-Testing Installation
-*********************
-
-To test if the Docker image was built correctly you can `exec` into the image and try to import STIPS::
-
-    # cd into STScI-STIPS
-    $ docker build -t stips .
-
-    # Create Docker Image
-    $ docker create -t -i stips bash
-
-        8293abe302b0c4f07a04282e811824d74681b77d0174148cc8af68078c098fa6
-
-    # Start Docker Image
-    $ docker start -a -i 8293abe302b0
-
-    (stips) root@8293abe302b0:~# python
-    Python 3.7.3 | packaged by conda-forge | (default, Jul  1 2019, 21:52:21)
-    [GCC 7.3.0] :: Anaconda, Inc. on linux
-    Type "help", "copyright", "credits" or "license" for more information.
-    >>> import stips

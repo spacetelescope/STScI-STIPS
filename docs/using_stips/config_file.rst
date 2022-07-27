@@ -2,15 +2,12 @@ The STIPS Configuration File
 ============================
 .. note::
 
-    Although the configuration file is the recommended general way of setting
-    STIPS options, it is also possible to set many of these options with 
-    dictionary keys or by specifying keyword arguments to classes or functions
-    at runtime.
+    Although the configuration file is the recommended general way of setting STIPS options, it is also possible to set many of these options with dictionary keys or by specifying keyword arguments to classes or functions at runtime.
 
 Configuration File Format
 -------------------------
 
-STIPS configuration files are formatted as `YAML files <https://yaml.org>`_. The 
+STIPS configuration files are formatted as `YAML files <https://yaml.org>`_. The
 configuration files included in the internal STIPS data directory (or the
 downloadable stips_data directory) include comments describing how the keywords
 are used, and what values they can have. This commentary is optional.
@@ -21,15 +18,15 @@ Configuration File Strategy
 When the ``stips.utilities.SelectParameter()`` function is used to look for a
 configuration parameter, STIPS follows the following strategy to find that
 parameter (and will take whichever value it finds first). As such, if the user
-wishes only to override some STIPS configuration values, they can put a 
+wishes to override only some STIPS configuration values, they can put a
 configuration file with only those values specified into the directory where
 STIPS is being run. Any other configuration will fall back to other files.
 
 The STIPS configuration hierarchy is:
 
 1. Keyword arguments provided when creating STIPS class
-2. Any configuration file (or directory containing a file named 
-   "stips_config.yaml") provided directly to 
+2. Any configuration file (or directory containing a file named
+   "stips_config.yaml") provided directly to
    ``stips.utilities.SelectParameter()``
 3. A file named "stips_config.yaml" in the same directory as STIPS is being run.
 4. A file named in (or a directory containing a file named "stips_config.yaml"
@@ -39,7 +36,7 @@ The STIPS configuration hierarchy is:
 
 .. note::
 
-	The internal stips_config.yaml file should not be edited, as it contains 
+	The internal stips_config.yaml file should not be edited, as it contains
 	default values that should not be changed directly. The appropriate way for
 	a user to change the STIPS configuration is to use any of methods 1-5 above.
 
@@ -50,7 +47,7 @@ General Configuration Keywords
 input_location (default *$CWD*)
 	If classes are given an input file name which is not a fully-qualified path,
 	they will look for that file in this directory. ``$CWD`` is a special value
-	that is replaced at runtime with the directory from which STIPS is being 
+	that is replaced at runtime with the directory from which STIPS is being
 	run. If used as a keyword argument, "cat_path" can be used instead of
 	"input_location" as a variable name for historical reasons.
 
@@ -68,7 +65,7 @@ catalogue_type (default *fits*)
 
 log_level (default *INFO*)
 	This is the default log level for the internal STIPS logger. Any value that
-	can be obtained from the logging module using ``getattr(logging, VALUE)`` 
+	can be obtained from the logging module using ``getattr(logging, VALUE)``
 	and then passed to ``logging.logger.setLevel()`` can be used here.
 
 random_seed (default *1234*)
@@ -82,12 +79,11 @@ Observation Keywords
 --------------------
 
 observation_default_background (default *0.0*)
-	The default sky background in counts/s/detector pixel. Currently this keyword can be 
-	set to 
-	
+	The default sky background in counts/s/detector pixel. Currently this keyword can be set to
+
 	* any integer or floating point value, in which case that value will be used
 	  directly
-	* any of the string values 'none', 'low', 'avg', or 'high'. In this case, 
+	* any of the string values 'none', 'low', 'avg', or 'high'. In this case,
 	  'none' is always treated as zero, and for any other keyword if the value
 	  is defined for the instrument/detector selected, that value will be used.
 	  If no such value can be found, the background will be set to 0.
@@ -97,27 +93,27 @@ observation_default_background (default *0.0*)
 
 observation_jbt_location (default *$WEB*)
 	If JBT is being used to determine the background, this tells STIPS where the
-	JBT data is located. ``$WEB`` indicates that the value should be fetched 
+	JBT data is located. ``$WEB`` indicates that the value should be fetched
 	from online, ``$DATA`` indicates that the value should be taken from a
 	directory named "background" in the "stips_data" directory. Otherwise the
-	value should be the path to a directory containing a local cache of the 
-	data. If used as a keyword argument, "background_location" or "jbt_location" 
+	value should be the path to a directory containing a local cache of the
+	data. If used as a keyword argument, "background_location" or "jbt_location"
 	can be used instead of "observation_jbt_location" for historical reasons.
 
 observation_distortion_enable (default *false*)
 	Whether co-ordinate distortion information should be included in the
-	observation. Note that this is not yet available for Roman. If used as a 
-	keyword argument, "distortion" can be used instead of 
+	observation. Note that this is not yet available for Roman. If used as a
+	keyword argument, "distortion" can be used instead of
 	"observation_distortion_enable" for historical reasons.
-	
+
 
 PSF Convolution Configuration
 -----------------------------
 
 psf_grid_default_size (default *1*)
 	What size PSF grid should be created. Note that this value is expressed as
-	a side length, so if psf_grid_default_size is set to n, webbpsf will create
-	a total of n^2 psf images. If used as a keyword argument, "psf_grid_size"
+	a side length, so if psf_grid_default_size is set to n, WebbPSF will create
+	a total of n^2 PSF images. If used as a keyword argument, "psf_grid_size"
 	can be used instead of "psf_grid_default_size" for historical reasons.
 
 psf_cache_enable (default *true*)
@@ -129,7 +125,7 @@ psf_cache_location (default *$DATA*)
 	``$DATA`` indicates the stips_data directory.
 
 psf_cache_directory (default *psf_cache*)
-	The name of the directory inside psf_cache_location where PSF grids should 
+	The name of the directory inside psf_cache_location where PSF grids should
 	be cached (again, if caching is enabled).
 
 psf_convolution_max_size (default *8192*)
@@ -156,7 +152,7 @@ residual_readnoise (default *true*)
 
 residual_flat (default *true*)
 	Whether a flatfield removal residual should be added when adding error.
-	
+
 residual_dark (default *true*)
 	Whether a dark current removal residual should be added when adding error.
 
