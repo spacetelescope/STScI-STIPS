@@ -68,13 +68,7 @@ Downloading Required Reference Data
 STIPS, Pandeia, and WebbPSF need the reference datasets.
 You will need to download the data and add them to your environmental path
 
-1. `cd` into the "ref_data" directory in your STScI-STIPS clone
-
-2. Bash "retrieve_stips_data.sh"::
-
-		bash retrieve_stips_data.sh
-
-3. Add the data paths to your bash environmental path. It is recommended that you add the path to your `.bash_profile` file::
+1. Add the following paths to your bash environmental path. It is recommended that you add the path to your `.bash_profile` file::
 
 		export stips_data="<absolute_path_to_this_folder>/ref_data/stips_data"
 		export WEBBPSF_PATH="<absolute_path_to_this_folder>/ref_data/webbpsf-data"
@@ -82,6 +76,13 @@ You will need to download the data and add them to your environmental path
 		export pandeia_refdata="<absolute_path_to_this_folder>/ref_data/pandeia_data-x.x.x_roman"
 
 Make sure that you have the correct version number for `pandeia_refdata` (replace the "x.x.x").
+
+2. `cd` into the "ref_data" directory in your STScI-STIPS clone
+
+3. Run the following code (ensuring your stips environment is active)::
+
+		python retrieve_stips_data.py
+
 
 Testing Installation
 *********************
