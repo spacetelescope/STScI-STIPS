@@ -2,7 +2,7 @@
 Known Issues (Pending Validation)
 *********************************
 
-Below is a list of known bugs, along with fixes.  Items will be removed as they are addressed by future STIPS updates.
+Below is a list of known bugs.  Items will be removed as they are addressed by future STIPS updates.
 
 * The orientation of the image is non-standard, with east pointing to the right of the image. The relative position of sources is not affected.
 
