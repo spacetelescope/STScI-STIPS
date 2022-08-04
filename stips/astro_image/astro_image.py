@@ -592,13 +592,22 @@ class AstroImage(object):
             ins.filter = self.filter
             ins.detector = self.detector
             scale = self.scale[0]
-            fov_pix = PSF_BOXSIZE
-            if psf_type == 'bright': fov_pix = PSF_BRIGHT_BOXSIZE
-            elif psf_type == 'xbright': fov_pix = PSF_EXTRA_BRIGHT_BOXSIZE
+
+            # PSF cannot be larger than the detector
+            ins_size = max(self.xsize, self.ysize)
+            # Limit of PSF size depending on brightness
+            limit = 60.
+            if psf_type == 'bright': limit = 120.
+            elif psf_type == 'xbright': limit = 240.
+            safe_size = int(np.floor(limit * self.photplam / (2 * self.scale[0])))
+            if safe_size <= 0:
+                safe_size = max(self.xsize, self.ysize)
+            msg = "PSF choosing between {} and {}"
+            self._log("info", msg.format(ins_size, safe_size))
+            fov_pix = min(ins_size, safe_size)
             if fov_pix%2 == 0:
                 fov_pix += 1
             num_psfs = self.psf_grid_size*self.psf_grid_size
-            #num_psfs = 9#self.psf_grid_size*self.psf_grid_size
             if SelectParameter('psf_cache_enable'):
                 save = True
                 overwrite = True
@@ -618,7 +627,7 @@ class AstroImage(object):
             ins.pixelscale = scale / PSF_UPSCALE
             self.psf = ins.psf_grid(all_detectors=False, num_psfs=num_psfs,
                                     fov_pixels=fov_pix, normalize='last',
-                                    oversample=PSF_UPSCALE, save=save,
+                                    oversample=1, save=save,
                                     outdir=psf_cache_dir, outfile=psf_file,
                                     overwrite=overwrite)
             msg = "{}: Finished PSF Grid creation at {}"
