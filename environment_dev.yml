@@ -49,7 +49,7 @@ dependencies:
     - stsynphot==1.1.0
     
     # Installed via github because the version available on pip has unfixed errors.
-    - esutil@git+https://github.com/jobovy/esutil.git
+    - esutil@git+https://github.com/karpov-sv/esutil.git
   
     # Major modules
     - astropy
