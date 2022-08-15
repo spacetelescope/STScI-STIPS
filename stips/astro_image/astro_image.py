@@ -591,22 +591,19 @@ class AstroImage(object):
             ins = self.psf_constructor
             ins.filter = self.filter
             ins.detector = self.detector
-            scale = self.scale[0]
-
-            # PSF cannot be larger than the detector
-            ins_size = max(self.xsize, self.ysize)
-            # Limit of PSF size depending on brightness
-            limit = 60.
-            if psf_type == 'bright': limit = 120.
-            elif psf_type == 'xbright': limit = 240.
-            safe_size = int(np.floor(limit * self.photplam / (2 * self.scale[0])))
-            if safe_size <= 0:
-                safe_size = max(self.xsize, self.ysize)
-            msg = "PSF choosing between {} and {}"
-            self._log("info", msg.format(ins_size, safe_size))
-            fov_pix = min(ins_size, safe_size)
+            # Supersample the pixel scale to get WebbPSF to output
+            # PSF models with even supersampling centered at the center of a pixel
+            ins.pixelscale = self.scale[0] / PSF_UPSCALE
+            # Figure out PSF size:
+            #   size depends on type and is multiplied by the upscale because we made the
+            #   pixels smaller above.
+            psf_sizes = {'normal': PSF_BOXSIZE, 
+                         'bright': PSF_BRIGHT_BOXSIZE, 
+                         'xbright': PSF_EXTRA_BRIGHT_BOXSIZE}
+            fov_pix = psf_sizes[psf_type] * PSF_UPSCALE
             if fov_pix%2 == 0:
                 fov_pix += 1
+
             num_psfs = self.psf_grid_size*self.psf_grid_size
             if SelectParameter('psf_cache_enable'):
                 save = True
@@ -622,9 +619,6 @@ class AstroImage(object):
                 psf_file = None
             msg = "{0}: Starting {1}x{1} PSF Grid creation at {2}"
             self._log("info", msg.format(self.name, self.psf_grid_size, time.ctime()))
-            # Supersample the pixel scale to get WebbPSF to output
-            # PSF models with even supersamplingcentered at the center of a pixel
-            ins.pixelscale = scale / PSF_UPSCALE
             self.psf = ins.psf_grid(all_detectors=False, num_psfs=num_psfs,
                                     fov_pixels=fov_pix, normalize='last',
                                     oversample=1, save=save,

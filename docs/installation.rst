@@ -2,13 +2,15 @@
 Installation
 ************
 
-STIPS is a simulation tool that depends on other modules such as PSF and exposure time calculators.  These underlying submodules need to be installed for STIPS to function properly along with their supporting datasets.  There are multiple options for installation and they are listed in this section along with instructions.
+STIPS is a simulation tool that depends on other modules such as PSF and exposure time calculators.  These underlying submodules need to be 
+installed for STIPS to function properly along with their supporting datasets.  There are multiple options for installation and they are listed 
+in this section along with instructions.
 
 STIPS Requirements
 ##################
 
-* `Pandeia`: Exposure time calculator.
-* `WebbPSF`: James Webb and Nancy Grace Roman PSF calculator.
+* `Pandeia>=1.7`: Exposure time calculator.
+* `WebbPSF>=1.0.0`: Nancy Grace Roman PSF calculator. STIPS also requires that `poppy`, a support package used by `webbpsf`, have version `>=1.0.3`
 * `astropy`: STIPS uses astropy in order to:
 
 	- Read and write FITS files.
@@ -21,18 +23,21 @@ STIPS Requirements
 * `numpy`: STIPS uses numpy extensively for almost everything that it does.
 * `photutils`: STIPS uses photutils to determine the flux inside the half-light radius
   in generated Sersic profiles.
-* `synphot` and `stsynphot`: STIPS uses synphot and stsynphot to generate
+* `synphot>=1.1.1` and `stsynphot>=1.1.0`: STIPS uses synphot and stsynphot to generate
   bandpasses, count rates, and zero points. Note that the reference data must
   also be downloaded, as described below in "Doanloading Required Data".
 * `scipy`: STIPS uses scipy to manipulate its internal images (zoom and rotate).
 
-Finally, STIPS requires a set of data files whose location is marked by setting the environment variable `stips_data`, which will be installed as part of these instructions.
+Finally, STIPS requires a set of data files whose location is marked by setting the environment variable `stips_data`, which will be installed as 
+part of these instructions.
 
 Installing Using Conda and Source
 ##################################
 
 STIPS can be installed using the source code and a Conda environment file.
-If you do not have anaconda or miniconda installed, please visit the `anaconda docs <https://docs.anaconda.com/anaconda/install/>`_ for installation instructions.  We have included a Conda environment file for easily installing or updating Conda packages to meet STIPS requirements.  Please follow the steps below to install STIPS:
+If you do not have anaconda or miniconda installed, please visit the `anaconda docs <https://docs.anaconda.com/anaconda/install/>`_ for 
+installation instructions.  We have included a Conda environment file for easily installing or updating Conda packages to meet STIPS 
+requirements.  Please follow the steps below to install STIPS:
 
 Installing
 **********

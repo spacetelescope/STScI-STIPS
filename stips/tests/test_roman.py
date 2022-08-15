@@ -41,12 +41,9 @@ def get_default_obs():
             'filters': ['F158'],
             'detectors': 1,
             'distortion': False,
-            'pupil_mask': '',
             'background': 'avg',
             'observations_id': 1,
             'exptime': 1000,
-            'parallel': True,
-            'convolve_size': 4088,
             'offsets': [
                         {
                             'offset_id': 1, 

@@ -117,10 +117,6 @@ def test_rotate(input,angle,output):
     #   regions of half the PSF width on each side. That will, in turn, result
     #   in the image sizes not matching the pre-made output arrays. Because this
     #   test is not related to PSFs in any way, no PSF is created.
-    print("Input: {}".format(input.shape))
-    print("Output: {}".format(output.shape))
     image = AstroImage(data=input, psf=False)
-    print("Image: {}".format(image.data.shape))
     image.rotate(angle)
-    print("Final Image: {}".format(image.data.shape))
     verifyData(image.hdu.data,output)

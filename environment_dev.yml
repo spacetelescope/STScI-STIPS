@@ -1,4 +1,7 @@
-# This file describes a conda environment that can be to install STIPS
+# This file describes a conda environment that can be to install STIPS for development and
+# testing purposes. Note that this environment set-up installs the STIPS module in 
+# editable mode, so any changes you make to the STIPS source will be reflected the next
+# time you run python.
 #
 # Run the following command to set up this environment:
 # $ conda env create -f environment.yml
@@ -7,10 +10,10 @@
 # $ conda env create -n <custom name> -f environment.yml
 #
 # Run the following command to activate the environment:
-# $ source activate stips
+# $ conda activate stips_dev
 #
 # To deactivate the environment run the following command:
-# $ source deactivate
+# $ conda deactivate
 #
 # To remove the environment entirely, run the following command:
 # $ conda env remove -n stips
@@ -20,31 +23,42 @@ name: stips_dev
 channels:
   - conda-forge
   - astropy
-  - http://ssb.stsci.edu/astroconda
   - defaults
 
 dependencies:
   # Base dependencies
-  - python>=3.7
   - pip
+  - python>=3.8
   - jupyter
   - Cython
 
   - pip:
+    #
+    # Special Modules. These are temporary entries and require documentation.
+    #
+    # poppy 1.0.3 fixes a bug with the way poppy was calling factorial with non-integer
+    # values. Currently this is the only way to ensure that webbpsf picks up the correct
+    # poppy version. This peg should be removed as soon as webbpsf has updated to only
+    # use poppy versions that include this fix.
+    - poppy==1.0.3
+  
+    # Core Modules
+    - webbpsf==1.0.0
+    - pandeia.engine==1.7
+    - synphot==1.1.1
+    - stsynphot==1.1.0
+    
+    # Installed via github because the version available on pip has unfixed errors.
+    - esutil@git+https://github.com/esheldon/esutil.git
+  
     # Major modules
+    - astropy
+    - photutils
     - ConfigParser
     - numpy
     - scipy
     - matplotlib
-    - astropy
-    - photutils
-    - healpy
-    - synphot
-    - stsynphot
-    - esutil --no-binary=esutil
-    - jwst_backgrounds
-    - webbpsf>=0.9.0
-    - pandeia.engine==1.6
+    - ipython
 
     # Minor modules
     - montage-wrapper
@@ -52,11 +66,14 @@ dependencies:
     - mechanize
 
     # Docs
+    - docutils
     - sphinx
     - sphinx_rtd_theme
     - stsci_rtd_theme
+    - sphinx_automodapi
     - sphinx_autoapi
-    
+    - astropy_helpers
+
     # Testing
     - tox
     - tox-conda

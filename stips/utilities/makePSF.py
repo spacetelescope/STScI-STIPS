@@ -50,14 +50,12 @@ PSF_UPSCALE = 4
 #   - general PSF: 44 pixels
 #   - bright source PSF: 
 #   - very bright source PSF:
-PSF_BOXSIZE = 45
-PSF_BRIGHT_BOXSIZE = 91
-PSF_EXTRA_BRIGHT_BOXSIZE = 181
+PSF_BOXSIZE = 44
+PSF_BRIGHT_BOXSIZE = 88
+PSF_EXTRA_BRIGHT_BOXSIZE = 176
 
 # The PSF grid is always 3x3
 PSF_GRID_SIZE = 3
-
-# PSF Bright Limits
 
 
 rind = lambda x : np.round(x).astype(int)

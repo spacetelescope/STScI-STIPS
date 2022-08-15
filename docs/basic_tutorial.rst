@@ -43,7 +43,7 @@ Creating a Scene to Observe
 STIPS contains functions to generate stellar populations as well as background galaxies.  These functions are all present in the `SceneModule` class.  In order to know what sort of populations to generate, the Scene Module requires input dictionaries to specify population parameters.  In this example, we will create the following:
 
 * A stellar population representing a global cluser with:
-  * 10,000 stars
+  * 100 stars
   * An age of 7.5 billion years
   * A metallicity of -2.0
   * A Salpeter IMF with alpha = -2.35
@@ -54,12 +54,16 @@ STIPS contains functions to generate stellar populations as well as background g
   * A distance of 20 kpc
   * No offset from the center of the scene being created
 * A collection of background galaxies with:
-  * 100 galaxies
+  * 10 galaxies
   * Redshifts between 0.0 and 0.2
   * Radii between 0.01 and 2.0 arcsec
   * V-band surface brightness magnitudes between 25 and 30
   * Uniform spatial distribution (unclustered) over 200 arcsec
   * No offset from the center of the scene being created
+
+..note::
+
+  Background galaxies are available in STIPS, but are neither supported nor tested.
 
 ..code-block:: python
 
@@ -68,7 +72,7 @@ STIPS contains functions to generate stellar populations as well as background g
   scm = SceneModule(out_prefix=obs_prefix, ra=obs_ra, dec=obs_dec)
 
   stellar_parameters = {
-                        'n_stars': 10000,
+                        'n_stars': 100,
                         'age_low': 7.5e12,
                         'age_high': 7.5e12,
                         'z_low': -2.0,
@@ -90,7 +94,7 @@ STIPS contains functions to generate stellar populations as well as background g
   print("Stellar population saved to file {}".format(stellar_cat_file))
 
   galaxy_parameters = {
-                       'n_gals': 100,
+                       'n_gals': 10,
                        'z_low': 0.0,
                        'z_high': 0.2,
                        'rad_low': 0.01,
@@ -178,9 +182,7 @@ In order to observe the scene, we must add the scene catalogues created above to
 
   print("Output Catalogues are {} and {}".format(output_stellar_catalogues, output_galaxy_catalogues))
 
-  psf_file = obm.addError()
-
-  print("PSF Files is {}".format(psf_file))
+  obm.addError()
 
   fits_file, mosaic_file, params = obm.finalize(mosaic=False)
 

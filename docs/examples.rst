@@ -3,7 +3,8 @@ Additional STIPS Examples
 
 Below is a brief condensed example of STIPS usage, similar to the usage in the :doc: `Basic Tutorial <basic_tutorial>`.
 
-* Creating a scene from an existing source catalogue `input_sources.txt`, and observing it with the Roman WFI "F129" filter, offset by 0.5 degrees in RA, and rotated by 27 degrees:
+* Creating a scene from an existing source catalogue `input_sources.txt`, and observing it with the Roman WFI "F129" filter, offset by 0.5 
+  degrees in RA, and rotated by 27 degrees:
 
 .. code-block:: python
 
@@ -14,7 +15,7 @@ Below is a brief condensed example of STIPS usage, similar to the usage in the :
     scm = SceneModule()
 
     stellar = {
-                'n_stars': 10000,
+                'n_stars': 100,
                 'age_low': 1.0e12, 'age_high': 1.0e12,
                 'z_low': -2.0, 'z_high': -2.0,
                 'imf': 'salpeter', 'alpha': -2.35,
@@ -29,7 +30,7 @@ Below is a brief condensed example of STIPS usage, similar to the usage in the :
     stellar_cat_file = scm.CreatePopulation(stellar)
 
     galaxy = {
-                'n_gals': 100,
+                'n_gals': 10,
                 'z_low': 0.0, 'z_high': 0.2,
                 'rad_low': 0.01, 'rad_high': 2.0,
                 'sb_v_low': 30.0, 'sb_v_high': 25.0,
@@ -60,8 +61,9 @@ Below is a brief condensed example of STIPS usage, similar to the usage in the :
     output_stellar_catalogues = obm.addCatalogue(stellar_cat_file)
     output_galaxy_catalogues = obm.addCatalogue(galaxy_cat_file)
 
-    psf_file = obm.addError()
+    obm.addError()
 
     fits_file, mosaic_file, params = obm.finalize(mosaic=False)
 
-In this case, the output catalogue(s) will show the actual applied count rates. Whether there is only one output catalogue or two depends on the input catalogue format.
+In this case, the output catalogue(s) will show the actual applied count rates. Whether there is only one output catalogue or two depends on the 
+input catalogue format.

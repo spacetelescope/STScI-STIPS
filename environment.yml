@@ -7,10 +7,10 @@
 # $ conda env create -n <custom name> -f environment.yml
 #
 # Run the following command to activate the environment:
-# $ source activate stips
+# $ conda activate stips
 #
 # To deactivate the environment run the following command:
-# $ source deactivate
+# $ conda deactivate
 #
 # To remove the environment entirely, run the following command:
 # $ conda env remove -n stips
@@ -28,8 +28,6 @@ dependencies:
   - python>=3.8
   - jupyter
   - Cython
-  # esutil is installed from conda because the pip version generates errors when called.
-  - esutil
 
   - pip:
     #
@@ -46,6 +44,9 @@ dependencies:
     - pandeia.engine==1.7
     - synphot==1.1.1
     - stsynphot==1.1.0
+    
+    # Installed via github because the version available on pip has unfixed errors.
+    - esutil@git+https://github.com/esheldon/esutil.git
   
     # Major modules
     - astropy
@@ -76,4 +77,4 @@ dependencies:
     - pytest-astropy
     
     # Current package
-    - -e .
+    - .
