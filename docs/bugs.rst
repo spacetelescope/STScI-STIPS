@@ -24,4 +24,9 @@ Below is a list of known bugs.  Items will be removed as they are addressed by f
   roughly 4 times as long (and extra-bright sources 16 times as long) to compute as standard sources, so these limits should only be set when
   it matters.
 
+* The STIPS star generation sub-module (`stips.star_generator`) depends on the `esutil` python module. This module can currently be installed 
+  as part of a conda environment, but can't be installed in a working state from a pip/setup environment. As such, if you are installing STIPS
+  without using conda, *and* you need to use the star generation sub-module, you will have to make an additional step. *After* installing STIPS,
+  but before using it, install `esutil` using pip without using a local cache (i.e. run `pip install esutil --no-cache-dir`).
+
 If you encounter any issues not listed here, please see the :doc:`help <help>` page.

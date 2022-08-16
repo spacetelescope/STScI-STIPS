@@ -18,6 +18,12 @@ STIPS Requirements
 	- Generate Sersic profile models (if any are in the generated scene).
 
 * `esutil`: Used for retrieving data from sqlite databases in the form of numpy arrays.
+  .. warning::
+     `esutil` is not installed by the stips setup.py because its pip installation has 
+     errors. After installing STIPS, you must run `pip install esutil --no-cache-dir` to
+     have `esutil` available.
+  .. note::
+     `esutil` is only needed if you are using `stips.star_generator`
 * `montage_wrapper`: STIPS uses montage to generate mosaics. It is only imported if
   STIPS is asked to generate a multi-detector image.
 * `numpy`: STIPS uses numpy extensively for almost everything that it does.
