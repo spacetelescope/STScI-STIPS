@@ -28,6 +28,7 @@ dependencies:
   - python>=3.8
   - jupyter
   - Cython
+  - esutil # installed from conda because you need the pre-compiled binaries.
 
   - pip:
     #
@@ -45,9 +46,6 @@ dependencies:
     - synphot==1.1.1
     - stsynphot==1.1.0
     
-    # Installed via github because the version available on pip has unfixed errors.
-    - esutil@git+https://github.com/karpov-sv/esutil.git
-  
     # Major modules
     - astropy
     - photutils

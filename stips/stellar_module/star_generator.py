@@ -234,7 +234,12 @@ class StarGenerator(object):
         return masses
     
     def get_star_info(self):
-        from esutil import sqlite_util
+        try:
+            from esutil import sqlite_util
+        except ImportError as e:
+            print("Error: The 'esutil' module is either not installed or not installed correctly.")
+            print("Please install esutil with the command 'pip install esutil --no-cache-dir'")
+            raise e
         stmt = "SELECT m_ini,Te,log_g,johnson_i_abs FROM star_info WHERE star_info.age = {} AND star_info.Z = {}".format(self.age,self.metallicity)
         sc = sqlite_util.SqliteConnection(self.dbname)
         arr = sc.execute(stmt,asarray=True)
@@ -287,7 +292,12 @@ class StarGenerator(object):
         return countrates
 
     def make_cluster_mags(self,masses):
-        from esutil import sqlite_util
+        try:
+            from esutil import sqlite_util
+        except ImportError as e:
+            print("Error: The 'esutil' module is either not installed or not installed correctly.")
+            print("Please install esutil with the command 'pip install esutil --no-cache-dir'")
+            raise e
         db = sqlite3.connect(self.dbname)
         sc = sqlite_util.SqliteConnection(self.dbname)
         stmt = "SELECT m_ini,johnson_i_abs,Te,log_g FROM star_info WHERE star_info.age = {} AND star_info.Z = {}".format(self.age,self.metallicity)
