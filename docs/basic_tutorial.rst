@@ -18,7 +18,7 @@ In order to use STIPS, you must have several sets of data files installed (:doc:
 
     Webbpsf Version d.e.f with Data Version d.e.f at /Some/Path/To/webbpsf_data_path
 
-..code-block:: python
+.. code-block:: python
 
   import stips
 
@@ -30,7 +30,7 @@ Setting Up Some Basics
 
 STIPS allows you to set up some basic elements of your observation and pass them when creating and running observations.  Below is one way to set these up.
 
-..code-block:: python
+.. code-block:: python
 
   obs_prefix = 'notebook_example'
   obs_ra = 150.0
@@ -61,11 +61,11 @@ STIPS contains functions to generate stellar populations as well as background g
   * Uniform spatial distribution (unclustered) over 200 arcsec
   * No offset from the center of the scene being created
 
-..note::
+.. note::
 
   Background galaxies are available in STIPS, but are neither supported nor tested.
 
-..code-block:: python
+.. code-block:: python
 
   from stips.scene_module import SceneModule
 
@@ -138,7 +138,7 @@ We will use a single offset with:
 * No centering (if an offset is centered, then, for a multi-detector observation, each detector is centered on the offset co-coordinates individually rather than the instrument as a whole beinf centered there)
 * No change in RA, DEC, or PA from the center of the observation
 
-..code-block:: python
+.. code-block:: python
 
   from stips.observation_module import ObservationModule
 
@@ -165,7 +165,7 @@ We will use a single offset with:
 
 Finally, nextObservation is called to move between different combinations of offset and filter.  It must be called once in order to initialize the observation module to the first observation before adding catalogues.
 
-..code-block:: python
+.. code-block:: python
 
   obm.nextObservation()
 
@@ -175,7 +175,7 @@ Observing the Scene
 
 In order to observe the scene, we must add the scene catalogues created above to it, add in error residuals, and finalize the observation.  In so doing, we create output catalogues which are taken from the input catalogues, but only contain the sources visible to the detectors, and convert source brightness into unites of counts/s for the detectors.
 
-..code-block:: python
+.. code-block:: python
 
   output_stellar_catalogues = obm.addCatalogue(stellar_cat_file)
   output_galaxy_catalogues = obm.addCatalogue(galaxy_cat_file)
@@ -196,7 +196,7 @@ Show the Result
 
 We use pyplot to plot the resulting simulated image.
 
-..code-block:: python
+.. code-block:: python
 
   %matplotlib inline
   %config InlineBackend.figure_format = 'svg'

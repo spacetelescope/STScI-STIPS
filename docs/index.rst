@@ -1,7 +1,7 @@
 Documentation
 =============
 
-..note::
+.. note::
 
   Support for JWST and HST has been removed from the latest version of STIPS; all instructions and documentation here reflect this change.
 
