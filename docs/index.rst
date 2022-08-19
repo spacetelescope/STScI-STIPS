@@ -7,7 +7,7 @@ Documentation
 
 Overview
 --------
-STIPS is the Space Telescope Imaging Product Simulator. It is designed to create simulations of full-detector post-pipeline astronomical scenes for any telescope. Currently STIPS has modules for WFC3 IR (F110W and F160W only) and Roman (WFI). STIPS has the ability to add instrumental distortion (if available) as well as calibration residuals (currently flatfield residuals, dark current residuals, and cosmic ray residuals). It automatically includes Poisson noise and readout noise. It does not include instrument saturation effects. In addition, STIPS has the ability to generate its own scenes, consisting of stellar populations and background galaxies (implemented as Sersic profiles).
+STIPS is the Space Telescope Imaging Product Simulator. It is designed to create simulations of full-detector post-pipeline astronomical scenes for the Nancy Grace Roman Space Telescope (Roman) Wide-Field Instrument (WFI). STIPS has the ability to add instrumental distortion (if available) as well as calibration residuals (currently flatfield residuals, dark current residuals, and cosmic ray residuals). It automatically includes Poisson noise and readout noise. It does not include instrument saturation effects.
 
 Why use STIPS?
 --------------
