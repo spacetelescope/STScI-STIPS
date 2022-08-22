@@ -18,12 +18,15 @@ STIPS Requirements
 	- Generate Sersic profile models (if any are in the generated scene).
 
 * `esutil`: Used for retrieving data from sqlite databases in the form of numpy arrays.
-  .. warning::
-     `esutil` is not installed by the stips setup.py because its pip installation has 
-     errors. After installing STIPS, you must run `pip install esutil --no-cache-dir` to
-     have `esutil` available.
-  .. note::
-     `esutil` is only needed if you are using `stips.star_generator`
+
+.. warning::
+   `esutil` is not installed by the stips setup.py because its pip installation has
+   errors. After installing STIPS, you must run `pip install esutil --no-cache-dir` to
+   have `esutil` available.
+
+.. note::
+   `esutil` is only needed if you are using `stips.star_generator`
+
 * `montage_wrapper`: STIPS uses montage to generate mosaics. It is only imported if
   STIPS is asked to generate a multi-detector image.
 * `numpy`: STIPS uses numpy extensively for almost everything that it does.
@@ -31,17 +34,17 @@ STIPS Requirements
   in generated Sersic profiles.
 * `synphot>=1.1.1` and `stsynphot>=1.1.0`: STIPS uses synphot and stsynphot to generate
   bandpasses, count rates, and zero points. Note that the reference data must
-  also be downloaded, as described below in "Doanloading Required Data".
+  also be downloaded, as described below in :ref:`downloading-required-ref-data`.
 * `scipy`: STIPS uses scipy to manipulate its internal images (zoom and rotate).
 
 Finally, STIPS requires a set of data files whose location is marked by setting the environment variable `stips_data`, which will be installed as 
 part of these instructions.
 
-Installing Using Conda and Source
+Installing Using Conda and Source Code
 ##################################
 
 STIPS can be installed using the source code and a Conda environment file.
-If you do not have anaconda or miniconda installed, please visit the `anaconda docs <https://docs.anaconda.com/anaconda/install/>`_ for 
+If you do not have Anaconda or Miniconda installed, please visit the `Anaconda docs <https://docs.anaconda.com/anaconda/install/>`_ for 
 installation instructions.  We have included a Conda environment file for easily installing or updating Conda packages to meet STIPS 
 requirements.  Please follow the steps below to install STIPS:
 
@@ -73,13 +76,15 @@ Installing
     python setup.py install
 
 
+.. _downloading-required-ref-data:
+
 Downloading Required Reference Data
 ************************************
 
 STIPS, Pandeia, and WebbPSF need the reference datasets.
 You will need to download the data and add them to your environmental path
 
-1. Add the following paths to your bash environmental path. It is recommended that you add the path to your `.bash_profile` file::
+1. Add the following paths to your bash environmental path. It is recommended that you add the path to your ``.bash_profile`` file::
 
 		export stips_data="<absolute_path_to_this_folder>/ref_data/stips_data"
 		export WEBBPSF_PATH="<absolute_path_to_this_folder>/ref_data/webbpsf-data"
@@ -88,9 +93,9 @@ You will need to download the data and add them to your environmental path
 
 Make sure that you have the correct version number for `pandeia_refdata` (replace the "x.x.x").
 
-2. `cd` into the "ref_data" directory in your STScI-STIPS clone
+2. ``cd`` into the "ref_data" directory in your ``STScI-STIPS`` clone
 
-3. Run the following code (ensuring your stips environment is active)::
+3. Run the following code (ensuring your ``stips`` Conda environment is active)::
 
 		python retrieve_stips_data.py
 
@@ -107,7 +112,7 @@ To test if all the required files have been installed, please import STIPS in py
 
     >>> import stips
 
-		    print(stips.__env__report__)
+    >>> print(stips.__env__report__)
 
 You should receive an output of the following form::
 
@@ -119,6 +124,8 @@ You should receive an output of the following form::
 
 		Webbpsf Version d.e.f with Data Version d.e.f at /Some/Path/To/webbpsf_data_path
 
-The following warning message can be ignored if it appears::
+Ignore the following warning message if it appears:
 
-    WARNING: stips_data environment variable not found. Falling back on local STIPS data.
+.. code-block:: text
+
+  WARNING: stips_data environment variable not found. Falling back on local STIPS data.

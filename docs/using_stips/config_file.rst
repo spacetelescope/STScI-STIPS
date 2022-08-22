@@ -9,7 +9,7 @@ Configuration File Format
 
 STIPS configuration files are formatted as `YAML files <https://yaml.org>`_. The
 configuration files included in the internal STIPS data directory (or the
-downloadable stips_data directory) include comments describing how the keywords
+downloadable ``stips_data`` directory) include comments describing how the keywords
 are used, and what values they can have. This commentary is optional.
 
 Configuration File Strategy
@@ -26,7 +26,7 @@ The STIPS configuration hierarchy is:
 
 1. Keyword arguments provided when creating STIPS class
 2. Any configuration file (or directory containing a file named
-   "stips_config.yaml") provided directly to
+   ``stips_config.yaml``) provided directly to
    ``stips.utilities.SelectParameter()``
 3. A file named "stips_config.yaml" in the same directory as STIPS is being run.
 4. A file named in (or a directory containing a file named "stips_config.yaml"

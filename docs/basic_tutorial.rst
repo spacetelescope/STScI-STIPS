@@ -10,6 +10,13 @@ Importing STIPS and Checking the STIPS Environment
 
 In order to use STIPS, you must have several sets of data files installed (:doc:`installing STIPS <installation>` contains instructions on how to do this).  In order to test your STIPS installation, STIPS includes an environment report utility that shows which version of STIPS you have installed, as well as the versions of the most important support packages that STIPS uses.  When you run the code below, you should get an output set of the following form:
 
+.. code-block:: python
+
+  import stips
+  print(stips.__env__report__)
+
+.. code-block:: text
+
     STIPS Version x.y.z with Data Version x.y.z at /Some/Path/To/stips_data
 
     STIPS Grid Generated with x.y.z
@@ -17,12 +24,6 @@ In order to use STIPS, you must have several sets of data files installed (:doc:
     Pandeia version a.b.c with Data Version a.b.c. at /Some/Path/To/pandeia_refdata
 
     Webbpsf Version d.e.f with Data Version d.e.f at /Some/Path/To/webbpsf_data_path
-
-.. code-block:: python
-
-  import stips
-
-  print(stips.__env__report__)
 
 
 Setting Up Some Basics
@@ -42,24 +43,27 @@ Creating a Scene to Observe
 
 STIPS contains functions to generate stellar populations as well as background galaxies.  These functions are all present in the `SceneModule` class.  In order to know what sort of populations to generate, the Scene Module requires input dictionaries to specify population parameters.  In this example, we will create the following:
 
-* A stellar population representing a global cluser with:
-  * 100 stars
-  * An age of 7.5 billion years
-  * A metallicity of -2.0
-  * A Salpeter IMF with alpha = -2.35
-  * A binary fraction of 10%
-  * A clustered distribution (higher-mass stars closer to the population center)
-  * An inverse power-law distribution
-  * A radius of 100 parsecs
-  * A distance of 20 kpc
-  * No offset from the center of the scene being created
-* A collection of background galaxies with:
-  * 10 galaxies
-  * Redshifts between 0.0 and 0.2
-  * Radii between 0.01 and 2.0 arcsec
-  * V-band surface brightness magnitudes between 25 and 30
-  * Uniform spatial distribution (unclustered) over 200 arcsec
-  * No offset from the center of the scene being created
+#. A stellar population representing a global cluster with:
+
+   * 100 stars
+   * An age of 7.5 billion years
+   * A metallicity of -2.0
+   * A Salpeter IMF with alpha = -2.35
+   * A binary fraction of 10%
+   * A clustered distribution (higher-mass stars closer to the population center)
+   * An inverse power-law distribution
+   * A radius of 100 parsecs
+   * A distance of 20 kpc
+   * No offset from the center of the scene being created
+
+#. A collection of background galaxies with:
+
+   * 10 galaxies
+   * Redshifts between 0.0 and 0.2
+   * Radii between 0.01 and 2.0 arcsec
+   * V-band surface brightness magnitudes between 25 and 30
+   * Uniform spatial distribution (unclustered) over 200 arcsec
+   * No offset from the center of the scene being created
 
 .. note::
 
@@ -118,7 +122,7 @@ Creating a STIPS Observation
 
 Once a scene has been created, it's possible to observe that scene as many times as you wish (and from as many places as you wish, although obviously any observation that doesn't include at least some of the scene will simply be an empty exposure).  In this case, we will create a single Roman WFI observation.
 
-STIPS uses a but of specialized terminology to describe its observations.  In particular:
+STIPS uses a bit of specialized terminology to describe its observations.  In particular:
 
 * An Observation is a set of exposures with a single instrument (e.g. Roman WFI), one or more filters (where each exposure in the observation will be repeated for every included filter), and some number of the instrument's detectors (for WFI, between 1 and 18), where each exposure will be repeated, with the appropriate inter-detector offset, for every included director, a single chosen sky background value, a single exposure time (applied to each exposure in the observation), and one or more offsets.
 * An Offset is a single telescope pointing.  For each offset specified in the observation, an exposure will be created for each detector and each filter at the offset.  STIPS may, optionally, create one or more mosaics at each offset, with a single mosaic including all detectors with the same filter.  In addition, STIPS can create a single combined mosaic for each filter in the combined Observation.
@@ -191,10 +195,10 @@ In order to observe the scene, we must add the scene catalogues created above to
   print("Observation Parameters are {}".format(params))
 
 
-Show the Result
+Showing the Result
 ---------------
 
-We use pyplot to plot the resulting simulated image.
+We use ``matplotlib`` to plot the resulting simulated image.
 
 .. code-block:: python
 
