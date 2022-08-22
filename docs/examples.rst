@@ -3,8 +3,8 @@ Additional STIPS Examples
 
 Below is a condensed example of STIPS usage, similar to the usage in the :doc:`Basic Tutorial <basic_tutorial>`.
 
-* Creating a scene from an existing source catalog ``input_sources.txt``, and observing it with the Roman WFI F129 filter, offset by 0.5 
-  degrees in RA, and rotated by 27 degrees:
+* Creating a scene from an existing source catalog ``input_sources.txt``, and observing it 
+  with the Roman WFI F129 filter, offset by 0.5 degrees in RA, and rotated by 27 degrees:
 
 .. code-block:: python
 
@@ -65,5 +65,5 @@ Below is a condensed example of STIPS usage, similar to the usage in the :doc:`B
 
     fits_file, mosaic_file, params = obm.finalize(mosaic=False)
 
-In this case, the output catalog(s) will show the actual applied count rates. Whether there is only one output catalog or two depends on the 
-input catalog format.
+In this case, the output catalog(s) will show the actual applied count rates. Whether there 
+is only one output catalog or two depends on the input catalog format.

@@ -2,7 +2,9 @@ The STIPS Configuration File
 ============================
 .. note::
 
-    Although the configuration file is the recommended general way of setting STIPS options, it is also possible to set many of these options with dictionary keys or by specifying keyword arguments to classes or functions at runtime.
+    Although the configuration file is the recommended general way of setting STIPS options, 
+    it is also possible to set many of these options with dictionary keys or by specifying 
+    keyword arguments to classes or functions at runtime.
 
 Configuration File Format
 -------------------------

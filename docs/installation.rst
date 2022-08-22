@@ -10,7 +10,8 @@ STIPS Requirements
 ##################
 
 * `Pandeia>=1.7`: Exposure time calculator.
-* `WebbPSF>=1.0.0`: Nancy Grace Roman PSF calculator. STIPS also requires that `poppy`, a support package used by `webbpsf`, have version `>=1.0.3`
+* `WebbPSF>=1.0.0`: Nancy Grace Roman PSF calculator. STIPS also requires that `poppy`, a 
+  support package used by `webbpsf`, have version `>=1.0.3`
 * `astropy`: STIPS uses astropy in order to:
 
 	- Read and write FITS files.
@@ -37,44 +38,50 @@ STIPS Requirements
   also be downloaded, as described below in :ref:`downloading-required-ref-data`.
 * `scipy`: STIPS uses scipy to manipulate its internal images (zoom and rotate).
 
-Finally, STIPS requires a set of data files whose location is marked by setting the environment variable `stips_data`, which will be installed as 
-part of these instructions.
+Finally, STIPS requires a set of data files whose location is marked by setting the 
+environment variable `stips_data`, which will be installed as part of these instructions.
 
 Installing Using Conda and Source Code
-##################################
+######################################
 
 STIPS can be installed using the source code and a Conda environment file.
-If you do not have Anaconda or Miniconda installed, please visit the `Anaconda docs <https://docs.anaconda.com/anaconda/install/>`_ for 
-installation instructions.  We have included a Conda environment file for easily installing or updating Conda packages to meet STIPS 
-requirements.  Please follow the steps below to install STIPS:
+If you do not have Anaconda or Miniconda installed, please visit the 
+`Anaconda docs <https://docs.anaconda.com/anaconda/install/>`_ for installation instructions.  
+We have included a Conda environment file for easily installing or updating Conda packages 
+to meet STIPS requirements.  Please follow the steps below to install STIPS:
 
-Installing
-**********
+.. _installing-as-a-user:
 
-1. You will need to clone the STIPS source code from the `spacetelescope/STScI-STIPS <https://github.com/spacetelescope/STScI-STIPS.git>`_ repository.  `cd` into the directory you would like to store the source code and run::
+Installing as a User
+********************
 
-    git clone https://github.com/spacetelescope/STScI-STIPS.git
+#. You will need to clone the STIPS source code from the 
+   `spacetelescope/STScI-STIPS <https://github.com/spacetelescope/STScI-STIPS.git>`_ 
+   repository. `cd` into the directory you would like to store the source code and run::
 
-    cd STScI-STIPS
+        git clone https://github.com/spacetelescope/STScI-STIPS.git
 
-2. The environment file can be used in two ways:
+        cd STScI-STIPS
 
-    a. To create a new Conda environment named `stips` run::
+#. The environment file can be used in two ways:
+
+   * To create a new Conda environment named ``stips``::
 
         conda env create -f environment.yml
-
         conda activate stips
 
 
-    b. To install to or update an existing (currently active) Conda environment::
+   * Or, to install to or update an existing and currently active Conda environment::
 
         conda env update --file environment.yml
 
+Installing as a Developer
+*************************
 
-3. You can now install STIPS using the cloned source code as follows::
+#. This step is identical to the first step of :ref:`installing-as-a-user`.
 
-    python setup.py install
-
+#. Follow the second step of :ref:`installing-as-a-user` but using the 
+   ``environment_dev.yml`` file instead of ``environment.yml``
 
 .. _downloading-required-ref-data:
 
@@ -95,7 +102,7 @@ Make sure that you have the correct version number for `pandeia_refdata` (replac
 
 2. ``cd`` into the "ref_data" directory in your ``STScI-STIPS`` clone
 
-3. Run the following code (ensuring your ``stips`` Conda environment is active)::
+3. Run the following code (after ensuring your ``stips`` Conda environment is active)::
 
 		python retrieve_stips_data.py
 

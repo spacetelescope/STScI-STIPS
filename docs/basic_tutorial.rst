@@ -2,13 +2,19 @@
 STIPS Basic Tutorial
 ********************
 
-This page will take you through the process of creating a basic STIPS observation.  You must have STIPS installed –– if you do not, please see :doc:`installing STIPS <installation>`.
+This page will take you through the process of creating a basic STIPS observation.  You 
+must have STIPS installed –– if you do not, please see :doc:`installing STIPS <installation>`.
 
 
 Importing STIPS and Checking the STIPS Environment
 --------------------------------------------------
 
-In order to use STIPS, you must have several sets of data files installed (:doc:`installing STIPS <installation>` contains instructions on how to do this).  In order to test your STIPS installation, STIPS includes an environment report utility that shows which version of STIPS you have installed, as well as the versions of the most important support packages that STIPS uses.  When you run the code below, you should get an output set of the following form:
+In order to use STIPS, you must have several sets of data files installed 
+(:doc:`installing STIPS <installation>` contains instructions on how to do this).  In 
+order to test your STIPS installation, STIPS includes an environment report utility that 
+shows which version of STIPS you have installed, as well as the versions of the most 
+important support packages that STIPS uses.  When you run the code below, you should get 
+an output set of the following form:
 
 .. code-block:: python
 
@@ -29,7 +35,8 @@ In order to use STIPS, you must have several sets of data files installed (:doc:
 Setting Up Some Basics
 ----------------------
 
-STIPS allows you to set up some basic elements of your observation and pass them when creating and running observations.  Below is one way to set these up.
+STIPS allows you to set up some basic elements of your observation and pass them when 
+creating and running observations.  Below is one way to set these up.
 
 .. code-block:: python
 
@@ -41,7 +48,10 @@ STIPS allows you to set up some basic elements of your observation and pass them
 Creating a Scene to Observe
 ---------------------------
 
-STIPS contains functions to generate stellar populations as well as background galaxies.  These functions are all present in the `SceneModule` class.  In order to know what sort of populations to generate, the Scene Module requires input dictionaries to specify population parameters.  In this example, we will create the following:
+STIPS contains functions to generate stellar populations as well as background galaxies.  
+These functions are all present in the ``SceneModule`` class.  In order to know what sort 
+of populations to generate, the Scene Module requires input dictionaries to specify 
+population parameters.  In this example, we will create the following:
 
 #. A stellar population representing a global cluster with:
 
@@ -120,16 +130,28 @@ STIPS contains functions to generate stellar populations as well as background g
 Creating a STIPS Observation
 ----------------------------
 
-Once a scene has been created, it's possible to observe that scene as many times as you wish (and from as many places as you wish, although obviously any observation that doesn't include at least some of the scene will simply be an empty exposure).  In this case, we will create a single Roman WFI observation.
+Once a scene has been created, it's possible to observe that scene as many times as you 
+wish (and from as many places as you wish, although obviously any observation that doesn't 
+include at least some of the scene will simply be an empty exposure).  In this case, we 
+will create a single Roman WFI observation.
 
 STIPS uses a bit of specialized terminology to describe its observations.  In particular:
 
-* An Observation is a set of exposures with a single instrument (e.g. Roman WFI), one or more filters (where each exposure in the observation will be repeated for every included filter), and some number of the instrument's detectors (for WFI, between 1 and 18), where each exposure will be repeated, with the appropriate inter-detector offset, for every included director, a single chosen sky background value, a single exposure time (applied to each exposure in the observation), and one or more offsets.
-* An Offset is a single telescope pointing.  For each offset specified in the observation, an exposure will be created for each detector and each filter at the offset.  STIPS may, optionally, create one or more mosaics at each offset, with a single mosaic including all detectors with the same filter.  In addition, STIPS can create a single combined mosaic for each filter in the combined Observation.
+* An Observation is a set of exposures with a single instrument (e.g. Roman WFI), one or 
+  more filters (where each exposure in the observation will be repeated for every included 
+  filter), and some number of the instrument's detectors (for WFI, between 1 and 18), 
+  where each exposure will be repeated, with the appropriate inter-detector offset, for 
+  every included director, a single chosen sky background value, a single exposure time 
+  (applied to each exposure in the observation), and one or more offsets.
+* An Offset is a single telescope pointing.  For each offset specified in the observation, 
+  an exposure will be created for each detector and each filter at the offset.  STIPS may, 
+  optionally, create one or more mosaics at each offset, with a single mosaic including 
+  all detectors with the same filter.  In addition, STIPS can create a single combined 
+  mosaic for each filter in the combined Observation.
 
 In this case, we will create an observation with:
 
-* ROman WFI F129
+* Roman WFI F129
 * 1 detector
 * No distortion
 * A background rate of 0.15 counts/s/pixel
@@ -139,7 +161,9 @@ In this case, we will create an observation with:
 We will use a single offset with:
 
 * An ID of 1
-* No centering (if an offset is centered, then, for a multi-detector observation, each detector is centered on the offset co-coordinates individually rather than the instrument as a whole beinf centered there)
+* No centering (if an offset is centered, then, for a multi-detector observation, each 
+  detector is centered on the offset co-coordinates individually rather than the instrument 
+  as a whole beinf centered there)
 * No change in RA, DEC, or PA from the center of the observation
 
 .. code-block:: python
@@ -167,7 +191,9 @@ We will use a single offset with:
 
   obm = ObservationModule(observation_parameters, out_prefix=obs_prefix, ra=obs_ra, dec=obs_dec)
 
-Finally, nextObservation is called to move between different combinations of offset and filter.  It must be called once in order to initialize the observation module to the first observation before adding catalogues.
+Finally, nextObservation is called to move between different combinations of offset and 
+filter.  It must be called once in order to initialize the observation module to the first 
+observation before adding catalogues.
 
 .. code-block:: python
 
@@ -177,7 +203,10 @@ Finally, nextObservation is called to move between different combinations of off
 Observing the Scene
 -------------------
 
-In order to observe the scene, we must add the scene catalogues created above to it, add in error residuals, and finalize the observation.  In so doing, we create output catalogues which are taken from the input catalogues, but only contain the sources visible to the detectors, and convert source brightness into unites of counts/s for the detectors.
+In order to observe the scene, we must add the scene catalogues created above to it, add 
+in error residuals, and finalize the observation.  In so doing, we create output catalogues 
+which are taken from the input catalogues, but only contain the sources visible to the 
+detectors, and convert source brightness into unites of counts/s for the detectors.
 
 .. code-block:: python
 
@@ -217,4 +246,4 @@ We use ``matplotlib`` to plot the resulting simulated image.
   fig1 = plt.figure()
   im = plt.matshow(result_dara, norm=matplotlib.colors.LogNorm())
 
-Alternatively, you can open the final .fits file in your preferred imaging software (for example, SAOImage DS9).
+Alternatively, you can open the final .fits file in your preferred imaging software.
