@@ -29,7 +29,7 @@ The STIPS configuration hierarchy is:
 #. Keyword arguments provided when creating a STIPS class.
 #. Any configuration file (or directory containing a file named
    ``stips_config.yaml``) provided directly to
-   ``stips.utilities.SelectParameter()``
+   ``stips.utilities.SelectParameter()``.
 #. A file named ``stips_config.yaml`` in the same directory as STIPS is being run.
 #. A file (or a directory containing a file named ``stips_config.yaml``)
    named in the environment variable ``stips_config``.

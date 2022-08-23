@@ -134,15 +134,18 @@ To test if all the required files have been installed, please import STIPS in Py
 
     >>> print(stips.__env__report__)
 
-You should receive an output of the following form::
+You should receive an output of the following form:
 
-		STIPS Version x.y.z with Data Version x.y.z at /Some/Path/To/stips_data
+.. code-block:: text
 
-		STIPS Grid Generated with x.y.z
+  STIPS Version x.y.z with Data Version x.y.z at /Some/Path/To/stips_data
 
-		Pandeia version a.b.c with Data Version a.b.c. at /Some/Path/To/pandeia_refdata
+  STIPS Grid Generated with x.y.z
 
-		Webbpsf Version d.e.f with Data Version d.e.f at /Some/Path/To/webbpsf_data_path
+  Pandeia version a.b.c with Data Version a.b.c. at /Some/Path/To/pandeia_refdata
+
+  Webbpsf Version d.e.f with Data Version d.e.f at /Some/Path/To/webbpsf_data_path
+
 
 Ignore the following warning message if it appears:
 
