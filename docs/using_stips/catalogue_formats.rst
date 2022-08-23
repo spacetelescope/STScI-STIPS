@@ -27,15 +27,23 @@ In FITS tables, metadata is included as header keywords.
 STIPS Table Formats
 -------------------
 
-* Phoenix
-* Realtime Phoenix
-* Pandeia
-* BC95
-* Internal
-* Mixed
-* Multifilter
-* Generic
-* Output
+  \• Phoenix
+
+  \• Realtime Phoenix
+
+  \• Pandeia
+
+  \• BC95
+
+  \• Internal
+
+  \• Mixed
+
+  \• Multifilter
+
+  \• Generic
+
+  \• Output
 
 Phoenix Tables
 --------------
@@ -48,21 +56,29 @@ combination is available in the grid) or at runtime (if the filter throughput
 can be calculated but is not present in the grid). A phoenix table
 specifies each source with the following columns:
 
-* ID (used to report the source in output tables)
-* Dataset (all sources within a dataset must have the same age and metallicity)
-* RA (decimal degrees)
-* DEC (decimal degrees)
-* Age (years)
-* Metallicity ([Fe/H])
-* Distance (kpc)
-* Mass (solar masses)
-* Binary status (whether or not the source is a binary companion of the previous
+  \• ID (used to report the source in output tables)
+
+  \• Dataset (all sources within a dataset must have the same age and metallicity)
+
+  \• RA (decimal degrees)
+
+  \• DEC (decimal degrees)
+
+  \• Age (years)
+
+  \• Metallicity ([Fe/H])
+
+  \• Distance (kpc)
+
+  \• Mass (solar masses)
+
+  \• Binary status (whether or not the source is a binary companion of the previous
   source)
 
 In order to identify a table as a Phoenix table, the following metadata must be
 present:
 
-* type=phoenix
+  \• type=phoenix
 
 Phoenix tables will be converted to the Internal input format by the STIPS
 Observation Module, and observed sources will be listed in an output table.
@@ -76,19 +92,26 @@ generated and observed at runtime. As a result, realtime phoenix tables are much
 slower to generate. A realtime phoenix table specifies each source with the
 following columns:
 
-* ID
-* RA (decimal degrees)
-* DEC (decimal degrees)
-* Teff
-* Log(g)
-* Metallicity ([Fe/H])
-* Apparent Magnitude
+  \• ID
+
+  \• RA (decimal degrees)
+
+  \• DEC (decimal degrees)
+
+  \• Teff
+
+  \• Log(g)
+
+  \• Metallicity ([Fe/H])
+
+  \• Apparent Magnitude
 
 In order to use a realtime phoenix table, the following metadata must be
 present:
 
-* ``type=phoenix_realtime``
-* ``bandpass`` (this must be set to the bandpass in which the effective magnitude
+  \• ``type=phoenix_realtime``
+
+  \• ``bandpass`` (this must be set to the bandpass in which the effective magnitude
   is measured)
 
 Realtime phoenix tables will be converted to the Internal input format by the
@@ -103,11 +126,15 @@ in order to ensure that STIPS results are sufficiently close to the results
 produced by Pandeia. They are a variant of the Realtime phoenix table, in which
 the following columns are present:
 
-* ID
-* RA (decimal degrees)
-* DEC (decimal degrees)
-* Key
-* Apparent Magnitude
+  \• ID
+
+  \• RA (decimal degrees)
+
+  \• DEC (decimal degrees)
+
+  \• Key
+
+  \• Apparent Magnitude
 
 Here the Key column replaces effective temperature, log(g), and metallicity,
 and it is set to the key that pandeia uses in producing its own phoenix model
@@ -117,8 +144,9 @@ keys in pandeia.
 
 In order to use a pandeia table, the following metadata must be present:
 
-* type=pandeia
-* bandpass
+  \• type=pandeia
+
+  \• bandpass
 
 Bandpass is treated as it is in Realtime phoenix tables. Table conversions are
 done in exactly the same way as Realtime phoenix tables.
@@ -132,27 +160,38 @@ Charlot Isochrone Synthesis Spectral Evolutionary Code (December 1995 version)
 A BC95 catalogue is an extended-source catalogue, and specifies sources with the
 following columns:
 
-* ID
-* RA (decimal degrees)
-* DEC (decimal degrees)
-* Redshift
-* Model (one of 'a', 'b', 'c', 'd', or 'e', with the description of each model
+  \• ID
+
+  \• RA (decimal degrees)
+
+  \• DEC (decimal degrees)
+
+  \• Redshift
+
+  \• Model (one of 'a', 'b', 'c', 'd', or 'e', with the description of each model
   provided in the
   `BC95 README <https://www.stsci.edu/hst/observatory/crds/cdbs_bc95.html>`_
   file.
-* Age (one of 10E5, 25E5, 50E5, 76E5, 10E6, 25E6, 50E6, 10E7, 50E7, 10E8, 50E8,
+
+  \• Age (one of 10E5, 25E5, 50E5, 76E5, 10E6, 25E6, 50E6, 10E7, 50E7, 10E8, 50E8,
   10E9, years)
-* Profile (one of 'expdisk' or 'devauc')
-* Radius (arcseconds)
-* Axial Ratio
-* PA (degrees)
-* Apparent Surface Brightness
+
+  \• Profile (one of 'expdisk' or 'devauc')
+
+  \• Radius (arcseconds)
+
+  \• Axial Ratio
+
+  \• PA (degrees)
+
+  \• Apparent Surface Brightness
 
 In order to identify the catalogue as a bc95 catalogue, the following metadata
 must be present:
 
-* ``type=bc95``
-* ``bandpass``
+  \• ``type=bc95``
+
+  \• ``bandpass``
 
 During the observation, the catalogue will be converted into an internal format,
 with any necessary additional metadata added at this point. Galaxy spectra will
@@ -166,25 +205,35 @@ Internal Catalogue
 An Internal catalogue is intended to include either point or extended sources,
 but is limited to a single filter. It must contain the following columns:
 
-* ID
-* RA (decimal degrees)
-* DEC (decimal degrees)
-* FLUX (for point sources, count rate in the specified filter, counts/s. For
+  \• ID
+
+  \• RA (decimal degrees)
+
+  \• DEC (decimal degrees)
+
+  \• FLUX (for point sources, count rate in the specified filter, counts/s. For
   sersic profiles, surface brightness inside Re in the specified filter,
   counts/s)
-* TYPE (either 'point' or 'sersic')
-* N (sersic profile index if TYPE is 'sersic', otherwise ignored)
-* Re (half-light radius in pixels if TYPE is 'sersic', otherwise ignored)
-* Phi (angle of PA in degrees if TYPE is 'sersic', otherwise ignored)
-* Ratio (axial ratio if TYPE is 'sersic', otherwise ignored)
-* Notes (any notes that are needed. Not used directly, but any notes will be
+
+  \• TYPE (either 'point' or 'sersic')
+
+  \• N (Sersic profile index if TYPE is 'sersic', otherwise ignored)
+
+  \• Re (half-light radius in pixels if TYPE is 'sersic', otherwise ignored)
+
+  \• Phi (angle of PA in degrees if TYPE is 'sersic', otherwise ignored)
+
+  \• Ratio (axial ratio if TYPE is 'sersic', otherwise ignored)
+
+  \• Notes (any notes that are needed. Not used directly, but any notes will be
   retained in the observed catalogue produced during the observation.)
 
 In order to identify the catalogue as an internal catalogue, and in order to use
 it for STIPS observations, the following columns must be present:
 
-* ``type=internal``
-* ``filter``
+  \• ``type=internal``
+
+  \• ``filter``
 
 ``filter`` is the filter the catalogue has been calibrated to. This catalogue type
 will not be converted during observation, but an observed source catalogue will
@@ -196,14 +245,15 @@ Mixed Catalogue
 A Mixed catalogue is identical to an internal catalogue, except that it
 contains one additional column:
 
-* Units (one of 'p' for photons/s, 'e' for electrons/s, 'j' for Jansky, or 'c'
+  \• Units (one of 'p' for photons/s, 'e' for electrons/s, 'j' for Jansky, or 'c'
   for counts/s.)
 
 In order to identify the catalogue as a mixed catalogue, the following metadata
 must be present:
 
-* ``type=mixed``
-* ``filter``
+  \• ``type=mixed``
+
+  \• ``filter``
 
 This catalogue will have its flux values converted to counts/s, and will then be
 treated as an internal catalogue.
@@ -218,7 +268,7 @@ provide the source count rate in that filter.
 
 A Multifilter catalogue must have the following metadata:
 
-* ``type=multifilter``
+  \• ``type=multifilter``
 
 The appropriate filter's count rate will be renamed as 'flux' as the catalogue
 is converted to internal format.
@@ -228,10 +278,13 @@ Generic Catalogue
 
 A Generic catalogue is a point-source catalogue with the following columns:
 
-* RA (decimal degrees)
-* DEC (decimal degrees)
-* One column for each desired filter, showing the count rate in that filter.
-* (Optional) an ID column for each source.
+  \• RA (decimal degrees)
+
+  \• DEC (decimal degrees)
+
+  \• One column for each desired filter, showing the count rate in that filter.
+
+  \• (Optional) an ID column for each source.
 
 No specific metadata is required.
 

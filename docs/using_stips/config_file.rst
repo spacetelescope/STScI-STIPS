@@ -2,8 +2,8 @@ The STIPS Configuration File
 ============================
 .. note::
 
-    Although the configuration file is the recommended general way of setting STIPS options, 
-    it is also possible to set many of these options with dictionary keys or by specifying 
+    Although the configuration file is the recommended general way of setting STIPS options,
+    it is also possible to set many of these options with dictionary keys or by specifying
     keyword arguments to classes or functions at runtime.
 
 Configuration File Format
@@ -26,15 +26,15 @@ STIPS is being run. Any other configuration will fall back to other files.
 
 The STIPS configuration hierarchy is:
 
-1. Keyword arguments provided when creating STIPS class
-2. Any configuration file (or directory containing a file named
+#. Keyword arguments provided when creating a STIPS class.
+#. Any configuration file (or directory containing a file named
    ``stips_config.yaml``) provided directly to
    ``stips.utilities.SelectParameter()``
-3. A file named "stips_config.yaml" in the same directory as STIPS is being run.
-4. A file named in (or a directory containing a file named "stips_config.yaml"
-   with the directory being named in) the environment variable "stips_config"
-5. A file named "stips_config.yaml" located in the "stips_data" directory.
-6. The "stips_config.yaml" file in the internal STIPS data directory.
+#. A file named ``stips_config.yaml`` in the same directory as STIPS is being run.
+#. A file (or a directory containing a file named ``stips_config.yaml``)
+   named in the environment variable ``stips_config``.
+#. A file named ``stips_config.yaml`` located in the ``stips_data`` directory.
+#. The ``stips_config.yaml`` file in the internal STIPS data directory.
 
 .. note::
 
