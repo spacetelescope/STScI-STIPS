@@ -38,7 +38,7 @@ The STIPS configuration hierarchy is:
 
 .. note::
 
-	The internal stips_config.yaml file should not be edited, as it contains
+	The internal ``stips_config.yaml`` file should not be edited, as it contains
 	default values that should not be changed directly. The appropriate way for
 	a user to change the STIPS configuration is to use any of methods 1-5 above.
 
@@ -50,20 +50,20 @@ input_location (default *$CWD*)
 	If classes are given an input file name which is not a fully-qualified path,
 	they will look for that file in this directory. ``$CWD`` is a special value
 	that is replaced at runtime with the directory from which STIPS is being
-	run. If used as a keyword argument, "cat_path" can be used instead of
-	"input_location" as a variable name for historical reasons.
+	run. If used as a keyword argument, ``cat_path`` can be used instead of
+	``input_location`` as a variable name for historical reasons.
 
 output_location (default *$CWD$*)
 	If classes produce any output files, they will be placed in this directory.
 	``$CWD`` is a special value that is replaced at runtime with the directory
-	from which STIPS is being run. If used as a keyword argument, "out_path" can
-	be used instead of "output_location" for historical reasons.
+	from which STIPS is being run. If used as a keyword argument, ``out_path``
+	can be used instead of ``output_location`` for historical reasons.
 
 catalogue_type (default *fits*)
 	This is the format in which catalogue files will be written, and from which
 	they will be read by default. Currently the only supported values for this
 	keyword are ``ascii.ipac`` and ``fits``. If used as a keyword argument,
-	"cat_type" can be used instead of "catalogue_type" for historical reasons.
+	``cat_type`` can be used instead of ``catalogue_type`` for historical reasons.
 
 log_level (default *INFO*)
 	This is the default log level for the internal STIPS logger. Any value that
@@ -73,8 +73,8 @@ log_level (default *INFO*)
 random_seed (default *1234*)
 	The seed value to be passed to ``numpy.random.RandomState(seed=seed)``. A
 	value of "-1" means that seed will be treated as None (and so will use
-	/dev/urandom or the system clock). If used as a keyword argument, "seed" can
-	be used instead of "random_seed" for historical reasons.
+	/dev/urandom or the system clock). If used as a keyword argument,
+	``seed`` can be used instead of ``random_seed`` for historical reasons.
 
 
 Observation Keywords
@@ -90,23 +90,24 @@ observation_default_background (default *0.0*)
 	  is defined for the instrument/detector selected, that value will be used.
 	  If no such value can be found, the background will be set to 0.
 
-	If used as a keyword argument, "background" can be used instead of
-	"observation_default_background" for historical reasons.
+	If used as a keyword argument, ``background`` can be used instead of
+	``observation_default_background`` for historical reasons.
 
 observation_jbt_location (default *$WEB*)
 	If JBT is being used to determine the background, this tells STIPS where the
 	JBT data is located. ``$WEB`` indicates that the value should be fetched
 	from online, ``$DATA`` indicates that the value should be taken from a
-	directory named "background" in the "stips_data" directory. Otherwise the
-	value should be the path to a directory containing a local cache of the
-	data. If used as a keyword argument, "background_location" or "jbt_location"
-	can be used instead of "observation_jbt_location" for historical reasons.
+	directory named ``background`` in the ``stips_data`` directory. Otherwise,
+	the value should be the path to a directory containing a local cache of the
+	data. If used as a keyword argument, ``background_location`` or
+	``jbt_location`` can be used instead of ``observation_jbt_location`` for
+	historical reasons.
 
 observation_distortion_enable (default *false*)
 	Whether co-ordinate distortion information should be included in the
 	observation. Note that this is not yet available for Roman. If used as a
-	keyword argument, "distortion" can be used instead of
-	"observation_distortion_enable" for historical reasons.
+	keyword argument, ``distortion`` can be used instead of
+	``observation_distortion_enable`` for historical reasons.
 
 
 PSF Convolution Configuration
@@ -115,8 +116,8 @@ PSF Convolution Configuration
 psf_grid_default_size (default *1*)
 	What size PSF grid should be created. Note that this value is expressed as
 	a side length, so if psf_grid_default_size is set to n, WebbPSF will create
-	a total of n^2 PSF images. If used as a keyword argument, "psf_grid_size"
-	can be used instead of "psf_grid_default_size" for historical reasons.
+	a total of n^2 PSF images. If used as a keyword argument, ``psf_grid_size``
+	can be used instead of ``psf_grid_default_size`` for historical reasons.
 
 psf_cache_enable (default *true*)
 	Whether PSF grids created by webbpsf should be cached after creation for
@@ -134,7 +135,7 @@ psf_convolution_max_size (default *8192*)
 	The maximum data array size to create for convolutions. Note that this value
 	should be a power of two. If it isn't, the largest power of 2 that is less
 	than psf_convolution_max_size will be used. If used as a keyword argument,
-	"convolve_size" can be used instead of "psf_convolution_max_size" for
+	``convolve_size`` can be used instead of ``psf_convolution_max_size`` for
 	historical reasons.
 
 
@@ -143,7 +144,7 @@ Error Residual Configuration
 
 residual_convolve_psf (default *true*)
 	Whether PSF convolution should be performed when adding error. If used as a
-	keyword argument, "convolve" may be used instead of "residual_convolve_psf"
+	keyword argument, ``convolve`` may be used instead of ``residual_convolve_psf``
 	for historical reasons.
 
 residual_poisson (default *true*)
