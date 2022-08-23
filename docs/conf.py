@@ -62,6 +62,9 @@ extensions = [
 
 numpydoc_show_class_members = False
 
+# ignore checkpoint paths when generating API docs
+autoapi_ignore = ['*.ipynb_checkpoints*']
+
 # -- General configuration ----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -148,13 +151,13 @@ man_pages = [('index', project.lower(), project + u' Documentation',
 # Directory to look in for the abscal source:
 autoapi_dirs = ["../stips"]
 
-# STIPS uses what is technically a circular import, in that stips.utilities.utilities 
+# STIPS uses what is technically a circular import, in that stips.utilities.utilities
 # imports __version__ from the top STIPS __init__.py. That said, __version__.py is already
 # installed by the time utilities are ever imported, so in practice is does not impede
 # STIPS running. It *does*, however, prevent AutoAPI from resolving the STIPS code files.
 # As such, I'm adding it to the suppress_warnings item.
 #
-# NOTE that this will also suppress module-not-found errors, but hopefully the run tests 
+# NOTE that this will also suppress module-not-found errors, but hopefully the run tests
 # will handle anything of the sort.
 suppress_warnings = ["autoapi.python_import_resolution"]
 
