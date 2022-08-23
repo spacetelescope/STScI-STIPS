@@ -89,7 +89,7 @@ Downloading Required Reference Data
 ************************************
 
 STIPS, Pandeia, and WebbPSF need the reference datasets.
-You will need to download the data and add them to your environmental path
+You will need to download the data and add them to your environmental path.
 
 1. Add the following paths to your bash environmental path. It is recommended that you add the path to your ``.bash_profile`` file::
 
@@ -100,7 +100,7 @@ You will need to download the data and add them to your environmental path
 
 Make sure that you have the correct version number for `pandeia_refdata` (replace the "x.x.x").
 
-2. ``cd`` into the "ref_data" directory in your ``STScI-STIPS`` clone
+2. ``cd`` into the ``ref_data`` directory in your ``STScI-STIPS`` clone.
 
 3. Run the following code (after ensuring your ``stips`` Conda environment is active)::
 

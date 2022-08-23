@@ -87,8 +87,8 @@ following columns:
 In order to use a realtime phoenix table, the following metadata must be
 present:
 
-* type=phoenix_realtime
-* bandpass (this must be set to the bandpass in which the effective magnitude
+* ``type=phoenix_realtime``
+* ``bandpass`` (this must be set to the bandpass in which the effective magnitude
   is measured)
 
 Realtime phoenix tables will be converted to the Internal input format by the
@@ -151,8 +151,8 @@ following columns:
 In order to identify the catalogue as a bc95 catalogue, the following metadata
 must be present:
 
-* type=bc95
-* bandpass
+* ``type=bc95``
+* ``bandpass``
 
 During the observation, the catalogue will be converted into an internal format,
 with any necessary additional metadata added at this point. Galaxy spectra will
@@ -163,7 +163,7 @@ observed sources (along with their sersic profile data).
 Internal Catalogue
 ------------------
 
-An 'internal' catalogue is intended to include either point or extended sources,
+An Internal catalogue is intended to include either point or extended sources,
 but is limited to a single filter. It must contain the following columns:
 
 * ID
@@ -178,32 +178,32 @@ but is limited to a single filter. It must contain the following columns:
 * Phi (angle of PA in degrees if TYPE is 'sersic', otherwise ignored)
 * Ratio (axial ratio if TYPE is 'sersic', otherwise ignored)
 * Notes (any notes that are needed. Not used directly, but any notes will be
-  retained in the observed catalogue produced during the observation.
+  retained in the observed catalogue produced during the observation.)
 
 In order to identify the catalogue as an internal catalogue, and in order to use
 it for STIPS observations, the following columns must be present:
 
-* type=internal
-* filter
+* ``type=internal``
+* ``filter``
 
-Filter is the filter the catalogue has been calibrated to. This catalogue type
+``filter`` is the filter the catalogue has been calibrated to. This catalogue type
 will not be converted during observation, but an observed source catalogue will
 be generated.
 
 Mixed Catalogue
 ---------------
 
-A 'mixed' catalogue is identical to an internal catalogue, except that it
+A Mixed catalogue is identical to an internal catalogue, except that it
 contains one additional column:
 
 * Units (one of 'p' for photons/s, 'e' for electrons/s, 'j' for Jansky, or 'c'
-  for counts/s.
+  for counts/s.)
 
 In order to identify the catalogue as a mixed catalogue, the following metadata
 must be present:
 
-* type=mixed
-* filter
+* ``type=mixed``
+* ``filter``
 
 This catalogue will have its flux values converted to counts/s, and will then be
 treated as an internal catalogue.
@@ -212,13 +212,13 @@ Multifilter Catalogue
 ---------------------
 
 A Multifilter catalogue is identical to an internal catalogue, except that it
-does not have a filter specified in its metadata and, instead of having a Flux
+does not have a filter specified in its metadata and, instead of having a FLUX
 column, it has one or more columns, each named after an available filter, that
 provide the source count rate in that filter.
 
 A Multifilter catalogue must have the following metadata:
 
-* type=multifilter
+* ``type=multifilter``
 
 The appropriate filter's count rate will be renamed as 'flux' as the catalogue
 is converted to internal format.

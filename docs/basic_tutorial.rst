@@ -137,13 +137,13 @@ will create a single Roman WFI observation.
 
 STIPS uses a bit of specialized terminology to describe its observations.  In particular:
 
-* An Observation is a set of exposures with a single instrument (e.g. Roman WFI), one or 
+* An *observation* is a set of exposures with a single instrument (e.g. Roman WFI), one or 
   more filters (where each exposure in the observation will be repeated for every included 
   filter), and some number of the instrument's detectors (for WFI, between 1 and 18), 
   where each exposure will be repeated, with the appropriate inter-detector offset, for 
   every included director, a single chosen sky background value, a single exposure time 
   (applied to each exposure in the observation), and one or more offsets.
-* An Offset is a single telescope pointing.  For each offset specified in the observation, 
+* An *offset* is a single telescope pointing.  For each offset specified in the observation, 
   an exposure will be created for each detector and each filter at the offset.  STIPS may, 
   optionally, create one or more mosaics at each offset, with a single mosaic including 
   all detectors with the same filter.  In addition, STIPS can create a single combined 
@@ -191,7 +191,7 @@ We will use a single offset with:
 
   obm = ObservationModule(observation_parameters, out_prefix=obs_prefix, ra=obs_ra, dec=obs_dec)
 
-Finally, nextObservation is called to move between different combinations of offset and 
+Finally, ``nextObservation()`` is called to move between different combinations of offset and 
 filter.  It must be called once in order to initialize the observation module to the first 
 observation before adding catalogues.
 
@@ -225,7 +225,7 @@ detectors, and convert source brightness into unites of counts/s for the detecto
 
 
 Showing the Result
----------------
+------------------
 
 We use ``matplotlib`` to plot the resulting simulated image.
 
