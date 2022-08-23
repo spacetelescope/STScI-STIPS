@@ -83,12 +83,13 @@ Observation Keywords
 observation_default_background (default *0.0*)
 	The default sky background in counts/s/detector pixel. Currently this keyword can be set to
 
-	* any integer or floating point value, in which case that value will be used
-	  directly
-	* any of the string values 'none', 'low', 'avg', or 'high'. In this case,
-	  'none' is always treated as zero, and for any other keyword if the value
-	  is defined for the instrument/detector selected, that value will be used.
-	  If no such value can be found, the background will be set to 0.
+		\• any integer or floating point value, in which case that value will be
+		used directly.
+
+		\• any of the string values 'none', 'low', 'avg', or 'high'. In this
+		case, 'none' is always treated as zero, and for any other keyword if the
+		value is defined for the instrument/detector selected, that value will
+		be used. If no such value can be found, the background will be set to 0.
 
 	If used as a keyword argument, ``background`` can be used instead of
 	``observation_default_background`` for historical reasons.
@@ -128,15 +129,15 @@ psf_cache_location (default *$DATA*)
 	``$DATA`` indicates the stips_data directory.
 
 psf_cache_directory (default *psf_cache*)
-	The name of the directory inside psf_cache_location where PSF grids should
-	be cached (again, if caching is enabled).
+	The name of the directory inside ``psf_cache_location`` where PSF grids
+	should be cached (again, if caching is enabled).
 
 psf_convolution_max_size (default *8192*)
 	The maximum data array size to create for convolutions. Note that this value
-	should be a power of two. If it isn't, the largest power of 2 that is less
-	than psf_convolution_max_size will be used. If used as a keyword argument,
-	``convolve_size`` can be used instead of ``psf_convolution_max_size`` for
-	historical reasons.
+	should be a power of two. If it isn't, the largest power of two that is less
+	than ``psf_convolution_max_size`` will be used. If used as a keyword
+	argument, ``convolve_size`` can be used instead of
+	``psf_convolution_max_size`` for historical reasons.
 
 
 Error Residual Configuration
