@@ -231,8 +231,6 @@ We use ``matplotlib`` to plot the resulting simulated image.
 
 .. code-block:: python
 
-  %matplotlib inline
-  %config InlineBackend.figure_format = 'svg'
   import matplotlib
   from matplotlib import style
   matplotlib.rcParams['axes.grid'] = False
