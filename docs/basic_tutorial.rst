@@ -208,8 +208,8 @@ observation before adding catalogues.
   obm.nextObservation()
 
 
-Observing the Scene
--------------------
+Observing the Created Scene
+---------------------------
 
 In order to observe the scene, we must add the scene catalogues created above to it, add
 in error residuals, and finalize the observation.  In so doing, we create output catalogues
