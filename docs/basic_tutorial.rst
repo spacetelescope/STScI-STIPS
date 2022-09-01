@@ -63,7 +63,7 @@ population parameters.  In this example, we will create the following:
    * A clustered distribution (higher-mass stars closer to the population center)
    * An inverse power-law distribution
    * A radius of 100 parsecs
-   * A distance of 20 kpc
+   * A distance of 10 kpc
    * No offset from the center of the scene being created
 
 #. A collection of background galaxies with:
@@ -71,7 +71,7 @@ population parameters.  In this example, we will create the following:
    * 10 galaxies
    * Redshifts between 0.0 and 0.2
    * Radii between 0.01 and 2.0 arcsec
-   * V-band surface brightness magnitudes between 25 and 30
+   * V-band surface brightness magnitudes between 28 and 24
    * Uniform spatial distribution (unclustered) over 200 arcsec
    * No offset from the center of the scene being created
 
@@ -86,7 +86,7 @@ population parameters.  In this example, we will create the following:
   scm = SceneModule(out_prefix=obs_prefix, ra=obs_ra, dec=obs_dec)
 
   stellar_parameters = {
-                        'n_stars': 100,
+                        'n_stars': 10000,
                         'age_low': 7.5e12,
                         'age_high': 7.5e12,
                         'z_low': -2.0,
@@ -98,8 +98,8 @@ population parameters.  In this example, we will create the following:
                         'distribution': 'invpow',
                         'radius': 100.0,
                         'radius_units': 'pc',
-                        'distance_low': 20.0,
-                        'distance_high': 20.0,
+                        'distance_low': 10.0,
+                        'distance_high': 10.0,
                         'offset_ra': 0.0,
                         'offset_dec':0.0
                         }
@@ -113,7 +113,7 @@ population parameters.  In this example, we will create the following:
                        'z_high': 0.2,
                        'rad_low': 0.01,
                        'rad_high': 2.0,
-                       'sb_v_low': 30.0,
+                       'sb_v_low': 28.0,
                        'sb_v_high': 25.0,
                        'distribution': 'uniform',
                        'clustered': False,
@@ -158,7 +158,7 @@ In this case, we will create an observation with:
 
   \• No distortion
 
-  \• A background rate of 0.15 counts/s/pixel
+  \• No sky background
 
   \• The ID 1
 
@@ -180,11 +180,19 @@ We will use a single offset with:
 
   offset = {
             'offset_id': 1,
-            'offset_center': False,
+            'offset_centre': False,
             'offset_ra': 0.0,
             'offset_dec': 0.0,
             'offset_pa': 0.0
             }
+  
+  residuals = {
+               'residual_flat': False,
+               'residual_dark': False,
+               'residual_cosmic': False,
+               'residual_poisson': True,
+               'residual_readnoise': True
+              }
 
   observation_parameters = {
                             'instrument': 'WFI',
@@ -197,7 +205,7 @@ We will use a single offset with:
                             'offsets': [offset]
                             }
 
-  obm = ObservationModule(observation_parameters, out_prefix=obs_prefix, ra=obs_ra, dec=obs_dec)
+  obm = ObservationModule(observation_parameters, out_prefix=obs_prefix, ra=obs_ra, dec=obs_dec, residual=residuals)
 
 Finally, ``nextObservation()`` is called to move between different combinations of offset and
 filter.  It must be called once in order to initialize the observation module to the first
@@ -235,6 +243,10 @@ detectors, and convert source brightness into unites of counts/s for the detecto
 Showing the Result
 ------------------
 
+.. figure:: roman_figures/stips_basic_tutorial.png
+
+  Fig. 1: Output from running the STIPS basic tutorial code. Detail from detector centre.
+
 We use ``matplotlib`` to plot the resulting simulated image.
 
 .. code-block:: python
@@ -249,7 +261,7 @@ We use ``matplotlib`` to plot the resulting simulated image.
   with fits.open(fits_file) as result_file:
     result_data = result_file[1].data
 
-  fig1 = plt.figure()
-  im = plt.matshow(result_dara, norm=matplotlib.colors.LogNorm())
+  fig1 = plot.figure()
+  im = plot.matshow(result_data)
 
 Alternatively, you can open the final ``.fits`` file in your preferred imaging software.

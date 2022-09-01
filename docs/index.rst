@@ -17,20 +17,25 @@ It does not include instrument saturation effects.
 
 Why use STIPS?
 --------------
-STIPS is intended for cases where an exposure time calculator (e.g. Pandeia) does not
-provide enough detector area (e.g. testing photometry code, quick looks at dither patterns
-or multi-detector observations of a scene). For Roman, it obtains its background count
-levels and instrumental throughput levels from Pandeia internally, so it should produce
-output within 10% of output produced by Pandeia.
+STIPS is intended to produce quick simulations of Level 2 (L2) images, and is provided for 
+cases where pandeia does not provide a large enough simulation area (e.g. full-detector 
+observations,or multiple-detector observations). STIPS obtains its Roman instrument and 
+filter values from `pandeia <https://pypi.org/project/pandeia.engine/>`_, so it should 
+produce output within 10% of output produced by Pandeia.
 
-STIPS is not the ideal choice if extremely good instrumental accuracy is needed. Pandeia
-is the preferred tool for high-accuracy observations.
+STIPS does not start with Level 1 (L1) images and propagate instrumental calibrations 
+through the simulations. While it does have the ability to add error residuals (representing
+the remaining uncertainty after pipeline calibration), these residuals are not validated 
+against actual pipeline calibrations of L1 images. STIPS is not the ideal choice if 
+extremely good instrumental accuracy is needed. Pandeia is the preferred tool for 
+high-accuracy observations.
 
 Developed by Brian York (`@york-stsci <https://github.com/york-stsci>`_),
 Robel Geda (`@robelgeda <https://github.com/robelgeda>`_), 
 and O. Justin Otor (`@ojustino <https://github.com/ojustino>`_). 
 Python ePSF code developed by 
-Sebastian Gomez (`@gmzsebastian <https://github.com/gmzsebastian>`_).
+Sebastian Gomez (`@gmzsebastian <https://github.com/gmzsebastian>`_) based on fortran code
+developed by Andrea Bellini (`@AndreaBellini <https://github.com/AndreaBellini>`_).
 
 .. figure:: roman_figures/stips_demo.png
 
