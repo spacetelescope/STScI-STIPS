@@ -1,38 +1,35 @@
-from __future__ import absolute_import,division
 __filetype__ = "base"
 
-#External Modules
-import glob, logging, os, shutil, sys, types, uuid
-
-import numpy as np
-import synphot as syn
-import stsynphot as stsyn
-import builtins
-from io import StringIO
-
+# External Modules
 from astropy import units as u
-from astropy.io import fits as pyfits
+from astropy.io import fits
 from astropy.table import Table, Column, MaskedColumn
-from functools import wraps
+import glob
+import logging
+import numpy as np
+import os
 from pandeia.engine.custom_exceptions import DataConfigurationError
+import shutil
+import stsynphot as stsyn
+import synphot as syn
+import sys
+import uuid
 
-#Local Modules
+# Local Modules
 from ..stellar_module import StarGenerator
 from ..astro_image import AstroImage
 from ..utilities import GetStipsData
-from ..utilities import GetStipsDataDir
 from ..utilities import OffsetPosition
-from ..utilities import read_metadata
-from ..utilities import read_table
 from ..utilities import SelectParameter
 from ..utilities import StipsDataTable
-from ..utilities.makePSF import PSF_BOXSIZE, PSF_BRIGHT_BOXSIZE, PSF_EXTRA_BRIGHT_BOXSIZE, PSF_GRID_SIZE, PSF_UPSCALE
+from ..utilities.makePSF import PSF_GRID_SIZE
+
 
 class Instrument(object):
     """
     The Instrument class represents a virtual base class which will be implemented as a variety of
         JWST, HST, and Roman actual instruments. The Instrument class contains:
-        
+
         detectors : array of detectors, each an AstroImage, and each with its own RA/DEC
         filter    : string, what filter of the instrument is being observed
         out_path  : place to put temporary files and the like
@@ -42,9 +39,9 @@ class Instrument(object):
         """
         Instrument. The __init__ function creates a (potentially) empty instrument.
         """
-        self.COMPFILES =  sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmc.fits")))
-        self.GRAPHFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmg.fits")))
-        self.THERMFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"],"mtab","*tmt.fits")))
+        self.COMPFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"], "mtab", "*tmc.fits")))
+        self.GRAPHFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"], "mtab", "*tmg.fits")))
+        self.THERMFILES = sorted(glob.glob(os.path.join(os.environ["PYSYN_CDBS"], "mtab", "*tmt.fits")))
         self.psf_grid_size = PSF_GRID_SIZE
 
         if 'logger' in kwargs:
@@ -71,7 +68,7 @@ class Instrument(object):
         self.pa = kwargs.get('pa', 0.)
         self.distortion = SelectParameter('distortion', kwargs)
         self.exptime = kwargs.get('exptime', 1.)
-        self.bright_limit  = kwargs.get('bright_limit', kwargs)
+        self.bright_limit = kwargs.get('bright_limit', kwargs)
         self.xbright_limit = kwargs.get('xbright_limit', kwargs)
         self.filter = None
         self.detectors = None
@@ -80,39 +77,39 @@ class Instrument(object):
         self.custom_background = kwargs.get('custom_background', 0.)
         self.CENTRAL_OFFSET = (0., 0., 0.)
 
-        #Adjust # of detectors based on keyword:
+        # Adjust # of detectors based on keyword:
         n_detectors = int(kwargs.get('detectors', len(self.DETECTOR_OFFSETS)))
         self.DETECTOR_OFFSETS = self.DETECTOR_OFFSETS[:n_detectors]
         self.OFFSET_NAMES = self.OFFSET_NAMES[:n_detectors]
         if hasattr(self, "N_OFFSET"):
             self.CENTRAL_OFFSET = self.N_OFFSET[n_detectors]
         msg = "{} with {} detectors. Central offset {}"
-        self._log('info', msg.format(self.DETECTOR, n_detectors, 
+        self._log('info', msg.format(self.DETECTOR, n_detectors,
                                      self.CENTRAL_OFFSET))
-    
+
     @classmethod
     def initFromImage(cls, image, **kwargs):
         """
-            Takes an input AstroImage, and does an add-with-align for every detector present. 
-            
+            Takes an input AstroImage, and does an add-with-align for every detector present.
+
             If units are present, does a unit conversion.
         """
         units = kwargs.get('unit', 'c')
-        self._log("info","Initializing from with units {}".format(units))
+        cls._log("info", "Initializing from with units {}".format(units))
         ins = cls(**kwargs)
-        img = image * ins.convertToCounts(unit,scalex=image.scale[0],scaley=image.scale[1])
-        self._log("info","Converted image units")
+        img = image * ins.convertToCounts(units, scalex=image.scale[0], scaley=image.scale[1])
+        cls._log("info", "Converted image units")
         for detector in ins.detectors:
-            self._log("info","Adding image to detector {}".format(detector.name))
+            cls._log("info", "Adding image to detector {}".format(detector.name))
             detector.addWithAlignment(img)
-        self._log("info","Finished initialization")
+        cls._log("info", "Finished initialization")
         return ins
 
     @classmethod
-    def initFromCatalogue(cls,catalogue,**kwargs):
+    def initFromCatalogue(cls, catalogue, **kwargs):
         """
             Takes an input catalogue, and observes that catalogue with all detectors.
-            
+
             It currently assumes that the input catalogue has the following columns:
                 RA: RA of source
                 DEC: DEC of source
@@ -125,21 +122,21 @@ class Instrument(object):
             Obtaining the correct values for FLUX (if not done before initialization) is a job for
             the subclasses.
         """
-        self._log("info","Initializing with catalogue {}".format(catalogue))
+        cls._log("info", "Initializing with catalogue {}".format(catalogue))
         ins = cls(**kwargs)
-        self._log("info","Converting catalogue to internal format")
+        cls._log("info", "Converting catalogue to internal format")
         cat = ins.convertCatalogue(catalogue)
         for detector in ins.detectors:
-            self._log("info","Adding image to detector {}".format(detector.name))
-            detector.addCatalogue(cat, dist=self.distortion)
-        self._log("info","Finished initialization")
+            cls._log("info", "Adding image to detector {}".format(detector.name))
+            detector.addCatalogue(cat, dist=ins.distortion)
+        cls._log("info", "Finished initialization")
         return ins
-    
-    def reset(self, ra, dec, pa, filter, obs_count, psf=True, detectors=True, celery=None):
+
+    def reset(self, ra, dec, pa, filter, obs_count, psf=True, detectors=True):
         """
         Reset instrument parameters.
         """
-        self._log("info","Resetting")
+        self._log("info", "Resetting")
         self.ra = ra
         self.dec = dec
         self.pa = pa
@@ -156,12 +153,11 @@ class Instrument(object):
                 del self._bp
         if detectors:
             self.resetDetectors(psf=psf)
-    
 
     def resetDetectors(self, psf=True):
         if self.detectors is not None:
             del self.detectors
-        #Create Detectors
+        # Create Detectors
         self.detectors = []
         for offset, name in zip(self.DETECTOR_OFFSETS, self.OFFSET_NAMES):
             distortion = None
@@ -171,9 +167,9 @@ class Instrument(object):
             delta_ra = (delta_ra - self.CENTRAL_OFFSET[0])/3600.
             delta_dec = (delta_dec - self.CENTRAL_OFFSET[1])/3600.
             delta_pa = delta_pa - self.CENTRAL_OFFSET[2]
-            ra,dec = OffsetPosition(self.ra, self.dec, delta_ra, delta_dec)
-            pa = (self.pa + delta_pa)%360.
-            hdr = {"DETECTOR":name, "FILTER":self.filter}
+            ra, dec = OffsetPosition(self.ra, self.dec, delta_ra, delta_dec)
+            pa = (self.pa + delta_pa) % 360.
+            hdr = {"DETECTOR": name, "FILTER": self.filter}
             msg = "Initialized {} Detector {} with filter {}"
             hist = [msg.format(self.instrument, name, self.filter)]
             msg = "Creating Detector {} with (RA,DEC,PA) = ({},{},{})"
@@ -185,66 +181,66 @@ class Instrument(object):
                                   distortion=distortion)
             self._log("info", "Detector {} created".format(name))
             self.detectors.append(detector)
-        
-    def toFits(self,outfile):
+
+    def toFits(self, outfile):
         """
         Takes the detectors and turns them into a multi-extension FITS file.
         """
-        self._log("info","Converting to FITS file")
-        hdus = [pyfits.PrimaryHDU()]
+        self._log("info", "Converting to FITS file")
+        hdus = [fits.PrimaryHDU()]
         for detector in self.detectors:
-            self._log("info","Converting detector {} to FITS extension".format(detector.name))
+            self._log("info", "Converting detector {} to FITS extension".format(detector.name))
             hdus.append(detector.imageHdu)
-        hdulist = pyfits.HDUList(hdus)
+        hdulist = fits.HDUList(hdus)
         hdulist.writeto(outfile, overwrite=True)
-        self._log("info","Created FITS file {}".format(outfile))
-    
-    def toMosaic(self,outfile):
+        self._log("info", "Created FITS file {}".format(outfile))
+
+    def toMosaic(self, outfile):
         """
         Creates a single FITS file from each detector, and then uses Montage to create a mosaic
         of all of the said files.
         """
         if len(self.detectors) > 1:
             import montage_wrapper as montage
-            self._log("info","Converting to FITS mosaic")
-            tmp_dir = os.path.join(self.out_path,"tmp-"+str(uuid.uuid4()))
+            self._log("info", "Converting to FITS mosaic")
+            tmp_dir = os.path.join(self.out_path, "tmp-"+str(uuid.uuid4()))
             os.makedirs(tmp_dir)
-            tmp_out_dir = os.path.join(self.out_path,"tmp-out-"+str(uuid.uuid4()))
-            tmp_work_dir = os.path.join(self.out_path,"tmp-work-"+str(uuid.uuid4()))
-            self.toFits(os.path.join(tmp_dir,"image.fits"))
-            montage.mosaic(tmp_dir,tmp_out_dir,background_match=True,work_dir=tmp_work_dir)
-            self._log("info","Mosaic finished running")
-            shutil.copy(os.path.join(tmp_out_dir,"mosaic.fits"),outfile)
+            tmp_out_dir = os.path.join(self.out_path, "tmp-out-"+str(uuid.uuid4()))
+            tmp_work_dir = os.path.join(self.out_path, "tmp-work-"+str(uuid.uuid4()))
+            self.toFits(os.path.join(tmp_dir, "image.fits"))
+            montage.mosaic(tmp_dir, tmp_out_dir, background_match=True, work_dir=tmp_work_dir)
+            self._log("info", "Mosaic finished running")
+            shutil.copy(os.path.join(tmp_out_dir, "mosaic.fits"), outfile)
             if os.path.exists(tmp_dir):
                 shutil.rmtree(tmp_dir)
             if os.path.exists(tmp_out_dir):
                 shutil.rmtree(tmp_out_dir)
             if os.path.exists(tmp_work_dir):
                 shutil.rmtree(tmp_work_dir)
-            self._log("info","Created FITS file {} and cleaned up".format(outfile))
+            self._log("info", "Created FITS file {} and cleaned up".format(outfile))
             return [outfile]
         else:
-            self._log("info","Not creating single-detector mosaic")
+            self._log("info", "Not creating single-detector mosaic")
             return []
 
     def addImage(self, image, unit='c'):
         """
-            Takes an input AstroImage, and does an add-with-align for every detector present. 
-            
+            Takes an input AstroImage, and does an add-with-align for every detector present.
+
             If units are present, does a unit conversion.
         """
-        self._log("info","Adding image with units {}".format(unit))
-        img = image * self.convertToCounts(unit,scalex=image.scale[0],scaley=image.scale[1])
-        self._log("info","Converted image count rate")
+        self._log("info", "Adding image with units {}".format(unit))
+        img = image * self.convertToCounts(unit, scalex=image.scale[0], scaley=image.scale[1])
+        self._log("info", "Converted image count rate")
         for detector in self.detectors:
-            self._log("info","Adding image to detector {}".format(detector.name))
+            self._log("info", "Adding image to detector {}".format(detector.name))
             detector.addWithAlignment(img)
-        self._log("info","Finished adding image")
-    
+        self._log("info", "Finished adding image")
+
     def addCatalogue(self, catalogue, obs_num, *args, **kwargs):
         """
             Takes an input catalogue, and observes that catalogue with all detectors.
-            
+
             It currently assumes that the input catalogue has the following columns:
                 RA: RA of source
                 DEC: DEC of source
@@ -257,62 +253,63 @@ class Instrument(object):
             Obtaining the correct values for FLUX (if not done before initialization) is a job for
             the subclasses.
         """
-        self._log("info","Adding catalogue {}".format(catalogue))
+        self._log("info", "Adding catalogue {}".format(catalogue))
         cat = self.convertCatalogue(catalogue, obs_num)
-        self._log("info","Finished converting catalogue to internal format")
+        self._log("info", "Finished converting catalogue to internal format")
         cats = [cat]
         for detector in self.detectors:
-            self._log("info","Adding catalogue to detector {}".format(detector.name))
+            self._log("info", "Adding catalogue to detector {}".format(detector.name))
             cats.append(detector.addCatalogue(cat, dist=self.distortion, *args, **kwargs))
         return cats
-        self._log("info","Finished Adding Catalogue")
-    
+        self._log("info", "Finished Adding Catalogue")
+
     def addTable(self, table, table_type, *args, **kwargs):
         """
             Takes an input table (still in memory), and observes that table with all detectors.
-            
+
             It assumes that the table type is a supported type.
 
             Obtaining the correct values for FLUX (if not done before initialization) is a job for
             the subclasses.
         """
-        self._log("info","Adding {} table".format(table_type))
+        self._log("info", "Adding {} table".format(table_type))
         conversion_fn = self.getTableFunction(table_type)
         internal_table, cache = conversion_fn(table, self.bandpass)
-        self._log("info","Finished converting table to internal format")
+        self._log("info", "Finished converting table to internal format")
         tables = [internal_table]
         for detector in self.detectors:
-            self._log("info","Adding table to detector {}".format(detector.name))
+            self._log("info", "Adding table to detector {}".format(detector.name))
             tables.append(detector.addTable(internal_table, dist=self.distortion))
-        self._log("info","Finished Adding Catalogue")        
+        self._log("info", "Finished Adding Catalogue")
         return tables
-    
-    def convertToCounts(self,unit,scalex=None,scaley=None):
+
+    def convertToCounts(self, unit, scalex=None, scaley=None):
         """
         Convert input to Counts.
-    
+
         unit: one of 'p' (photons/s), 'e' (erg/s), 'c' (counts/s), 'j' (Jansky), 's' (W/m/m^2/Sr)
-        
+
         scale: needed for surface brightness conversions. Arcseconds/pixel
-    
+
         returns: factor (multiplicative conversion factor)
         """
-        units = ('p','e','c','j','s')
-        if unit not in units: raise ValueError("Unit {} is not one of {}".format(unit,units))
-        
+        units = ('p', 'e', 'c', 'j', 's')
+        if unit not in units:
+            raise ValueError("Unit {} is not one of {}".format(unit, units))
+
         if unit == 'c':
             return 1.
         elif unit == 'j':
             return 1./self.photfnu
-        elif unit =='p':
-            freq = 299792458000000. / self.photplam #c in um/s
-            energy = 6.6260755e-27 * freq # h in erg*s to give energy in ergs
+        elif unit == 'p':
+            freq = 299792458000000. / self.photplam  # c in um/s
+            energy = 6.6260755e-27 * freq  # h in erg*s to give energy in ergs
             return 1.e23 * energy / (self.photfnu * self.AREA * freq)
         elif unit == 'e':
-            freq = 299792458000000. / self.photplam #c in um/s
+            freq = 299792458000000. / self.photplam  # c in um/s
             return 1.e23 / (self.photfnu * self.AREA * freq)
-        else: #unit == 's'
-            #W/m/m^2/Sr -> Jy = 1.e14 * photplam^2 * (scalex*scaley/206265.^2) / 3.e8
+        else:  # unit == 's'
+            # W/m/m^2/Sr -> Jy = 1.e14 * photplam^2 * (scalex*scaley/206265.^2) / 3.e8
             # Jy -> counts = 1./photfnu
             # Combined as follows
             return 1.e14 * self.photplam**2 * (scalex*scaley/42545250225.) / (3.e8 * self.photfnu)
@@ -327,9 +324,9 @@ class Instrument(object):
             - Mixed (has columns RA/DEC/FLUX/UNITS/TYPE/N/Re/Phi/Ratio/ID/Notes)
             - Generic (has columns RA/DEC/FILTER where FILTER == self.filter (and possibly also
                        other filters)
-        
+
         catalogue: catalogue name of input catalogue
-        
+
         returns: cat: new catalogue in Internal format
         """
         (in_cat_path, in_cat_name) = os.path.split(catalogue)
@@ -339,10 +336,10 @@ class Instrument(object):
         in_data_table = StipsDataTable.dataTableFromFile(catalogue)
         cols = in_data_table.columns
         if "keywords" in in_data_table.meta:
-            meta = {k.lower():v['value'] for k,v in in_data_table.meta['keywords'].items()}
+            meta = {k.lower(): v['value'] for k, v in in_data_table.meta['keywords'].items()}
         else:
-            meta = {k.lower():v for k,v in in_data_table.meta.items()}
-        #Check for built-in metadata
+            meta = {k.lower(): v for k, v in in_data_table.meta.items()}
+        # Check for built-in metadata
         table_type = ""
 #         if 'keywords' in in_meta:
 #             if 'type' in in_meta['keywords']:
@@ -354,23 +351,23 @@ class Instrument(object):
         elif table_type == 'internal':
             filter = meta['filter'].lower()
 #             filter = t.meta['keywords']['filter']['value'].lower()
-            if filter != self.filter.lower(): 
+            if filter != self.filter.lower():
                 raise ValueError("Adding catalogue with filter {} to {} {}".format(filter, self.DETECTOR, self.filter))
             return catalogue
         elif table_type == 'mixed':
             filter = meta['filter'].lower()
 #             filter = t.meta['keywords']['filter']['value'].lower()
-            if filter != self.filter.lower(): 
+            if filter != self.filter.lower():
                 raise ValueError("Adding catalogue with filter {} to {} {}".format(filter, self.DETECTOR, self.filter))
         elif table_type == 'multifilter':
             if self.filter.lower() not in [c.lower() for c in in_data_table.columns]:
                 raise ValueError("Adding catalogue with filters {} to {} {}".format(in_data_table.columns, self.DETECTOR, self.filter))
-        else: #check for necessary columns
-            #We want RA, DEC, and count rate in the appropriate filter
+        else:  # check for necessary columns
+            # We want RA, DEC, and count rate in the appropriate filter
             if 'ra' not in cols or 'dec' not in cols or self.filter.lower() not in [c.lower() for c in cols]:
                 raise ValueError("Can't parse catalogue without proper columns")
         return self.handleConversion(catalogue, table_type, obsname)
-    
+
     def getTableFunction(self, table_type):
         if table_type == 'phoenix':
             return self.readPhoenixTable
@@ -385,7 +382,7 @@ class Instrument(object):
         elif table_type == 'multifilter':
             return self.readMultiTable
         return self.readGenericTable
-    
+
     def getTableFormat(self, table_type):
         if table_type == 'phoenix':
             return {'ra': ' %10g', 'dec': ' %10g', 'flux': ' %12g', 'type': '%6s', 'n': '%4s', 're': '%4s', 'phi': '%4s', 'ratio': '%6s', 'id': '%8d', 'notes': '%-25s'}
@@ -400,24 +397,23 @@ class Instrument(object):
         elif table_type == 'multifilter':
             return {}
         return {}
-    
+
     def handleConversion(self, catalogue, table_type, obsname):
         """
-        Converts an input catalogue into an internal format catalogue. Needs the appropriate 
+        Converts an input catalogue into an internal format catalogue. Needs the appropriate
         function (e.g. readPhoenixTable) in order to call it.
         """
-        self._log("info","Converting {} catalogue".format(table_type))
+        self._log("info", "Converting {} catalogue".format(table_type))
         self._log("info", "Preparing output table")
-        if os.path.isfile(obsname): 
+        if os.path.isfile(obsname):
             os.remove(obsname)
         cat_function = self.getTableFunction(table_type)
-        
+
         in_data_table = StipsDataTable.dataTableFromFile(catalogue)
         out_data_table = StipsDataTable.dataTableFromFile(obsname)
-        out_data_table.meta = {'name': 'Internal Format Catalogue', 'type': 'internal', 
+        out_data_table.meta = {'name': 'Internal Format Catalogue', 'type': 'internal',
                                'filter': self.filter}
-        
-        
+
         bp = self.bandpass
         cached = -1
         current_chunk = in_data_table.read_chunk()
@@ -427,16 +423,16 @@ class Instrument(object):
             out_data_table.write_chunk(out_chunk)
             current_chunk = in_data_table.read_chunk()
         return obsname
-    
+
     def readPhoenixTable(self, table, bp, cached=-1):
         """
-        Takes a table (or fraction of a table) with the data in the Phoenix catalogue format, and 
+        Takes a table (or fraction of a table) with the data in the Phoenix catalogue format, and
         return an output table (not yet in ascii form) in the internal format, with those sources
         in it.
         """
         if table is None:
             return None
-        self._log("info","Converting Phoenix Table to Internal format")
+        self._log("info", "Converting Phoenix Table to Internal format")
         if isinstance(table['id'], MaskedColumn):
             ids = table['id'].filled()
         else:
@@ -475,47 +471,47 @@ class Instrument(object):
             binaries = table['binary']
         rates = np.zeros_like(ras)
         all_datasets = np.unique(datasets)
-        self._log("info","{} datasets".format(len(all_datasets)))
+        self._log("info", "{} datasets".format(len(all_datasets)))
         for dataset in all_datasets:
             idx = np.where(datasets == dataset)
             if len(idx[0]) > 0:
                 stargen = StarGenerator(ages[idx][0], metallicities[idx][0], seed=self.seed, logger=self.logger)
                 rates[idx] = stargen.make_cluster_rates(masses[idx], self, bp)
                 del stargen
-        rates = rates * 100 / (distances**2) #convert absolute to apparent rates
+        rates = rates * 100 / (distances**2)  # convert absolute to apparent rates
         if cached > 0:
             rates[0] += cached
             cached = -1
-        #Now, deal with binaries. Remember that if Binary == 1, then the star below is the binary companion.
-        idx = np.where(binaries==1.0)[0] #Stars with binary companions
-        idxp = (idx+1) #binary companions
-        if len(idxp) > 0 and idxp[-1] >= len(rates): #last one is a binary. Cache it.
+        # Now, deal with binaries. Remember that if Binary == 1, then the star below is the binary companion.
+        idx = np.where(binaries == 1.0)[0]  # Stars with binary companions
+        idxp = (idx+1)  # binary companions
+        if len(idxp) > 0 and idxp[-1] >= len(rates):  # last one is a binary. Cache it.
             cached = rates[-1]
             idx, idxp = idx[:-1], idxp[:-1]
             ids, datasets, ras, decs, ages, metallicities, = ids[:-1], datasets[:-1], ras[:-1], decs[:-1], ages[:-1], metallicities[:-1]
             masses, distances, binaries, rates = masses[:-1], distances[:-1], binaries[:-1], rates[:-1]
-        rates[idx] += rates[idxp] #add count rates together
+        rates[idx] += rates[idxp]  # add count rates together
         # Now that we've added rates together, remove the binary companions
-        ras = np.delete(ras,idxp)
-        decs = np.delete(decs,idxp)
-        rates = np.delete(rates,idxp)
-        ids = np.delete(ids,idxp)
-        binaries = np.delete(binaries,idxp)
-        notes = np.empty_like(ras,dtype="S6")
-        notes[np.where(binaries==1)] = 'Binary'
-        notes[np.where(binaries!=1)] = 'None'
+        ras = np.delete(ras, idxp)
+        decs = np.delete(decs, idxp)
+        rates = np.delete(rates, idxp)
+        ids = np.delete(ids, idxp)
+        binaries = np.delete(binaries, idxp)
+        notes = np.empty_like(ras, dtype="S6")
+        notes[np.where(binaries == 1)] = 'Binary'
+        notes[np.where(binaries != 1)] = 'None'
         t = Table()
         t['ra'] = Column(data=ras.data)
         t['dec'] = Column(data=decs.data)
         t['flux'] = Column(data=rates.data)
-        t['type'] = Column(data=np.full_like(ras,"point",dtype="S6"))
-        t['n'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
-        t['re'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
-        t['phi'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
-        t['ratio'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['type'] = Column(data=np.full_like(ras, "point", dtype="S6"))
+        t['n'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
+        t['re'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
+        t['phi'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
+        t['ratio'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
         t['id'] = Column(data=ids.data)
         t['notes'] = Column(data=notes.data)
-        
+
         return t, cached
 
     def readPhoenixRealtimeTable(self, table, bp, cached=-1):
@@ -560,7 +556,6 @@ class Instrument(object):
         self._log("info", "Normalization Bandpass is {}".format(norm_bp))
         rates = np.zeros_like(ras)
         for index in range(len(ids)):
-#             self._log("info", "Converting index={} of {}".format(index, len(ids)))
             t, g, Z, a = temps[index], gravs[index], metallicities[index], apparents[index]
             sp = stsyn.grid_to_spec('phoenix', t, Z, g)
             sp = self.normalize(sp, a, norm_bp)
@@ -570,16 +565,16 @@ class Instrument(object):
         t['ra'] = Column(data=ras.data)
         t['dec'] = Column(data=decs.data)
         t['flux'] = Column(data=rates.data)
-        t['type'] = Column(data=np.full_like(ras,"point",dtype="S6"))
-        t['n'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
-        t['re'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
-        t['phi'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
-        t['ratio'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['type'] = Column(data=np.full_like(ras, "point", dtype="S6"))
+        t['n'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
+        t['re'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
+        t['phi'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
+        t['ratio'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
         t['id'] = Column(data=ids.data)
-        t['notes'] = Column(data=np.full_like(ras,"None",dtype="S6"))
-        
+        t['notes'] = Column(data=np.full_like(ras, "None", dtype="S6"))
+
         return t, cached
-    
+
     def readPandeiaTable(self, table, bp, cached=-1):
         """
         Converts a set of Pandeia phoenix sources specified as (id, ra, dec, key, apparent) into individual stars, observes them,
@@ -625,16 +620,16 @@ class Instrument(object):
         t['ra'] = Column(data=ras.data)
         t['dec'] = Column(data=decs.data)
         t['flux'] = Column(data=rates.data)
-        t['type'] = Column(data=np.full_like(ras,"point",dtype="S6"))
-        t['n'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
-        t['re'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
-        t['phi'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
-        t['ratio'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['type'] = Column(data=np.full_like(ras, "point", dtype="S6"))
+        t['n'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
+        t['re'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
+        t['phi'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
+        t['ratio'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
         t['id'] = Column(data=ids.data)
-        t['notes'] = Column(data=np.full_like(ras,"None",dtype="S6"))
-        
+        t['notes'] = Column(data=np.full_like(ras, "None", dtype="S6"))
+
         return t, cached
-    
+
     def readBC95Table(self, table, bp, cached=-1):
         """
         Converts a BC95 galaxy grid of sources into the internal source table standard
@@ -642,15 +637,16 @@ class Instrument(object):
         from pandeia.engine.custom_exceptions import SynphotError as pSynError
         if table is None:
             return None
+
         # This function is needed because I can't get python not to read '50E8' as a number, or to output it as a correctly formatted string
         def stringify(num):
             num = float(num)
             exponent = int(np.floor(np.log10(num)))
             value = int(10*(num/(10**np.floor(np.log10(num)))))
             return "{}E{}".format(value, exponent-1)
-        
+
         self._log("info", "Converting BC95 Catalogue")
-        proflist = {"expdisk":1,"devauc":4}
+        proflist = {"expdisk": 1, "devauc": 4}
         distance_type = "redshift"
         if isinstance(table['id'], MaskedColumn):
             ids = table['id'].filled()
@@ -669,7 +665,7 @@ class Instrument(object):
                 zs = table['redshift'].filled()
             else:
                 zs = table['redshift']
-        except KeyError: #distances instead
+        except KeyError:  # distances instead
             if isinstance(table['distance'], MaskedColumn):
                 zs = table['distance'].filled()
             else:
@@ -687,12 +683,12 @@ class Instrument(object):
             profiles = table['profile'].filled()
         else:
             profiles = table['profile']
-        radii = table['radius']/self.SCALE[0] #at some point, may want to figure out multiple scales.
+        radii = table['radius']/self.SCALE[0]  # at some point, may want to figure out multiple scales.
         if isinstance(table['axial_ratio'], MaskedColumn):
             ratios = table['axial_ratio'].filled()
         else:
             ratios = table['axial_ratio']
-        pas = (table['pa'] + (self.pa*180./np.pi) )%360.
+        pas = (table['pa'] + (self.pa*180./np.pi)) % 360.
         if isinstance(table['apparent_surface_brightness'], MaskedColumn):
             vmags = table['apparent_surface_brightness'].filled()
         else:
@@ -704,17 +700,16 @@ class Instrument(object):
         self._log("info", "Normalization Bandpass is {}".format(norm_bp))
         rates = np.array(())
         indices = np.array(())
-        notes = np.array((),dtype='object')
+        notes = np.array((), dtype='object')
         total = len(models)
-        for i, (z,model,age,profile,radius,ratio,pa,mag) in enumerate(zip(zs,models,ages,profiles,radii,ratios,pas,vmags)):
-#             self._log("info", "{} of {}: {} {} {} {} {} {} {} {}".format(i, total, z, model, age, profile, radius, ratio, pa, mag))
+        for i, (z, model, age, profile, radius, ratio, pa, mag) in enumerate(zip(zs, models, ages, profiles, radii, ratios, pas, vmags)):
             fname = "bc95_{}_{}.fits".format(model, stringify(age))
             try:
-                sp = syn.SourceSpectrum.from_file(os.path.join(os.environ['PYSYN_CDBS'],"grid","bc95","templates",fname))
+                sp = syn.SourceSpectrum.from_file(os.path.join(os.environ['PYSYN_CDBS'], "grid", "bc95", "templates", fname))
                 if distance_type == "redshift":
                     sp = syn.SourceSpectrum(sp.model, z=z)
                 sp = self.normalize(sp, mag, norm_bp)
-                obs = syn.Observation(sp, self.bandpass, force='taper', 
+                obs = syn.Observation(sp, self.bandpass, force='taper',
                                       binset=sp.waveset)
                 rate = obs.countrate(area=self.AREA).value
             except pSynError as e:
@@ -740,7 +735,7 @@ class Instrument(object):
         t['ratio'] = Column(data=ratios.data)
         t['id'] = Column(data=ids.data)
         t['notes'] = Column(data=notes.data, dtype='S25')
-        
+
         return t, cached
 
     def readMixedTable(self, table, bp, cached=-1):
@@ -811,9 +806,9 @@ class Instrument(object):
         t['ratio'] = Column(data=ratios.data)
         t['id'] = Column(data=ids.data)
         t['notes'] = Column(data=notes.data)
-        
+
         return t, cached
-    
+
     def readMultiTable(self, table, bp, cached=-1):
         """
         Converts an internal multifilter list of sources into the internal source table standard
@@ -836,7 +831,7 @@ class Instrument(object):
             indices = table['n'].filled()
         else:
             indices = table['n']
-        radii = table['re']/self.SCALE[0] #at some point, may want to figure out multiple scales.
+        radii = table['re']/self.SCALE[0]  # at some point, may want to figure out multiple scales.
         if isinstance(table['phi'], MaskedColumn):
             pas = table['phi'].filled()
         else:
@@ -865,7 +860,7 @@ class Instrument(object):
         t['ratio'] = Column(data=ratios.data)
         t['id'] = Column(data=ids.data)
         t['notes'] = Column(data=notes.data)
-        
+
         return t, cached
 
     def readGenericTable(self, table, bp, cached=-1):
@@ -889,19 +884,19 @@ class Instrument(object):
             else:
                 ids = table['id']
         else:
-            ids = np.arange(len(ras),dtype=int)
+            ids = np.arange(len(ras), dtype=int)
         t = Table()
         t['ra'] = Column(data=ras.data)
         t['dec'] = Column(data=decs.data)
         t['flux'] = Column(data=rates.data)
-        t['type'] = Column(data=np.full_like(ras,"point",dtype="S6"))
-        t['n'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
-        t['re'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
-        t['phi'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
-        t['ratio'] = Column(data=np.full_like(ras,"N/A",dtype="S3"))
+        t['type'] = Column(data=np.full_like(ras, "point", dtype="S6"))
+        t['n'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
+        t['re'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
+        t['phi'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
+        t['ratio'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
         t['id'] = Column(data=ids.data)
         t['notes'] = Column(data=np.full_like(ras, "N/A", dtype="S3"))
-        
+
         return t, cached
 
     def generateReadnoise(self):
@@ -909,22 +904,22 @@ class Instrument(object):
         pass
 
     @classmethod
-    def handleDithers(cls,form):
+    def handleDithers(cls, form):
         """Base function for handling dither patterns"""
         pass
 
     @classmethod
-    def doSubpixel(cls,dithers,subpixels):
+    def doSubpixel(cls, dithers, subpixels):
         """For each (x,y) in dithers, dither around that point for each point in subpixels. Return the full set"""
         my_dithers = []
-        for (x,y) in dithers:
-            for (i,j) in subpixels:
-                my_dithers.append((x+i,y+j))
+        for (x, y) in dithers:
+            for (i, j) in subpixels:
+                my_dithers.append((x+i, y+j))
         return my_dithers
-    
+
     def addError(self, *args, **kwargs):
         """Base function for adding in residual error"""
-        self._log("info","Adding residual error")
+        self._log("info", "Adding residual error")
         poisson = SelectParameter('residual_poisson', kwargs)
         readnoise = SelectParameter('residual_readnoise', kwargs)
         flat = SelectParameter('residual_flat', kwargs)
@@ -933,61 +928,61 @@ class Instrument(object):
         snapshots = kwargs.get("snapshots", {})
 
         if flat:
-            flat = AstroImage.initDataFromFits(self.flatfile,ext='COMPRESSED_IMAGE', psf=False, logger=self.logger)
+            flat = AstroImage.initDataFromFits(self.flatfile, ext='COMPRESSED_IMAGE', psf=False, logger=self.logger)
         if dark:
-            dark = AstroImage.initDataFromFits(self.darkfile,ext='COMPRESSED_IMAGE', psf=False, logger=self.logger)
+            dark = AstroImage.initDataFromFits(self.darkfile, ext='COMPRESSED_IMAGE', psf=False, logger=self.logger)
             dark *= self.exptime
         if readnoise:
             rn = self.generateReadnoise()
         for detector in self.detectors:
             if 'initial' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_initial.fits".format(self.obs_count, detector.name))
-            self._log("info","Adding error to detector {}".format(detector.name))
-            self._log("info","Adding background")
-            self._log("info","Background is {} counts/s/pixel".format(self.pixel_background))
+            self._log("info", "Adding error to detector {}".format(detector.name))
+            self._log("info", "Adding background")
+            self._log("info", "Background is {} counts/s/pixel".format(self.pixel_background))
             detector.addBackground(self.pixel_background)
             if 'background' in snapshots or 'all' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_background.fits".format(self.obs_count, detector.name))
-            self._log("info","Inserting correct exposure time")
+            self._log("info", "Inserting correct exposure time")
             detector.setExptime(self.exptime)
             if 'exptime' in snapshots or 'all' in snapshots:
                 detector.toFits(self.imgbase+"_{}_{}_snapshot_exptime.fits".format(self.obs_count, detector.name))
-            self._log("info","Cropping Down to base Detector Size")
+            self._log("info", "Cropping Down to base Detector Size")
             detector.cropToBaseSize()
-            if poisson: 
-                self._log("info","Adding poisson noise")
+            if poisson:
+                self._log("info", "Adding poisson noise")
                 detector.introducePoissonNoise()
                 if 'poisson' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_poisson.fits".format(self.obs_count, detector.name))
             if readnoise:
-                self._log("info","Adding readnoise")
+                self._log("info", "Adding readnoise")
                 detector.introduceReadnoise(rn)
                 if 'readnoise' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_readnoise.fits".format(self.obs_count, detector.name))
             if flat:
-                self._log("info","Adding flatfield residual")
+                self._log("info", "Adding flatfield residual")
                 detector.introduceFlatfieldResidual(flat)
                 if 'flat' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_flat.fits".format(self.obs_count, detector.name))
             if dark:
-                self._log("info","Adding dark residual")
+                self._log("info", "Adding dark residual")
                 detector.introduceDarkResidual(dark)
                 if 'dark' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_dark.fits".format(self.obs_count, detector.name))
             if cosmic:
-                self._log("info","Adding cosmic ray residual")
+                self._log("info", "Adding cosmic ray residual")
                 detector.introduceCosmicRayResidual(self.PIXEL_SIZE)
                 if 'cr' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_cr.fits".format(self.obs_count, detector.name))
-        self._log("info","Finished adding error")
+        self._log("info", "Finished adding error")
 
     def normalize(self, source_spectrum_or_wave_flux, norm_flux, bandpass):
         if "," in bandpass:
             bandpass = bandpass.replace(",", "_")
         norm_type = self.get_type(bandpass)
-        
+
         from pandeia.engine.normalization import NormalizationFactory
-        norm = NormalizationFactory(type=norm_type, bandpass=bandpass, 
+        norm = NormalizationFactory(type=norm_type, bandpass=bandpass,
                                     norm_fluxunit='abmag', norm_flux=norm_flux)
         if isinstance(source_spectrum_or_wave_flux, tuple):
             wave, flux = source_spectrum_or_wave_flux
@@ -997,6 +992,7 @@ class Instrument(object):
         try:
             norm_wave, norm_flux = norm.normalize(wave, flux)
         except DataConfigurationError as e:
+            self._log("warning", "DataConfigurationError: {}".format(e))
             try:
                 norm = syn.SpectralElement.from_filter(bandpass)
             except FileNotFoundError as e:
@@ -1017,11 +1013,10 @@ class Instrument(object):
             return norm_sp
         sp = syn.SourceSpectrum(syn.Empirical1D, points=norm_wave, lookup_table=norm_flux)
         return sp
-    
+
     def get_type(self, bandpass_str):
         if 'miri' in bandpass_str or 'nircam' in bandpass_str:
             return 'jwst'
-        #**WFIRST_REMNANT**
         elif 'wfi' in bandpass_str or 'wfirst' in bandpass_str or 'roman' in bandpass_str:
             return 'roman'
         elif 'wfc3' in bandpass_str:
@@ -1033,53 +1028,52 @@ class Instrument(object):
         if hasattr(self, "_bp"):
             return self._bp
         i = self.pandeia_instrument
-        det_params = i.get_detector_pars()
+        # det_params = i.get_detector_pars()
         # 'rn_fudge': multiplied in to match IDT results.
         # 'var_fudge': chromatic fudge factor. quantum yield squared.
-        # 'fullwell': 
+        # 'fullwell':
         # 'ff_electrons':
         # 'pix_size':
-        # 
         wr = i.get_wave_range()
         wave = np.linspace(wr['wmin'], wr['wmax'], num=500)
         pce = i.get_total_eff(wave)
-        
+
         if pce[0] != 0.:
             wave = np.insert(wave, 0, wave[0]-(wave[1]-wave[0]))
             pce = np.insert(pce, 0, 0.)
         if pce[-1] != 0.:
             wave = np.append(wave, wave[-1]+(wave[-1]-wave[-2]))
             pce = np.append(pce, 0.)
-        
-        self._bp = syn.SpectralElement(syn.Empirical1D, points=wave*u.micron, 
+
+        self._bp = syn.SpectralElement(syn.Empirical1D, points=wave*u.micron,
                                        lookup_table=pce)
         return self._bp
-    
+
     @property
     def pandeia_instrument(self):
         if hasattr(self, "_instrument"):
             return self._instrument
         from pandeia.engine.calc_utils import build_default_calc
         from pandeia.engine.instrument_factory import InstrumentFactory
-    
-        instrument = self.INSTRUMENT.lower()        
+
+        instrument = self.INSTRUMENT.lower()
         telescope = self.TELESCOPE.lower()
-        
+
         print("Creating pandeia instrument {}.{}.{}".format(telescope, instrument, self.MODE))
         calc = build_default_calc(telescope, instrument, self.MODE)
         conf = calc['configuration']
         conf['instrument']['filter'] = self.filter.lower()
-        
+
         msg = "Creating Instrument with Configuration {}"
         self.logger.info(msg.format(conf['instrument']))
-        
+
         self._instrument = InstrumentFactory(config=conf)
-        return self._instrument        
-    
+        return self._instrument
+
     @property
     def zeropoint(self):
         return self.zeropoint_unit.value
-    
+
     @property
     def zeropoint_unit(self):
         try:
@@ -1100,11 +1094,11 @@ class Instrument(object):
         obs = syn.Observation(sp, bp, binset=sp.waveset)
         zeropoint = obs.effstim(flux_unit=syn.units.OBMAG, area=self.AREA)
         return zeropoint
-    
+
     @property
     def photflam(self):
         return self.photflam_unit.value
-    
+
     @property
     def photflam_unit(self):
         sp = syn.SourceSpectrum(syn.ConstFlux1D, amplitude=(0.*u.STmag))
@@ -1112,11 +1106,11 @@ class Instrument(object):
         obs = syn.Observation(sp, bp, binset=sp.waveset)
         pf = (obs.effstim(flux_unit='flam') / obs.countrate(area=self.AREA))
         return pf
-    
+
     @property
     def pixel_background(self):
         return self.pixel_background_unit.value
-    
+
     @property
     def pixel_background_unit(self):
         if isinstance(self.background_value, (int, float)):
@@ -1138,17 +1132,16 @@ class Instrument(object):
             msg = "Returning background {} for 'custom'"
             self._log("info", msg.format(self.custom_background))
             return self.custom_background*u.ct/u.s
-        
+
         msg = "Unknown Background {}. Returning 0."
         self._log("warning", msg.format(self.background_value))
         return 0.*u.ct/u.second
 
-
-    def _log(self,mtype,message):
+    def _log(self, mtype, message):
         """
         Checks if a logger exists. Else prints.
         """
-        if hasattr(self,'logger'):
-            getattr(self.logger,mtype)(message)
+        if hasattr(self, 'logger'):
+            getattr(self.logger, mtype)(message)
         else:
-            sys.stderr.write("{}: {}\n".format(mtype,message))
+            sys.stderr.write("{}: {}\n".format(mtype, message))

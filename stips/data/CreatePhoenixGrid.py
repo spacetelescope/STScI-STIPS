@@ -1,13 +1,15 @@
-from __future__ import print_function
-
-import glob
+from astropy.io import fits
+from astropy import units as u
+import numpy as np
 import os
+import stsynphot as stsyn
+import synphot as syn
 import sys
 import time
 
-# Set plot backend. Must happen before importing pylab.
-import matplotlib
-matplotlib.use('Agg')
+from stips.utilities import InstrumentList
+from stips import __version__ as stips_version_info
+
 
 pandeia_version_file = os.path.join(os.environ["pandeia_refdata"], "VERSION_PSF")
 with open(pandeia_version_file, 'r') as inf:
@@ -18,14 +20,6 @@ file_dir = os.path.basename(os.path.abspath(__file__))
 stips_dir = os.path.abspath(os.path.join(file_dir, "..", ".."))
 sys.path.append(stips_dir)
 
-import numpy as np
-import synphot as syn
-import stsynphot as stsyn
-from stips.utilities import InstrumentList
-from stips import __version__ as stips_version_info
-from astropy.io import fits as pyfits
-from astropy import units as u
-
 print("STIPS Version: {}".format(stips_version_info))
 
 modes = {
@@ -33,39 +27,35 @@ modes = {
             'nircamlong':   ['lw_imaging'],
             'miri':         ['imaging'],
             'wfc3ir':       ['imaging'],
-            'wfi':          ['imaging']
-        }
+            'wfi':          ['imaging']}
+
 filters = {
             'nircamshort':  {'sw_imaging': ["f070w", "f090w", "f115w", "f140m", "f150w", "f162m", "f164n", "f182m", "f187n", "f200w", "f210m", "f212n"]},
-            'nircamlong':   {'lw_imaging': ["f250m", "f277w", "f300m", "f323n", "f335m", "f356w", "f360m", "f405n", "f410m", "f430m", "f444w", "f460m", "f466n", "f470n", 
+            'nircamlong':   {'lw_imaging': ["f250m", "f277w", "f300m", "f323n", "f335m", "f356w", "f360m", "f405n", "f410m", "f430m", "f444w", "f460m", "f466n", "f470n",
                                             "f480m"
-                                            ]
-                            },
+                                            ]},
             'miri':         {'imaging': ["f560w", "f770w", "f1000w", "f1130w", "f1280w", "f1500w", "f1800w", "f2100w", "f2550w"]},
             'wfc3ir':       {'imaging': ["f110w", "f160w"]},
-            'wfi':          {'imaging': ['f062', 'f087', 'f106', 'f129', 'f146', 'f149', 'f158', 'f184']}
-          }
+            'wfi':          {'imaging': ['f062', 'f087', 'f106', 'f129', 'f146', 'f149', 'f158', 'f184']}}
 
 apertures = {
                 'nircamshort':  {'sw_imaging':  "sw"},
                 'nircamlong':   {'lw_imaging':  "lw"},
                 'miri':         {'imaging':     "imager"},
                 'wfc3ir':       {'imaging':     "default"},
-                'wfi':          {'imaging':     "any"}
-            }
-area =  {
-            'nircamlong':   253260.0,
-            'nircamshort':  253260.0,
-            'miri':         253260.0,
-            'wfc3ir':       45238.93416,
-            'wfi':          45238.93416
-        }
-        
+                'wfi':          {'imaging':     "any"}}
+area = {
+        'nircamlong':   253260.0,
+        'nircamshort':  253260.0,
+        'miri':         253260.0,
+        'wfc3ir':       45238.93416,
+        'wfi':          45238.93416}
+
 
 def get_grid_points():
     grid_file = os.path.abspath(os.path.join(os.environ['PYSYN_CDBS'], "grid", "phoenix", "catalog.fits"))
     teff, Z, logg = np.array(()), np.array(()), np.array(())
-    with pyfits.open(grid_file) as inf:
+    with fits.open(grid_file) as inf:
         indices = inf[1].data.field('INDEX')
         for row in indices:
             items = row.split(",")
@@ -125,14 +115,13 @@ if __name__ == '__main__':
                             for filter in filters[instrument.lower()][mode]:
                                 if counts:
                                     obs = syn.Observation(spec_norm, bandpasses[instrument.lower()][filter], binset=spec_norm.waveset)
-                                    result_arrays[instrument.lower()][filter][i,j,k,l] = obs.countrate(area[instrument.lower()]).value
+                                    result_arrays[instrument.lower()][filter][i, j, k, l] = obs.countrate(area[instrument.lower()]).value
                                     print(".", end='')
                                 else:
-                                    result_arrays[instrument.lower()][filter][i,j,k,l] = 0.
+                                    result_arrays[instrument.lower()][filter][i, j, k, l] = 0.
                                     print("x", end='')
                     print("")
                     n += 1
-
 
     print("{}: Saving files...".format(time.ctime()), end='')
     with open(os.path.join(os.getcwd(), "grid", "VERSION.txt"), "wt") as outf:

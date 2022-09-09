@@ -6,25 +6,33 @@ General CGI form functions.
 :Organization: Space Telescope Science Institute
 
 """
-from __future__ import absolute_import,division
-
 # External modules
-import glob, importlib, inspect, os, requests, shutil, socket, struct, sys, tarfile 
-import urllib, uuid, yaml
+import importlib
+import inspect
 import numpy as np
-import astropy.io.fits as pyfits
+import os
+import requests
+import sys
+import tarfile
+import yaml
 from astropy.io import ascii
 from astropy.table import Table
-from pathlib import Path
-from scipy.special import gamma, gammaincinv, gammainc
+from scipy.special import gamma, gammaincinv
 
 from .. import __version__ as __stips__version__
 
-rind = lambda x : np.round(x).astype(int)
+
+def rind(x):
+    """
+    Convenience function to take a float, round it to the nearest integer, and convert it
+    to the ``int`` type.
+    """
+    return np.round(x).astype(int)
+
 
 def remove_subfolder(tar_file, subfolder):
     """
-    Utility function to take a tar file and remove a set of leading folders from each 
+    Utility function to take a tar file and remove a set of leading folders from each
     member in the tar file.
     """
     subfolder_len = len(subfolder)
@@ -32,6 +40,7 @@ def remove_subfolder(tar_file, subfolder):
         if member.path.startswith(subfolder):
             member.path = member.path[subfolder_len:]
             yield member
+
 
 def get_compressed_file(url, file_name, path="", dirs_to_remove=""):
     """
@@ -49,13 +58,15 @@ def get_compressed_file(url, file_name, path="", dirs_to_remove=""):
         input_file.extractall(path=path, members=members)
     os.remove(file_name)
 
-#-----------
+
 class classproperty(object):
     def __init__(self, f):
         self.f = classmethod(f)
+
     def __get__(self, *a):
         return self.f.__get__(*a)()
-#-----------
+
+
 class __grid__(object):
     @classproperty
     def __pandeia__version__(self):
@@ -63,7 +74,7 @@ class __grid__(object):
             line = inf.readline()
             items = line.strip().split()
             return items[1]
-    
+
     @classproperty
     def __stips__version__(self):
         with open(GetStipsData(os.path.join("grid", "VERSION.txt")), "r") as inf:
@@ -71,12 +82,13 @@ class __grid__(object):
             line = inf.readline()
             items = line.strip().split()
             return items[1]
-#-----------
+
+
 class StipsEnvironment(object):
     @classproperty
     def __stips__version__(self):
         return __stips__version__
-    
+
     @classproperty
     def __stips__data__location__(self):
         if 'stips_data' in os.environ:
@@ -95,7 +107,7 @@ class StipsEnvironment(object):
                     return line.strip()
             return 'stips_data HAS NO VERSION FILE'
         return 'NO REFERENCE DATA SET'
-    
+
     @classproperty
     def __stips__grid__version__(self):
         if 'stips_data' in os.environ:
@@ -108,7 +120,6 @@ class StipsEnvironment(object):
                     return items[1]
             return 'stips_data GRID HAS NO VERSION FILE'
         return 'NO REFERENCE DATA SET'
-    
 
     @classproperty
     def __pandeia__version__(self):
@@ -116,13 +127,13 @@ class StipsEnvironment(object):
         if hasattr(pandeia.engine, '__version__'):
             return pandeia.engine.__version__
         return 'UNKNOWN'
-    
+
     @classproperty
     def __pandeia__data__location__(self):
         if 'pandeia_refdata' in os.environ:
             return os.environ["pandeia_refdata"]
         return 'UNSET'
-    
+
     @classproperty
     def __pandeia__data__version__(self):
         if 'pandeia_refdata' in os.environ:
@@ -135,15 +146,14 @@ class StipsEnvironment(object):
                     return line.strip()
             return 'NO VERSION_PSF FILE FOUND'
         return 'NO REFERENCE DATA SET'
-    
-    
+
     @classproperty
     def __webbpsf__version__(self):
         import webbpsf
         if hasattr(webbpsf, '__version__'):
             return webbpsf.__version__
         return 'UNKNOWN'
-    
+
     @classproperty
     def __webbpsf__data__location__(self):
         if 'WEBBPSF_PATH' in os.environ:
@@ -162,8 +172,7 @@ class StipsEnvironment(object):
                     return line.strip()
             return 'WEBBPSF_PATH HAS NO version.txt FILE'
         return 'NO REFERENCE DATA SET'
-    
-    
+
     @classproperty
     def __stips__environment__dict__(self):
         env = StipsEnvironment
@@ -184,12 +193,12 @@ class StipsEnvironment(object):
                     'photutils_version': photutils.__version__
                    }
         return env_dict
-    
+
     @classproperty
     def __stips__environment__report__(self):
         env = StipsEnvironment.__stips__environment__report__pretty__
         return env.replace("\n", " ").replace("\t", " ")
-    
+
     @classproperty
     def __stips__environment__report__pretty__(self):
         env = StipsEnvironment.__stips__environment__dict__
@@ -201,7 +210,6 @@ class StipsEnvironment(object):
         return report
 
 
-#-----------
 def SetupDataPaths():
     """
     Set up the STIPS, synphot, webbpsf, and pandeia reference data environment variables.
@@ -221,13 +229,13 @@ def SetupDataPaths():
             os.environ[var_name] = var_path
 #             print("Set {} to {}".format(var_name, var_path))
 
-#-----------
+
 def DownloadReferenceData():
     """
     Set up the STIPS, synphot, webbpsf, and pandeia reference data environment variables.
     """
     SetupDataPaths()
-    
+
     # STIPS
     print("Checking STIPS data")
     stips_data_file = "stips_data-1.0.9.tgz"
@@ -239,7 +247,7 @@ def DownloadReferenceData():
         get_compressed_file(stips_url, stips_data_file, stips_data_path, "stips_data/")
     else:
         print("Found at {}".format(stips_data_path))
-    
+
     # synphot/stsynphot
     print("Checking synphot data")
     synphot_url = "https://ssb.stsci.edu/trds/tarfiles"
@@ -254,7 +262,7 @@ def DownloadReferenceData():
             get_compressed_file(url, file_name, synphot_data_path, "grp/redcat/trds/")
     else:
         print("Found at {}".format(synphot_data_path))
-    
+
     # webbpsf
     print("Checking webbpsf data")
     webbpsf_url = "https://stsci.box.com/shared/static/34o0keicz2iujyilg4uz617va46ks6u9.gz"
@@ -263,11 +271,11 @@ def DownloadReferenceData():
     if not os.path.isdir(webbpsf_data_path):
         print("Downloading webbpsf data to {}".format(webbpsf_data_path))
         os.makedirs(webbpsf_data_path)
-        get_compressed_file(webbpsf_url, webbpsf_data_file, webbpsf_data_path, 
+        get_compressed_file(webbpsf_url, webbpsf_data_file, webbpsf_data_path,
                             "webbpsf-data/")
     else:
         print("Found at {}".format(webbpsf_data_path))
-    
+
     # pandeia
     print("Checking pandeia data")
     pandeia_data_file = "pandeia_data-1.7.tar.gz"
@@ -276,14 +284,14 @@ def DownloadReferenceData():
     if not os.path.isdir(pandeia_data_path):
         print("Downloading pandeia data to {}".format(pandeia_data_path))
         os.makedirs(pandeia_data_path)
-        get_compressed_file(pandeia_url, pandeia_data_file, pandeia_data_path, 
+        get_compressed_file(pandeia_url, pandeia_data_file, pandeia_data_path,
                             "pandeia_data-1.7_roman/")
     else:
         print("Found at {}".format(pandeia_data_path))
 
-    #Done.
+    # Done.
 
-#-----------
+
 def GetStipsDataDir():
     """
     Get the STIPS data directory path.
@@ -307,7 +315,7 @@ def GetStipsDataDir():
         raise FileNotFoundError("${stips_data} does not exist.")
     return stips_data_base
 
-#-----------
+
 def GetStipsData(to_retrieve):
     """
     Retrieve a file from the stips_data directory. Will also print out a warning if the directory
@@ -327,26 +335,26 @@ def GetStipsData(to_retrieve):
         raise FileNotFoundError("File {} does not exist.".format(retrieval_file))
     return retrieval_file
 
-#-----------
+
 def SelectParameter(name, override_dict=None, config_file=None):
     """
-    If override_dict contains the key name, return override_dict[name]. 
-    Otherwise, if the parameter name is present in the configuration file, 
+    If override_dict contains the key name, return override_dict[name].
+    Otherwise, if the parameter name is present in the configuration file,
     return the value found in the configuration file. Otherwise, if an alternate
     name (as defined in a local dictionary) is found in the configuration file,
     return the value for that name. Otherwise, return None.
-    
+
     Parameters
     ----------
     name : str
         Name of parameter
-    
+
     override_dict : dict, default None
         Dictionary that may override a configuration value
-    
+
     config_file : str, default None
         Supplied configuration file
-    
+
     Returns
     -------
     value : obj
@@ -366,13 +374,13 @@ def SelectParameter(name, override_dict=None, config_file=None):
                         'psf_grid_size': 'psf_grid_default_size',
                         'seed': 'random_seed'
                     }
-    
+
     if override_dict is not None:
         if name in override_dict:
             return override_dict[name]
         elif name in name_mappings and name_mappings[name] in override_dict:
             return override_dict[name_mappings[name]]
-        
+
     value = GetParameter(name, config_file)
     if value is not None:
         return value
@@ -381,27 +389,27 @@ def SelectParameter(name, override_dict=None, config_file=None):
 
     return None
 
-#-----------
-def GetParameter(param, config_file=None, use_provided=True, use_cwd=True, 
+
+def GetParameter(param, config_file=None, use_provided=True, use_cwd=True,
                  use_environ=True, use_data=True):
     """
     Retrieve a parameter from the STIPS configuration file. This function looks
     for the STIPS configuration file as follows (returning the first file found)
-    
+
     - If a file is provided to the function, check that file
     - If there is a stips_config.yaml in the current directory, check that file
     - If there is a stips_config environment variable, check that file
     - If there is a "stips_config.yaml" file in stips_data, check that file
     - Check the internal data/stips_config.yaml file.
-    
+
     Parameters
     ----------
     param : str
         Name of parameter
-    
+
     config_file : str, default None
         Supplied configuration file
-    
+
     Returns
     -------
     value : obj
@@ -423,31 +431,26 @@ def GetParameter(param, config_file=None, use_provided=True, use_cwd=True,
     if use_environ and env_config is not None:
         if not os.path.isfile(env_config):
             env_config = os.path.join(env_config, "stips_config.yaml")
-    
+
     if use_provided and config_file is not None and os.path.isfile(config_file):
-#         print("Using provided file")
         conf_file = config_file
         file_used = "provided"
     elif use_cwd and os.path.isfile(cwd_config):
-#         print("Using file in CWD")
         conf_file = cwd_config
         file_used = "cwd"
     elif use_environ and 'stips_config' in os.environ and os.path.isfile(env_config):
-#         print("Using file in stips_config envvar")
         conf_file = env_config
         file_used = "environ"
     elif use_data and os.path.isfile(data_config):
-#         print("Using file in stips_data directory")
         file_used = "data"
         conf_file = data_config
     elif os.path.isfile(local_config):
-#         print("Using internal file")
         conf_file = local_config
-    
+
     if conf_file is not None:
         with open(conf_file, 'r') as config:
             settings = yaml.safe_load(config)
-    
+
     if settings is not None and param in settings:
         return TranslateParameter(param, settings[param], data_dir=use_data)
     elif param not in settings and file_used == "provided":
@@ -460,30 +463,30 @@ def GetParameter(param, config_file=None, use_provided=True, use_cwd=True,
     elif param not in settings and file_used == "environ":
         # Try without the environment variable config in case it doesn't include
         #   the full set of parameters
-        return GetParameter(param, use_provided=False, use_cwd=False, 
+        return GetParameter(param, use_provided=False, use_cwd=False,
                             use_environ=False)
     elif param not in settings and file_used == "data":
         # Try without the stips_data config in case it doesn't include
         #   the full set of parameters
-        return GetParameter(param, use_provided=False, use_cwd=False, 
+        return GetParameter(param, use_provided=False, use_cwd=False,
                             use_environ=False, use_data=False)
-        
+
     return None
 
-#-----------
+
 def TranslateParameter(param, value, data_dir=True):
     """
     Check if a parameter is in a dictionary of special values and, if so,
     substitute in the proper value.
-    
+
     Parameters
     ----------
     param : str
         Name of parameter
-    
+
     value : obj
         Supplied value
-    
+
     Returns
     -------
     value : obj
@@ -504,11 +507,11 @@ def TranslateParameter(param, value, data_dir=True):
                 return translations[param][value]()
             return translations[param][value]
         return value
-        
+
     return value
 
-#-----------
-def OffsetPosition(in_ra,in_dec,delta_ra,delta_dec):
+
+def OffsetPosition(in_ra, in_dec, delta_ra, delta_dec):
     """
     Offset a position given in decimal degrees.
 
@@ -522,7 +525,7 @@ def OffsetPosition(in_ra,in_dec,delta_ra,delta_dec):
 
     delta_ra: float
         Offset in RA (decimal degrees).
-    
+
     delta_dec: float
         Offset in DEC (decimal degrees).
 
@@ -530,7 +533,7 @@ def OffsetPosition(in_ra,in_dec,delta_ra,delta_dec):
     -------
     ra: float
         Offset RA.
-    
+
     dec: float
         Offset DEC.
     """
@@ -547,17 +550,17 @@ def OffsetPosition(in_ra,in_dec,delta_ra,delta_dec):
         ra = ra - 360.
     if ra < 0.:
         ra = ra + 360.
-    return ra,dec
+    return ra, dec
 
-#-----------
+
 def InstrumentList(excludes=[]):
     """
     Looks through the available instrument files, and imports all instruments that do not match
     one of the names in 'excludes', or whose telescope does not match one of the names in 'excludes'
-    
+
     Parameters
     ----------
-    
+
     excludes: list of strings
         Class and Telescope names to exclude when building the array.
 
@@ -586,6 +589,7 @@ def InstrumentList(excludes=[]):
                     instruments[name] = obj
     return instruments
 
+
 def read_metadata(filename, n_lines=100000, format='ascii.ipac'):
     lines = []
     for i, line in enumerate(open(filename, 'r')):
@@ -594,6 +598,7 @@ def read_metadata(filename, n_lines=100000, format='ascii.ipac'):
             break
     t = Table.read(lines, format=format)
     return t
+
 
 def read_table(filename, n_chunk=100000, format="ipac"):
     """
@@ -618,13 +623,12 @@ def read_table(filename, n_chunk=100000, format="ipac"):
         else:
             yield ascii.read(lines, format=format, guess=False)
 
-#-----------
+
 def b(n):
     # Normalisation constant
     return gammaincinv(2*n, 0.5)
 
 
-#-----------
 def sersic_lum(Ie, re, n):
     # total luminosity (integrated to infinity)
     bn = b(n)

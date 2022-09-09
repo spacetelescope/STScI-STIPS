@@ -10,16 +10,17 @@ long tables.
 from __future__ import absolute_import, division, print_function
 
 # External modules
-import copy, os, sys
+import os
 from astropy.io import ascii, fits
 from astropy.table import Table
 from collections import OrderedDict
 from io import StringIO
 
+
 class StipsDataTable(object):
     def __init__(self, **kwargs):
         """
-        This function creates a data table object. It generally expects to have a file name, and 
+        This function creates a data table object. It generally expects to have a file name, and
         will take formatting arguments (and the like), and do both input and output.
         """
         self._file = kwargs.get('file_name', None)
@@ -29,7 +30,7 @@ class StipsDataTable(object):
         self._chunk_size = kwargs.get('chunk_size', 100000)
         starting_chunk = kwargs.get('starting_chunk', 0)
         self.init_table(starting_chunk)
-    
+
     @staticmethod
     def dataTableFromFile(table_file, **kwargs):
         """
@@ -43,40 +44,40 @@ class StipsDataTable(object):
         else:
             table = table_classes['default'](file_name=table_file, format='ascii.ipac', in_dir=file_path, **kwargs)
         return table
-    
+
     @property
     def file(self):
         return self._file
-    
+
     @property
     def in_dir(self):
         return self._in_dir
-    
+
     @property
     def format(self):
         return self._format
-    
+
     @property
     def chunk_size(self):
         return self._chunk_size
-    
+
     @property
     def chunk(self):
         return self._current_chunk
-    
+
     def init_table(self, starting_chunk):
         """
         Nothing to do in base class
         """
         self._current_chunk = starting_chunk
-    
+
     def read_chunk(self, chunk=None, advance=True, set=True):
         raise NotImplementedError("Read Chunk not implemented in base class")
-    
+
     def write_chunk(self, chunk=None, advance=True):
         raise NotImplementedError("Write Chunk not implemented in base class")
-        
-    
+
+
 class StipsFitsTable(StipsDataTable):
     def init_table(self, starting_chunk):
         super(StipsFitsTable, self).init_table(starting_chunk)
@@ -84,7 +85,7 @@ class StipsFitsTable(StipsDataTable):
             t = self.read_chunk(chunk=0, set=False, advance=False)
             self.meta = t.meta
             self.columns = t.columns
-    
+
     def read_chunk(self, chunk=None, advance=True, set=True):
         if chunk is None:
             chunk = self._current_chunk
@@ -99,7 +100,7 @@ class StipsFitsTable(StipsDataTable):
         if advance:
             self._current_chunk += 1
         return table_data
-    
+
     def write_chunk(self, chunk, advance=True):
         if chunk is not None:
             if os.path.isfile(self.file):
@@ -116,14 +117,15 @@ class StipsFitsTable(StipsDataTable):
             if advance:
                 self._current_chunk += 1
             hdulist.writeto(self.file, overwrite=True)
-        
+
+
 class StipsIpacTable(StipsDataTable):
     def init_table(self, starting_chunk):
         super(StipsIpacTable, self).init_table(starting_chunk)
         self.header_length = 4
         if os.path.isfile(self.file):
             self.columns, self.meta = self.read_metadata(self.file)
-    
+
     @staticmethod
     def read_metadata(filename, n_lines=100, format='ascii.ipac'):
         lines = []
@@ -171,7 +173,7 @@ class StipsIpacTable(StipsDataTable):
                 names, meta = StipsIpacTable.read_metadata(filename, format=format)
                 chunk.meta = meta
                 yield chunk
-    
+
     def read_chunk(self, chunk=None, advance=True, set=True):
         if not hasattr(self, "_iterator"):
             self._iterator = self.read_table(self.file, self.chunk_size)
@@ -204,7 +206,7 @@ class StipsIpacTable(StipsDataTable):
                 self._current_chunk += 1
             with open(self.file, 'a') as outf:
                 outf.write(data.read())
-        
+
     def init_names(self):
         """
         Initialize names for the ascii.ipac table
@@ -216,4 +218,3 @@ class StipsIpacTable(StipsDataTable):
                 if i == self.chunk_size:
                     break
         return self.read_metadata(self.file, format=self.format)
-

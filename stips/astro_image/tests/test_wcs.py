@@ -1,11 +1,12 @@
-import os, pytest, random
-
-import numpy as np
-
 from astropy.wcs import WCS
 from astropy.io import fits
+import numpy as np
+import os
+import pytest
+import random
 
 from stips.astro_image import AstroImage
+
 
 @pytest.mark.veryslow
 def test_astro_image_rotation_full(data_base):
@@ -53,16 +54,16 @@ def test_astro_image_rotation_sample(data_base):
 
     arr_size_x = ai.hdu.shape[0]
     arr_size_y = ai.hdu.shape[1]
-    
+
     random.seed()
-    
+
     coords = []
-    
+
     for x in range(1000):
         coords.append((random.randrange(arr_size_x),
                        random.randrange(arr_size_y)))
 
-    for x,y in coords:
+    for x, y in coords:
         wcs_location = default_wcs.all_pix2world([[y, x]], 0)
         default_value = default_data[y][x]
 
@@ -78,11 +79,13 @@ def test_astro_image_rotation_sample(data_base):
 
 # RA, DEC, PA
 wcs_data = [
-    ( 18.5,  22.3, 27.9),
-    (139.1,  -5.0,  0.0),
-    (228.0, -55.8, 45.0)
+     (18.5,   22.3, 27.9),
+     (139.1,  -5.0,  0.0),
+     (228.0, -55.8, 45.0)
 ]
-@pytest.mark.parametrize(("ra","dec","pa"), wcs_data)
+
+
+@pytest.mark.parametrize(("ra", "dec", "pa"), wcs_data)
 def test_fits_wcs(ra, dec, pa):
     input_image = AstroImage(ra=ra, dec=dec, pa=pa, psf=False)
     input_image.toFits('test_wcs.fits')
@@ -107,5 +110,5 @@ def test_fits_wcs(ra, dec, pa):
         assert np.isclose(input_file[0].header["PC1_2"], pc_matrix[0][1])
         assert np.isclose(input_file[0].header["PC2_1"], pc_matrix[1][0])
         assert np.isclose(input_file[0].header["PC2_2"], pc_matrix[1][1])
-        
+
     os.remove("test_wcs.fits")

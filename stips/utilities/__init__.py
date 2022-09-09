@@ -11,5 +11,6 @@ from .utilities import OffsetPosition
 from .utilities import InstrumentList
 from .utilities import read_metadata
 from .utilities import read_table
+from .utilities import rind
 from .utilities import sersic_lum
 from .DataTable import StipsDataTable

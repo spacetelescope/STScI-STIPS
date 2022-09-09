@@ -55,7 +55,7 @@ population parameters.  In this example, we will create the following:
 
 #. A stellar population representing a global cluster with:
 
-   * 100 stars
+   * 10000 stars
    * An age of 7.5 billion years
    * A metallicity of -2.0
    * A Salpeter IMF with alpha = -2.35
@@ -158,7 +158,7 @@ In this case, we will create an observation with:
 
   \• No distortion
 
-  \• No sky background
+  \• Sky background of 0.15 counts/s/pixel
 
   \• The ID 1
 
@@ -173,6 +173,18 @@ We will use a single offset with:
   as a whole beinf centered there)
 
   \• No change in RA, DEC, or PA from the center of the observation
+
+We will use the following residual settings:
+
+  \• Flatfield residual: off
+
+  \• Dark current residual: off
+
+  \• Cosmic ray removal residual: off
+
+  \• Poisson noise residual: on
+
+  \• Readnoise residual: on
 
 .. code-block:: python
 
