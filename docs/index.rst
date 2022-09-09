@@ -18,10 +18,10 @@ It does not include instrument saturation effects.
 Why use STIPS?
 --------------
 STIPS is intended to produce quick simulations of Level 2 (L2) images, and is provided for 
-cases where pandeia does not provide a large enough simulation area (e.g. full-detector 
-observations,or multiple-detector observations). STIPS obtains its Roman instrument and 
-filter values from `pandeia <https://pypi.org/project/pandeia.engine/>`_, so it should 
-produce output within 10% of output produced by Pandeia.
+cases where `Pandeia <https://pypi.org/project/pandeia.engine/>`_ does not
+provide a large enough simulation area (e.g., full-detector or multiple-detector
+observations). STIPS obtains its Roman instrument and filter values from
+Pandeia, so it should produce output within 10% of output produced by Pandeia.
 
 STIPS does not start with Level 1 (L1) images and propagate instrumental calibrations 
 through the simulations. While it does have the ability to add error residuals (representing
@@ -34,7 +34,7 @@ Developed by Brian York (`@york-stsci <https://github.com/york-stsci>`_),
 Robel Geda (`@robelgeda <https://github.com/robelgeda>`_), 
 and O. Justin Otor (`@ojustino <https://github.com/ojustino>`_). 
 Python ePSF code developed by 
-Sebastian Gomez (`@gmzsebastian <https://github.com/gmzsebastian>`_) based on fortran code
+Sebastian Gomez (`@gmzsebastian <https://github.com/gmzsebastian>`_) based on Fortran code
 developed by Andrea Bellini (`@AndreaBellini <https://github.com/AndreaBellini>`_).
 
 .. figure:: roman_figures/stips_demo.png

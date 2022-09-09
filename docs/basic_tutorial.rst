@@ -257,7 +257,7 @@ Showing the Result
 
 .. figure:: roman_figures/stips_basic_tutorial.png
 
-  Fig. 1: Output from running the STIPS basic tutorial code. Detail from detector centre.
+  Fig. 1: Output from running the STIPS basic tutorial code. Detail from detector center.
 
 We use ``matplotlib`` to plot the resulting simulated image.
 
