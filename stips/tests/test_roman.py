@@ -5,6 +5,7 @@ import pytest
 
 from tempfile import TemporaryDirectory
 
+
 def create_catalogues(out_path):
     star_data = {
                     'n_stars': 100,
@@ -31,7 +32,7 @@ def create_catalogues(out_path):
     scm = SceneModule(out_path=out_path)
     stellar_cat_file = scm.CreatePopulation(star_data)
     galaxy_cat_file = scm.CreateGalaxies(galaxy_data)
-    
+
     return stellar_cat_file, galaxy_cat_file
 
 
@@ -41,21 +42,15 @@ def get_default_obs():
             'filters': ['F158'],
             'detectors': 1,
             'distortion': False,
-            'oversample': 1,
-            'psf_grid_size': 1,
-            'pupil_mask': '',
             'background': 'avg',
             'observations_id': 1,
             'exptime': 1000,
-            'memmap': True,
-            'parallel': True,
-            'convolve_size': 4088,
             'offsets': [
                         {
-                            'offset_id': 1, 
-                            'offset_centre': False, 
-                            'offset_ra': 0.5, 
-                            'offset_dec': 0.0, 
+                            'offset_id': 1,
+                            'offset_centre': False,
+                            'offset_ra': 0.5,
+                            'offset_dec': 0.0,
                             'offset_pa': 27.0
                         }
                        ]
@@ -68,15 +63,15 @@ def test_roman_observation():
     dir_name = TemporaryDirectory()
 
     stellar_cat_file, galaxy_cat_file = create_catalogues(dir_name.name)
-    
+
     obs = get_default_obs()
-    
+
     obm = ObservationModule(obs, out_path=dir_name.name, cat_path=dir_name.name)
     obm.nextObservation()
-    output_stellar_catalogues = obm.addCatalogue(stellar_cat_file)
-    output_galaxy_catalogues = obm.addCatalogue(galaxy_cat_file)
-    psf_file = obm.addError()
-    fits_file, mosaic_file, params = obm.finalize(mosaic=False)
+    obm.addCatalogue(stellar_cat_file)
+    obm.addCatalogue(galaxy_cat_file)
+    obm.addError()
+    obm.finalize(mosaic=False)
 
 
 @pytest.mark.veryslow
@@ -87,49 +82,28 @@ def test_roman_observation_deluxe():
     stellar_cat_file, galaxy_cat_file = create_catalogues(dir_name.name)
 
     obs = get_default_obs()
-    obs['psf_grid_size'] = 3
-    obs['oversample'] = 5
 
     obm = ObservationModule(obs, out_path=dir_name.name, cat_path=dir_name.name)
     obm.nextObservation()
-    output_stellar_catalogues = obm.addCatalogue(stellar_cat_file)
-    output_galaxy_catalogues = obm.addCatalogue(galaxy_cat_file)
-    psf_file = obm.addError()
-    fits_file, mosaic_file, params = obm.finalize(mosaic=False)
+    obm.addCatalogue(stellar_cat_file)
+    obm.addCatalogue(galaxy_cat_file)
+    obm.addError()
+    obm.finalize(mosaic=False)
 
 
 obs_data = [
     (
         {
-            'psf_grid_size': 3,
-        },
-    ),
-    (
-        {
-            'oversample': 3,
-        },
-    ),
-    (
-        {
-            'memmap': False,
-        },
-    ),
-    (
-        {
             'filters': ['F106'],
-        },
-    ),
-    (
-        {
-            'parallel': False,
         },
     )
 ]
 
+
 @pytest.mark.veryslow
 @pytest.mark.parametrize(("obs_changes"), obs_data)
 def test_obs_parameters(obs_changes):
-    
+
     dir_name = TemporaryDirectory()
 
     stellar_cat_file, galaxy_cat_file = create_catalogues(dir_name.name)
@@ -140,7 +114,7 @@ def test_obs_parameters(obs_changes):
 
     obm = ObservationModule(obs, out_path=dir_name.name, cat_path=dir_name.name)
     obm.nextObservation()
-    output_stellar_catalogues = obm.addCatalogue(stellar_cat_file)
-    output_galaxy_catalogues = obm.addCatalogue(galaxy_cat_file)
-    psf_file = obm.addError()
-    fits_file, mosaic_file, params = obm.finalize(mosaic=False)
+    obm.addCatalogue(stellar_cat_file)
+    obm.addCatalogue(galaxy_cat_file)
+    obm.addError()
+    obm.finalize(mosaic=False)

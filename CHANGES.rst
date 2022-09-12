@@ -3,7 +3,19 @@ Release Notes
 #############
 
 Version History and Change Log
--------------------------------
+------------------------------
+
+Version 2.0.0
+=============
+
+- STIPS now uses an ePSF, and calculates source appearance on a per-source basis
+- Dropped support for python 2, and python <= 3.7
+- Dropped support for HST and JWST instruments
+- Dropped support for jbt background tool, as its results are JWST-specific
+- Updated pandeia to 1.7
+- Updated webbpsf to 1.0.0
+- Dropped astropy helpers code
+
 
 Version 1.0.8
 =============

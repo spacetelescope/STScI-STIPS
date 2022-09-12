@@ -13,7 +13,7 @@ Functions to simulate cosmic rays.
 # External modules
 import numpy as np
 
-#-----------
+
 def GaussPsf2D(npix, fwhm, normalize=True):
     """
     Parameters
@@ -36,20 +36,20 @@ def GaussPsf2D(npix, fwhm, normalize=True):
     """
 
     # Initialize PSF params
-    cntrd = (npix - 1.0) * 0.5
-    st_dev = 0.5 * fwhm / np.sqrt( 2.0 * np.log(2) )
+    st_dev = 0.5 * fwhm / np.sqrt(2.0 * np.log(2))
 
     # Rene Breton 2011-10-20
     # https://groups.google.com/group/astropy-dev/browse_thread/thread/5ee6cd662236e382
-    x, y = np.indices([npix,npix]) - (npix-1)*0.5
-    psf = np.exp( -0.5 * ((x**2 + y**2)/st_dev**2) ) 
-        
+    x, y = np.indices([npix, npix]) - (npix-1)*0.5
+    psf = np.exp(-0.5 * ((x**2 + y**2)/st_dev**2))
+
     # Normalize
-    if normalize: psf /= psf.sum()
+    if normalize:
+        psf /= psf.sum()
 
     return psf
 
-#-----------
+
 def MakeCosmicRay(xSize, ySize, crProb, crElectrons, crSize, crPsf, seed, verbose=True):
     """
     Simulate cosmic rays.
@@ -82,14 +82,14 @@ def MakeCosmicRay(xSize, ySize, crProb, crElectrons, crSize, crPsf, seed, verbos
     crArray: array_like
         CR to populate (e-).
     """
-    crArray = np.zeros((ySize,xSize))
+    crArray = np.zeros((ySize, xSize))
 
     # See if a CR hit
     crPoisson = np.random.RandomState(seed=seed).poisson(lam=crProb, size=xSize*ySize)
     cr_locs = np.where(crPoisson >= 1)
     num_crs = len(cr_locs[0])
     if num_crs == 0:
-        if verbose: 
+        if verbose:
             print('No CR in poisson')
         return crArray
 
@@ -105,7 +105,7 @@ def MakeCosmicRay(xSize, ySize, crProb, crElectrons, crSize, crPsf, seed, verbos
     idxGood = np.where((crXMin > 0) & (crXMax < xSize) & (crYMin > 0) & (crYMax < ySize))
     numGood = len(idxGood[0])
     if numGood == 0:
-        if verbose: 
+        if verbose:
             print('No CR fully inside frame')
         return crArray
 
@@ -120,12 +120,12 @@ def MakeCosmicRay(xSize, ySize, crProb, crElectrons, crSize, crPsf, seed, verbos
         y1 = crYMin[ii]
         y2 = crYMax[ii] + 1
         cr_sim = cr_electrons[i] * crPsf
-        crArray[int(y1):int(y2),int(x1):int(x2)] += cr_sim
+        crArray[int(y1):int(y2), int(x1):int(x2)] += cr_sim
     # End of i loop
 
     return crArray
 
-#-----------
+
 def GetCrTemplate(fwhm=0.9):
     """
     Define cosmic rays size and PSF.
@@ -147,7 +147,7 @@ def GetCrTemplate(fwhm=0.9):
     cr_psf = GaussPsf2D(2*cr_size+1, fwhm)
     return cr_size, cr_psf
 
-#-----------
+
 def GetCrProbs(rates, pixarea, exptime):
     """
     Calculate probabilities of CR hits.
@@ -168,7 +168,8 @@ def GetCrProbs(rates, pixarea, exptime):
     probs: tuple of float
         Probabilities for respective elements in `rates`.
     """
-    m = pixarea * exptime # cm^2 s
+    m = pixarea * exptime  # cm^2 s
     probs = []
-    for r in rates: probs.append( r * m) # hits
+    for r in rates:
+        probs.append(r * m)  # hits
     return tuple(probs)
