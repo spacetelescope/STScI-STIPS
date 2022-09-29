@@ -12,29 +12,34 @@ For documentation and installation instructions please visit https://stsci-stips
 
 ## Overview
 
-STIPS is the Space Telescope Imaging Product Simulator. It is designed to create simulations of 
-full-detector post-pipeline astronomical scenes for any telescope. Currently STIPS has modules for
-WFC3 IR (F110W and F160W only), JWST (NIRCam Short, NIRCam Long, and MIRI), and Roman (WFI). STIPS
-has the ability to add instrumental distortion (if available) as well as calibration residuals
-(currently flatfield residuals, dark current residuals, and cosmic ray residuals). It automatically
-includes Poisson noise and readout noise. It does not include instrument saturation effects. In
-addition, STIPS has the ability to generate its own scenes, consisting of stellar populations and
-background galaxies (implemented as Sersic profiles).
+STIPS is the Space Telescope Imaging Product Simulator. It is designed to create 
+simulations of full-detector post-pipeline astronomical scenes for the Nancy Grace Roman 
+Space Telescope's Wide-Field Instrument (WFI). STIPS has the ability to add 
+instrumental distortion (if available) as well as calibration residuals from flatfields,
+dark currents, and cosmic rays. It automatically includes Poisson noise and readout noise.
+It does not include instrument saturation effects.
 
 ## Why use STIPS?
 
-STIPS is intended for cases where an ETC (e.g. Pandeia) does not provide enough detector area (e.g.
-testing photometry code, quick looks at dither patterns or multi-detector observations of a scene).
-For JWST and Roman, it obtains its background count levels and instrumental throughput levels from
-Pandeia internally, so it should produce output within 10% of output produced by Pandeia.
+STIPS is intended to produce quick simulations of Level 2 (L2) images, and is provided for 
+cases where [Pandeia](https://pypi.org/project/pandeia.engine) does not
+provide a large enough simulation area (e.g., full-detector or multiple-detector
+observations). STIPS obtains its Roman instrument and filter values from
+Pandeia, so it should produce output within 10% of output produced by Pandeia.
 
-If extremely good instrumental accuracy is needed, STIPS is not the ideal choice. Instead, the
-various instrument design teams have produced much more detailed simulators. STIPS is intended to
-run reasonably quickly, and to make scene generation and observation as easy as possible.
+STIPS does not start with Level 1 (L1) images and propagate instrumental calibrations 
+through the simulations. While it does have the ability to add error residuals (representing
+the remaining uncertainty after pipeline calibration), these residuals are not validated 
+against actual pipeline calibrations of L1 images. STIPS is not the ideal choice if 
+extremely good instrumental accuracy is needed. Pandeia is the preferred tool for 
+high-accuracy observations.
 
-Developed by Brian York ([@york-stsci](https://github.com/york-stsci)) and
-Robel Geda ([@robelgeda](https://github.com/robelgeda)).
-
+Developed by Brian York ([@york-stsci](https://github.com/york-stsci)),
+Robel Geda ([@robelgeda](https://github.com/robelgeda)), and 
+O. Justin Otor ([@ojustino](https://github.com/ojustino)).
+Python ePSF code developed by 
+Sebastian Gomez ([@gmzsebastian](https://github.com/gmzsebastian)) based on Fortran code
+developed by Andrea Bellini ([@AndreaBellini](https://github.com/AndreaBellini)).
 
 ![Alt text](docs/roman_figures/stips_demo.png?raw=true "Roman WFI Image of a Star Cluster and Background Galaxies")
 
