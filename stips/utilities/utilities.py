@@ -29,6 +29,61 @@ def rind(x):
     """
     return np.round(x).astype(int)
 
+def get_pandeia_background():
+    """
+    Import Pandeia functions to calculate the image background in a given
+    filter, in units of electrons per second.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    total_back: float
+        Total background in units of electrons per second
+    """
+    from pandeia.engine.observation import Observation
+    from pandeia.engine.etc3D import setup, Scene
+    from pandeia.engine.calc_utils import build_default_calc
+    from pandeia.engine.astro_spectrum import ConvolvedSceneCube
+    from pandeia.engine.background import Background
+    import scipy.signal as sg
+
+    # Create default configuration file from Pandeia
+    calc_input = build_default_calc('roman','wfi','imaging')
+    #calc_input['configuration']['instrument']['filter'] = wfi_filter
+
+    # Setup Observation
+    calc_config, instrument, strategy, scene_configuration, background, background_level, warnings = setup(calc_input)
+
+    # Create Scence
+    scene = Scene(input=scene_configuration)
+
+    # Create Observation
+    observation = Observation(
+        scene=scene,
+        instrument=instrument,
+        strategy=strategy,
+        background=background,
+        background_level=background_level
+        )
+
+    # Calculate Background
+    my_detector_signal = ConvolvedSceneCube(scene = scene, instrument = instrument,
+                                            background = Background(observation),
+                                            psf_library=instrument.psf_library)
+
+    # Get electron rate and dark current
+    fp_pix_rate = np.ones_like(my_detector_signal.flux_plus_bg_list[0][0]) * observation.instrument.the_detector.dark_current * 100
+    # Include IPC effects
+    kernel = observation.instrument.get_ipc_kernel()
+    detector = sg.fftconvolve(fp_pix_rate, kernel, mode='same')
+
+    # Total background
+    total_back = np.mean(detector[2:-2,2:-2])
+
+    return total_back
 
 def remove_subfolder(tar_file, subfolder):
     """

@@ -184,10 +184,10 @@ class WFI(RomanInstrument):
     BACKGROUNDS = ['None', 'Average zodiacal background', 'Median zodiacal background', 'Maximum zodiacal background', 'Minimum zodiacal background']
     BGTEXT = {'none': 'None', 'avg': 'Average zodiacal background',
               'med': 'Median zodiacal background', 'max': 'Maximum zodiacal background',
-              'min': 'Minimum zodiacal background', 'custom': 'Custom thermal background rate'}
+              'min': 'Minimum zodiacal background', 'custom': 'Custom thermal background rate', 'pandeia': 'Pandeia background rate'}
     # PHOTFNU has units of Jy
     # For now, just assuming similar PHOTFNU to WFC3IR.
-    PHOTFNU = {'F062': 3.25e-08, 'F087': 8.87e-08, 'F106': 3.94e-08, 'F129': 3.51e-08, 'F158': 3.13e-08, 'F184': 1.18e-07, 'F146': 1.63e-08}
+    PHOTFNU = {'F062': 7.2858e-08, 'F087': 9.9351e-08, 'F106': 9.7499e-08, 'F129': 9.6040e-08, 'F158': 9.2410e-08, 'F184': 9.746e-08, 'F146': 3.0870e-08}
     # PHOTPLAM has units of um
     # For now, just put them in the middle
     PHOTPLAM = {'F062': 0.6700, 'F087': 0.8735, 'F106': 1.0595, 'F129': 1.2925, 'F158': 1.577, 'F184': 1.5815, 'F146': 1.4635}

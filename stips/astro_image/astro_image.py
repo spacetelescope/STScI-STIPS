@@ -967,8 +967,19 @@ class AstroImage(object):
         not affect the data values, but it does affect errors residuals (e.g. dark
         current and cosmic ray count)
         """
+        factor = exptime / self.exptime
+        self.data *= factor
         self.exptime = exptime
         self.updateHeader('exptime', self.exptime)
+
+        #self.exptime = exptime
+        #self.updateHeader('exptime', self.exptime)
+
+    def setUnits(self):
+        """
+        Divide the image by the exposure time to the output is in e/s as opposed to e.
+        """
+        self.data /= self.exptime
 
     def addBackground(self, background):
         """

@@ -21,9 +21,9 @@ from ..astro_image import AstroImage
 from ..utilities import GetStipsData
 from ..utilities import OffsetPosition
 from ..utilities import SelectParameter
+from ..utilities import get_pandeia_background
 from ..utilities import StipsDataTable
 from ..utilities.makePSF import PSF_GRID_SIZE
-
 
 class Instrument(object):
     """
@@ -974,6 +974,7 @@ class Instrument(object):
                 detector.introduceCosmicRayResidual(self.PIXEL_SIZE)
                 if 'cr' in snapshots or 'all' in snapshots:
                     detector.toFits(self.imgbase+"_{}_{}_snapshot_cr.fits".format(self.obs_count, detector.name))
+            detector.setUnits()
         self._log("info", "Finished adding error")
 
     def normalize(self, source_spectrum_or_wave_flux, norm_flux, bandpass):
@@ -1128,11 +1129,15 @@ class Instrument(object):
             msg = "Returning background {} for '{}'"
             self._log("info", msg.format(bkg, self.background_value))
             return bkg*u.ct/u.s
+        elif self.background_value == 'pandeia':
+            msg = "Returning background {} for 'pandeia'"
+            self.custom_background = get_pandeia_background()
+            self._log("info", msg.format(self.custom_background))
+            return self.custom_background*u.ct/u.s
         elif self.background_value == 'custom':
             msg = "Returning background {} for 'custom'"
             self._log("info", msg.format(self.custom_background))
             return self.custom_background*u.ct/u.s
-
         msg = "Unknown Background {}. Returning 0."
         self._log("warning", msg.format(self.background_value))
         return 0.*u.ct/u.second

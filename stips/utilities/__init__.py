@@ -13,4 +13,5 @@ from .utilities import read_metadata
 from .utilities import read_table
 from .utilities import rind
 from .utilities import sersic_lum
+from .utilities import get_pandeia_background
 from .DataTable import StipsDataTable
