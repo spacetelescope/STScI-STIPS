@@ -320,7 +320,7 @@ def DownloadReferenceData():
 
     # webbpsf
     print("Checking webbpsf data")
-    webbpsf_url = "https://stsci.box.com/shared/static/34o0keicz2iujyilg4uz617va46ks6u9.gz"
+    webbpsf_url = "https://stsci.box.com/shared/static/ntb71b3uusf1kzgf9bss0hzbreoja5gg.gz"
     webbpsf_data_path = os.environ[GetParameter("webbpsf_data_name", use_data=False)]
     webbpsf_data_file = "webbpsf_data.tar.gz"
     if not os.path.isdir(webbpsf_data_path):

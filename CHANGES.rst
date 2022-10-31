@@ -5,6 +5,13 @@ Release Notes
 Version History and Change Log
 ------------------------------
 
+Version 2.1.0
+=============
+- Updated the Flux PHOTFNU values to match Pandeia
+- Updated the background and noise estimates to use Pandeia
+- Updated webbpsf to 1.1
+
+
 Version 2.0.0
 =============
 
