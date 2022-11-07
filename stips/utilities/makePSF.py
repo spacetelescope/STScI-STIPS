@@ -129,7 +129,7 @@ def bicubic(epsf, iy, ix, fx, fy):
     """
     Perform the bi-cubic interpolation of an image from a center
     pixel and a pixel phase. Functions originally obtained from
-    Andrea Bellini's Fortran code
+    Andrea Bellini's Fortran code.
 
     This function is significantly faster than the more complex
     scipy.interpolate.interp2d, which differs from this at the level
