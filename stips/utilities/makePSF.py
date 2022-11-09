@@ -270,7 +270,7 @@ def real_psf(dx, dy, epsf, psf_center=177, boxsize=PSF_BOXSIZE):
 
     # Do Bi-cubic interpolation for the innermost pixels
     rpsf_phot = bicubic(epsf, iy, ix, fx, fy)
-    
+
     return rpsf_phot
 
 
