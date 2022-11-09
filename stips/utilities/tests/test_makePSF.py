@@ -21,8 +21,10 @@ EPSF4 = np.array([[0.25, 0.5 , 0.5 , 0.5 , 0.25],
                   [0.5 , 1.  , 1.  , 1.  , 0.5 ],
                   [0.25, 0.5 , 0.5 , 0.5 , 0.25]])
 
+#Currently only an upscale of 4 is supported
 PSF_UPSCALE = 4
 
+#Size of PSF to be placed on image, depends on brightness 
 PSF_BOXSIZE = 44
 PSF_BRIGHT_BOXSIZE = 88
 PSF_EXTRA_BRIGHT_BOXSIZE = 176
@@ -37,13 +39,11 @@ rind = lambda x : np.round(x).astype(int)
 #Select the part of the data we'll use to construct the test PSF
 
 file = fits.open('psf_WFI_2.0.0_F129_sca01.fits')
-
 file_in = file[0].data[0]
 
 #Generate the test PSF using the make_epsf function from makePSF
 #We can now use this basic PSF as a comparative standard against which to check the makePSF code
-
-test_psf = makePSF.make_epsf(file[0].data[0])
+test_psf = makePSF.make_epsf(file_in)
 
 #Set a few basic variables for use in testing the bicubic function of makePSF
 
@@ -205,8 +205,8 @@ def test_real_psf():
     dx = 10
     dy = 15
 
-    rx = 88 + 10*4
-    ry = 88 + 15*4
+    rx = 88 + dx*4
+    ry = 88 + dy*4
     ix_rpsf = int(rx)
     iy_rpsf = int(ry)
     fx_rpsf = rx-ix_rpsf # Pixel Phase
