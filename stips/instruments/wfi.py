@@ -2,7 +2,8 @@ __filetype__ = "detector"
 
 # Local Modules
 from .roman_instrument import RomanInstrument
-
+from astropy.constants import c
+from astropy import units as u
 
 class WFI(RomanInstrument):
     __classtype__ = "detector"
@@ -69,19 +70,6 @@ class WFI(RomanInstrument):
     # upper ones. Assuming no rotation offset.
 
     # Offsets are in (arcseconds_ra,arcseconds_dec,degrees_angle)
-    '''
-    DETECTOR_OFFSETS = (# SCA01                                        SCA02                                         SCA03                                         SCA04
-                        ((2*27.5+478.06)*( 0),(478.06-27.5/2)*( 0),0.),            ((2*27.5+478.06)*( 0),(478.06-27.5/2)*( 1),0.),            ((2*27.5+478.06)*( 0),(478.06-27.5/2)*( 2)+66.7,0.),       ((2*27.5+478.06)*(-1),(478.06-27.5/2)*( 0)+188.2*0.7,0.),
-                        # SCA05                                        SCA06                                         SCA07                                         SCA08
-                        ((2*27.5+478.06)*(-1),(478.06-27.5/2)*( 1)+188.2*0.7,0.),      ((2*27.5+478.06)*(-1),(478.06-27.5/2)*( 2)+66.7+188.2*0.7,0.), ((2*27.5+478.06)*(-2),(478.06-27.5/2)*( 0)+376.4*0.9,0.),      ((2*27.5+478.06)*(-2),(478.06-27.5/2)*( 1)+376.4*0.9,0.),
-                        # SCA09                                        SCA10                                         SCA11                                         SCA12
-                        ((2*27.5+478.06)*(-2),(478.06-27.5/2)*( 2)+66.7+376.4*0.9,0.), ((2*27.5+478.06)*( 1),(478.06-27.5/2)*( 0),0.),            ((2*27.5+478.06)*( 1),(478.06-27.5/2)*( 1),0.),            ((2*27.5+478.06)*( 1),(478.06-27.5/2)*( 2)+66.7,0.),
-                        # SCA13                                        SCA14                                         SCA15                                         SCA16
-                        ((2*27.5+478.06)*( 2),(478.06-27.5/2)*( 0)+188.2*0.7,0.),      ((2*27.5+478.06)*( 2),(478.06-27.5/2)*( 1)+188.2*0.7,0.),      ((2*27.5+478.06)*( 2),(478.06-27.5/2)*( 2)+66.7+188.2*0.7,0.), ((2*27.5+478.06)*( 3),(478.06-27.5/2)*( 0)+376.4*0.9,0.),
-                        # SCA17                                        SCA18
-                        ((2*27.5+478.06)*( 3),(478.06-27.5/2)*( 1)+376.4*0.9,0.),      ((2*27.5+478.06)*( 3),(478.06-27.5/2)*( 2)+66.7+376.4*0.9,0.))
-    '''
-
     DETECTOR_OFFSETS = (  # SCA01                  SCA02                    SCA03
                         (0.0, 0.0, 0.0),         (0.0, 464.31, 0.0),      (0.0, 995.32, 0.0),
                         # SCA04                  SCA05                    SCA06
@@ -187,11 +175,27 @@ class WFI(RomanInstrument):
               'min': 'Minimum zodiacal background', 'custom': 'Custom thermal background rate', 'pandeia': 'Pandeia background rate'}
     # PHOTFNU has units of Jy
     # For now, just assuming similar PHOTFNU to WFC3IR.
+    # For now, just put them in the middle
+    PHOTPLAM = {'F062': 0.620, 'F087': 0.869, 'F106': 1.060, 'F129': 1.293, 'F158': 1.577, 'F184': 1.842, 'F146': 1.464}
+
+    '''
     PHOTFNU = {'F062': 7.2858e-08, 'F087': 9.9351e-08, 'F106': 9.7499e-08, 'F129': 9.6040e-08, 'F158': 9.2410e-08, 'F184': 9.746e-08, 'F146': 3.0870e-08}
     # PHOTPLAM has units of um
-    # For now, just put them in the middle
-    PHOTPLAM = {'F062': 0.6700, 'F087': 0.8735, 'F106': 1.0595, 'F129': 1.2925, 'F158': 1.577, 'F184': 1.5815, 'F146': 1.4635}
     # For now, just put in HST-style dithers.
+    # calculation of PHOTLAM
+    LIGHT = c.to(u.AA / u.s).value
+    PHOTFLAM = {}
+    for i in PHOTFNU:
+        PHOTFLAM[i] = LIGHT * PHOTFNU[i] / (PHOTPLAM[i] ** 2)
+    ZEROPOINTS_AB = {}
+    for i in PHOTFNU:
+        ZEROPOINTS_AB[i] = 8.9 - 2.5 * np.log10(PHOTFNU[i])
+    '''
+    ZEROPOINTS_AB = {'F062': 26.50, 'F087': 26.36, 'F106': 26.38, 'F129': 26.34, 'F158': 26.36, 'F184': 25.98, 'F146': 27.61}
+    PHOTFNU = {}
+    for i in ZEROPOINTS_AB:
+        PHOTFNU[i] = 10 ** (0.4 * (8.9 - ZEROPOINTS_AB[i]))
+
     DITHERS = ("SUBPIXEL ONLY", "BOX-UVIS", "BLOB")  # Assume for now
     DITHER_POINTS = {
                         "SUBPIXEL ONLY": ["0"],
