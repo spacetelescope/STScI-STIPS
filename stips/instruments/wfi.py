@@ -53,16 +53,6 @@ class WFI(RomanInstrument):
     INSTRUMENT = "WFI"
     DETECTOR = "WFI"
 
-    OFFSET_NAMES = ("SCA01", "SCA02", "SCA03", "SCA04", "SCA05", "SCA06",
-                    "SCA07", "SCA08", "SCA09", "SCA10", "SCA11", "SCA12",
-                    "SCA13", "SCA14", "SCA15", "SCA16", "SCA17", "SCA18")
-    N_OFFSET = {1:      (0.0,    0.0,  0.0),  2:     (0.0,  464.31, 0.0),  3:     (0.0,   995.32, 0.0),
-                4:   (-533.06, 131.74, 0.0),  5:  (-533.06, 596.05, 0.0),  6:  (-533.06, 1127.06, 0.0),
-                7:  (-1066.12, 338.76, 0.0),  8: (-1066.12, 803.07, 0.0),  9: (-1066.12, 1334.08, 0.0),
-                10:   (533.06,   0.0,  0.0), 11:   (533.06, 464.31, 0.0), 12:   (533.06,  995.32, 0.0),
-                13:  (1066.12, 131.74, 0.0), 14:  (1066.12, 596.05, 0.0), 15:  (1066.12, 1127.06, 0.0),
-                16:  (1599.18, 338.76, 0.0), 17:  (1599.18, 803.07, 0.0), 18:  (1599.18, 1334.08, 0.0)}
-
     # Each detector is 450.56 x 450.56", and according to the WFIRST-STSCI-TR1506A
     # Document, the offsets are (27.5”) in the long direction and (94.2" and 27.5")
     # in the short direction. Assuming 0 offset for SCA01. Then RA offsets are equal
@@ -82,6 +72,16 @@ class WFI(RomanInstrument):
                         (1066.12, 131.74, 0.0),  (1066.12, 596.05, 0.0),  (1066.12, 1127.06, 0.0),
                         # SCA16                  SCA17                    SCA18
                         (1599.18, 338.76, 0.0),  (1599.18, 803.07, 0.0),  (1599.18, 1334.08, 0.0))
+
+    OFFSET_NAMES = ("SCA01", "SCA02", "SCA03", "SCA04", "SCA05", "SCA06",
+                    "SCA07", "SCA08", "SCA09", "SCA10", "SCA11", "SCA12",
+                    "SCA13", "SCA14", "SCA15", "SCA16", "SCA17", "SCA18")
+    N_OFFSET = {1:  DETECTOR_OFFSETS[ 0],  2: DETECTOR_OFFSETS[ 1],  3: DETECTOR_OFFSETS[ 2],
+                4:  DETECTOR_OFFSETS[ 3],  5: DETECTOR_OFFSETS[ 4],  6: DETECTOR_OFFSETS[ 5],
+                7:  DETECTOR_OFFSETS[ 6],  8: DETECTOR_OFFSETS[ 7],  9: DETECTOR_OFFSETS[ 8],
+                10: DETECTOR_OFFSETS[ 9], 11: DETECTOR_OFFSETS[10], 12: DETECTOR_OFFSETS[11],
+                13: DETECTOR_OFFSETS[12], 14: DETECTOR_OFFSETS[13], 15: DETECTOR_OFFSETS[14],
+                16: DETECTOR_OFFSETS[15], 17: DETECTOR_OFFSETS[16], 18: DETECTOR_OFFSETS[17]}
 
     # This is a set of offsets derived from "WFIRST-STSCI-TR1506A"
     #
