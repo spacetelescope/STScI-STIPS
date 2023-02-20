@@ -48,6 +48,7 @@ dependencies:
     - pandeia.engine==1.7
     - synphot==1.1.1
     - stsynphot==1.1.0
+    - soc_roman_tools
     
     # Major modules
     - astropy
