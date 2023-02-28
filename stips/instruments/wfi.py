@@ -36,9 +36,10 @@ class WFI(RomanInstrument):
         self.DEFAULT_FILTER = 'F184'  # Assume for now
         self.SCA_ROTATION = -60 # Rotation of SCA with respect to SIAF
 
-
+        # Get RA and DEC that will be used for detector offset calculations
         RA = kwargs.get('ra', 0)
         DEC = kwargs.get('dec', 0)
+
         # Calculate the detector offsets based on the Roman SIAF file from soc_roman_tools
         # The telescope (tel) frame is defined such that (0, 0) is the center of the boresight
         # path of the WFI in the observatory coordinate system.
@@ -48,35 +49,38 @@ class WFI(RomanInstrument):
 
         # Make array of SCA's
         self.SCA_NAMES = ["WFI01_FULL", "WFI02_FULL", "WFI03_FULL", "WFI04_FULL", "WFI05_FULL", "WFI06_FULL",
-                     "WFI07_FULL", "WFI08_FULL", "WFI09_FULL", "WFI10_FULL", "WFI11_FULL", "WFI12_FULL",
-                     "WFI13_FULL", "WFI14_FULL", "WFI15_FULL", "WFI16_FULL", "WFI17_FULL", "WFI18_FULL"]
+                          "WFI07_FULL", "WFI08_FULL", "WFI09_FULL", "WFI10_FULL", "WFI11_FULL", "WFI12_FULL",
+                          "WFI13_FULL", "WFI14_FULL", "WFI15_FULL", "WFI16_FULL", "WFI17_FULL", "WFI18_FULL"]
 
-        # Offsets are in (arcseconds_ra,arcseconds_dec,degrees_angle)
+        # Default detector offsets in (arcseconds_ra,arcseconds_dec,degrees_angle)
         self.DETECTOR_OFFSETS = [# SCA01           SCA02             SCA03
-                            (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
-                            # SCA04           SCA05             SCA06
-                            (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
-                            # SCA07           SCA08             SCA09
-                            (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
-                            # SCA10           SCA11             SCA12
-                            (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
-                            # SCA13           SCA14             SCA15
-                            (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
-                            # SCA16           SCA17             SCA18
-                            (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]
+                                 (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
+                                 # SCA04           SCA05             SCA06
+                                 (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
+                                 # SCA07           SCA08             SCA09
+                                 (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
+                                 # SCA10           SCA11             SCA12
+                                 (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
+                                 # SCA13           SCA14             SCA15
+                                 (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
+                                 # SCA16           SCA17             SCA18
+                                 (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]
 
-        # Ref point
-        s01 = rsiaf['WFI01_FULL'].sci_to_tel(2043.5, 2043.5)
-        center = SkyCoord(s01[0] * u.arcsec, s01[1] * u.arcsec).skyoffset_frame(-60 * u.deg)
+        # Reference point
+        s01 = rsiaf['WFI01_FULL'].sci_to_tel(self.DETECTOR_SIZE[0] / 2, self.DETECTOR_SIZE[1] / 2)
+        center = SkyCoord(s01[0] * u.arcsec, s01[1] * u.arcsec).skyoffset_frame(self.SCA_ROTATION * u.deg)
 
         for i, sca in enumerate(self.SCA_NAMES):
             # Get V2, V3 coordinate pair in the telescope frame at the center of the SCA
             V2, V3 = rsiaf[sca].sci_to_tel(self.DETECTOR_SIZE[0] / 2, self.DETECTOR_SIZE[1] / 2)
+            # Transform these to the center reference point
             out = ICRS(V2 * u.arcsec, V3 * u.arcsec).transform_to(center)
+            # Get out offsets in X and Y direction of SCA array, convert to arcsec
             X, Y = out.lon.value * 3600, out.lat.value * 3600
-            # Offset in arcsec, arcsec, and degrees angle
+            # Offset in arcsec, arcsec, and degrees angle, converting from deg to radians
             self.DETECTOR_OFFSETS[i] = (X / np.cos(DEC / 180 * np.pi), Y, 0)
 
+        # Copy the results into these variables needed by some functions in STIPS
         self.OFFSET_NAMES = ("SCA01", "SCA02", "SCA03", "SCA04", "SCA05", "SCA06",
                              "SCA07", "SCA08", "SCA09", "SCA10", "SCA11", "SCA12",
                              "SCA13", "SCA14", "SCA15", "SCA16", "SCA17", "SCA18")
