@@ -29,14 +29,15 @@ def rind(x):
     """
     return np.round(x).astype(int)
 
-def get_pandeia_background():
+def get_pandeia_background(wfi_filter):
     """
     Import Pandeia functions to calculate the image background in a given
     filter, in units of electrons per second.
 
     Parameters
     ----------
-    None
+    wfi_filter : str
+        Name of WFI filter
 
     Returns
     -------
@@ -52,7 +53,7 @@ def get_pandeia_background():
 
     # Create default configuration file from Pandeia
     calc_input = build_default_calc('roman','wfi','imaging')
-    #calc_input['configuration']['instrument']['filter'] = wfi_filter
+    calc_input['configuration']['instrument']['filter'] = wfi_filter
 
     # Setup Observation
     calc_config, instrument, strategy, scene_configuration, background, background_level, warnings = setup(calc_input)

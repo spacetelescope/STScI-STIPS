@@ -1132,7 +1132,7 @@ class Instrument(object):
             return bkg*u.ct/u.s
         elif self.background_value == 'pandeia':
             msg = "Returning background {} for 'pandeia'"
-            self.custom_background = get_pandeia_background()
+            self.custom_background = get_pandeia_background(self.filter)
             self._log("info", msg.format(self.custom_background))
             return self.custom_background*u.ct/u.s
         elif self.background_value == 'custom':
