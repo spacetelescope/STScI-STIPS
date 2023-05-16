@@ -29,7 +29,7 @@ def rind(x):
     """
     return np.round(x).astype(int)
 
-def get_pandeia_background(wfi_filter):
+def get_pandeia_background(wfi_filter, webapp = False):
     """
     Import Pandeia functions to calculate the image background in a given
     filter, in units of electrons per second.
@@ -38,16 +38,18 @@ def get_pandeia_background(wfi_filter):
     ----------
     wfi_filter : str
         Name of WFI filter
+    webapp: bool
+        Toggle strict API checking
 
     Returns
     -------
     total_back: float
         Total background in units of electrons per second
     """
-    from pandeia.engine.observation import Observation
-    from pandeia.engine.etc3D import setup, Scene
     from pandeia.engine.calc_utils import build_default_calc
-    from pandeia.engine.astro_spectrum import ConvolvedSceneCube
+    from pandeia.engine.etc3D import setup, Scene
+    from pandeia.engine.observation import Observation
+    from pandeia.engine.signal import DetectorSignal
     from pandeia.engine.background import Background
     import scipy.signal as sg
 
@@ -56,10 +58,10 @@ def get_pandeia_background(wfi_filter):
     calc_input['configuration']['instrument']['filter'] = wfi_filter
 
     # Setup Observation
-    calc_config, instrument, strategy, scene_configuration, background, background_level, warnings = setup(calc_input)
+    calc_config, instrument, strategy, scene_configuration, background, background_level, warnings = setup(calc_input, webapp=webapp)
 
     # Create Scence
-    scene = Scene(input=scene_configuration)
+    scene = Scene('roman', input=scene_configuration, webapp=webapp)
 
     # Create Observation
     observation = Observation(
@@ -67,19 +69,21 @@ def get_pandeia_background(wfi_filter):
         instrument=instrument,
         strategy=strategy,
         background=background,
-        background_level=background_level
+        background_level=background_level,
+        webapp=webapp
         )
 
-    # Calculate Background
-    my_detector_signal = ConvolvedSceneCube(scene = scene, instrument = instrument,
-                                            background = Background(observation),
-                                            psf_library=instrument.psf_library)
+    # Calculate signal from background, without IPC
+    observation.instrument.the_detector.ipc = False
+    my_detector_signal = DetectorSignal(observation, calc_config=calc_config, webapp=webapp, empty_scene=True)
 
-    # Get electron rate and dark current
-    fp_pix_rate = np.ones_like(my_detector_signal.flux_plus_bg_list[0][0]) * observation.instrument.the_detector.dark_current * 100
+    # Extract background rate
+    rate_plus_bg = my_detector_signal.rate_plus_bg_list[0]
+    rate_per_pix = rate_plus_bg['fp_pix']
+
     # Include IPC effects
     kernel = observation.instrument.get_ipc_kernel()
-    detector = sg.fftconvolve(fp_pix_rate, kernel, mode='same')
+    detector = sg.fftconvolve(rate_per_pix, kernel, mode='same')
 
     # Total background
     total_back = np.mean(detector[2:-2,2:-2])
@@ -321,7 +325,7 @@ def DownloadReferenceData():
 
     # webbpsf
     print("Checking webbpsf data")
-    webbpsf_url = "https://stsci.box.com/shared/static/ntb71b3uusf1kzgf9bss0hzbreoja5gg.gz"
+    webbpsf_url = "https://stsci.box.com/shared/static/t90gqazqs82d8nh25249oq1obbjfstq8.gz"
     webbpsf_data_path = os.environ[GetParameter("webbpsf_data_name", use_data=False)]
     webbpsf_data_file = "webbpsf_data.tar.gz"
     if not os.path.isdir(webbpsf_data_path):
@@ -334,14 +338,14 @@ def DownloadReferenceData():
 
     # pandeia
     print("Checking pandeia data")
-    pandeia_data_file = "pandeia_data-1.7.tar.gz"
+    pandeia_data_file = "pandeia_data-2.0.tar.gz"
     pandeia_url = "https://stsci.box.com/shared/static/ycbm34uxhzafgb7te74vyl2emnr1mdty.gz"
     pandeia_data_path = os.environ[GetParameter("pandeia_data_name", use_data=False)]
     if not os.path.isdir(pandeia_data_path):
         print("Downloading pandeia data to {}".format(pandeia_data_path))
         os.makedirs(pandeia_data_path)
         get_compressed_file(pandeia_url, pandeia_data_file, pandeia_data_path,
-                            "pandeia_data-1.7_roman/")
+                            "pandeia_data-2.0_roman/")
     else:
         print("Found at {}".format(pandeia_data_path))
 
