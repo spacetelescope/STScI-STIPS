@@ -139,7 +139,7 @@ class WFI(RomanInstrument):
         # For now, just put them in the middle
         self.PHOTPLAM = {'F062': 0.620, 'F087': 0.869, 'F106': 1.060, 'F129': 1.293, 'F158': 1.577, 'F184': 1.842, 'F146': 1.464}
 
-        self.ZEROPOINTS_AB = {'F062': 26.50, 'F087': 26.36, 'F106': 26.38, 'F129': 26.34, 'F158': 26.36, 'F184': 25.98, 'F146': 27.61}
+        self.ZEROPOINTS_AB = {'F062': 26.73, 'F087': 26.39, 'F106': 26.41, 'F129': 26.43, 'F158': 26.47, 'F184': 26.08, 'F146': 27.66}
         self.PHOTFNU = {}
         for i in self.ZEROPOINTS_AB:
             self.PHOTFNU[i] = 10 ** (0.4 * (8.9 - self.ZEROPOINTS_AB[i]))
