@@ -32,7 +32,7 @@ dependencies:
 
   - pip:
     # Special Modules. These are temporary entries and require documentation.
-    - poppy==1.1.1
+    - poppy==1.0.3
   
     # Core Modules
     - webbpsf==1.1.1
