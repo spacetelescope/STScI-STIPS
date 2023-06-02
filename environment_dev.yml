@@ -41,7 +41,7 @@ dependencies:
     # values. Currently this is the only way to ensure that webbpsf picks up the correct
     # poppy version. This peg should be removed as soon as webbpsf has updated to only
     # use poppy versions that include this fix.
-    - poppy==1.0.3
+    - poppy==1.1.1
   
     # Core Modules
     - webbpsf==1.1.0
