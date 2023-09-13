@@ -55,7 +55,7 @@ def get_pandeia_background(wfi_filter, webapp = False):
 
     # Create default configuration file from Pandeia
     calc_input = build_default_calc('roman','wfi','imaging')
-    calc_input['configuration']['instrument']['filter'] = wfi_filter
+    calc_input['configuration']['instrument']['filter'] = wfi_filter.lower()
 
     # Setup Observation
     calc_config, instrument, strategy, scene_configuration, background, background_level, warnings = setup(calc_input, webapp=webapp)
