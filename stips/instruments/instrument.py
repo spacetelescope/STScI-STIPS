@@ -726,7 +726,7 @@ class Instrument(object):
             note = "BC95_{}_{}_{}".format(model, stringify(age), mag)
             notes = np.append(notes, note)
         t = Table()
-        t['ra'] = Column(data=ras.data, dtype=np.float)
+        t['ra'] = Column(data=ras.data, dtype=float)
         t['dec'] = Column(data=decs.data)
         t['flux'] = Column(data=rates.data)
         t['type'] = Column(data=np.full_like(ras, 'sersic', dtype='S7'))

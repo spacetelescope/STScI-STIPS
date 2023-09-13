@@ -782,7 +782,8 @@ class AstroImage(object):
         g = coords.Grid(1., 1., self.xsize, self.ysize)
         xc, yc = ix, iy
 
-        src = source.Source(config=source_dict)
+        # Roman is the only telescope supported
+        src = source.Source('roman', config=source_dict)
         src.grid = g
         sersic = profile.SersicDistribution(src)
         img = deepcopy(sersic.prof)*flux/np.sum(sersic.prof)
