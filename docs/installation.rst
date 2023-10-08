@@ -9,34 +9,34 @@ in this section along with instructions.
 STIPS Requirements
 ##################
 
-  \• ``pandeia>=3.0``: Exposure time calculator.
+* ``pandeia>=3.0``: Exposure time calculator.
 
-  \• ``webbpsf==1.1.1``: Nancy Grace Roman PSF calculator. STIPS also requires that ``poppy``, a
+* ``webbpsf==1.1.1``: Nancy Grace Roman PSF calculator. STIPS also requires that ``poppy``, a
   support package used by WebbPSF, have version ``>=1.0.3``.
 
-  \• ``astropy``: STIPS uses Astropy in order to:
+* ``astropy``: STIPS uses Astropy in order to:
 
-    \• Read and write FITS files.
+    * Read and write FITS files.
 
-    \• Read and write ASCII tables (specifically in the IPAC format).
+    * Read and write ASCII tables (specifically in the IPAC format).
 
-    \• Generate Sersic profile models (if any are in the generated scene).
+    * Generate Sersic profile models (if any are in the generated scene).
 
-  \• ``montage_wrapper``: STIPS uses ``montage`` to generate mosaics. It is
+* ``montage_wrapper``: STIPS uses ``montage`` to generate mosaics. It is
   only imported if STIPS is asked to generate a multi-detector image.
 
-  \• ``numpy``: STIPS uses ``numpy`` extensively for almost everything that it does.
+* ``numpy``: STIPS uses ``numpy`` extensively for almost everything that it does.
 
-  \• ``photutils``: STIPS uses ``photutils`` to determine the flux inside the half-light radius
+* ``photutils``: STIPS uses ``photutils`` to determine the flux inside the half-light radius
   in generated Sersic profiles.
 
-  \• ``synphot>=1.1.1`` and ``stsynphot>=1.1.0``: STIPS uses ``synphot`` and
+* ``synphot>=1.1.1`` and ``stsynphot>=1.1.0``: STIPS uses ``synphot`` and
   ``stsynphot`` to generate bandpasses, count rates, and zero points. Note that
   the reference data must also be downloaded, as described below in :ref:`downloading-required-ref-data`.
 
-  \• ``scipy``: STIPS uses SciPy to manipulate its internal images (zoom and rotate).
+* ``scipy``: STIPS uses SciPy to manipulate its internal images (zoom and rotate).
 
-  \• ``esutil``: Used for retrieving data from sqlite databases in the form of ``numpy`` arrays.
+* ``esutil``: Used for retrieving data from sqlite databases in the form of ``numpy`` arrays.
 
 .. warning::
    ``esutil`` is not installed by the STIPS ``setup.py`` file because its pip

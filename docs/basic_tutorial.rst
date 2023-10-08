@@ -107,7 +107,7 @@ population parameters.  In this example, we will create the following:
                         'offset_ra': 0.0,
                         'offset_dec': 0.0
                        }
-   
+
   stellar_cat_file = scm.CreatePopulation(stellar_parameters)
   print("Stellar population saved to file {}".format(stellar_cat_file))
 
@@ -126,7 +126,7 @@ population parameters.  In this example, we will create the following:
                        'offset_ra': 0.0,
                        'offset_dec': 0.0,
                       }
-   
+
   galaxy_cat_file = scm.CreateGalaxies(galaxy_parameters)
   print("Galaxy population saved to file {}".format(galaxy_cat_file))
 
@@ -140,14 +140,14 @@ will create a single Roman WFI observation.
 
 STIPS uses a bit of specialized terminology to describe its observations.  In particular:
 
-  \• An *observation* is a set of exposures with a single instrument (e.g. Roman WFI), one or
+* An *observation* is a set of exposures with a single instrument (e.g. Roman WFI), one or
   more filters (where each exposure in the observation will be repeated for every included
   filter), and some number of the instrument's detectors (for WFI, between 1 and 18),
   where each exposure will be repeated, with the appropriate inter-detector offset, for
   every included director, a single chosen sky background value, a single exposure time
   (applied to each exposure in the observation), and one or more offsets.
 
-  \• An *offset* is a single telescope pointing.  For each offset specified in the observation,
+* An *offset* is a single telescope pointing.  For each offset specified in the observation,
   an exposure will be created for each detector and each filter at the offset.  STIPS may,
   optionally, create one or more mosaics at each offset, with a single mosaic including
   all detectors with the same filter.  In addition, STIPS can create a single combined
@@ -155,39 +155,39 @@ STIPS uses a bit of specialized terminology to describe its observations.  In pa
 
 In this case, we will create an observation with:
 
-  \• Roman WFI F129
+  * Roman WFI F129
 
-  \• 1 detector
+  * 1 detector
 
-  \• No distortion
+  * No distortion
 
-  \• Sky background of 0.15 counts/s/pixel
+  * Sky background of 0.15 counts/s/pixel
 
-  \• The ID 1
+  * The ID 1
 
-  \• An exposure of 1000 seconds
+  * An exposure of 1000 seconds
 
 We will use a single offset with:
 
-  \• An ID of 1
+  * An ID of 1
 
-  \• No centering (if an offset is centered, then, for a multi-detector observation, each
-  detector is centered on the offset co-coordinates individually rather than the instrument
-  as a whole beinf centered there)
+  * No centering (if an offset is centered, then, for a multi-detector observation, each
+    detector is centered on the offset co-coordinates individually rather than the instrument
+    as a whole beinf centered there)
 
-  \• No change in RA, DEC, or PA from the center of the observation
+  * No change in RA, DEC, or PA from the center of the observation
 
 We will use the following residual settings:
 
-  \• Flatfield residual: off
+  * Flatfield residual: off
 
-  \• Dark current residual: off
+  * Dark current residual: off
 
-  \• Cosmic ray removal residual: off
+  * Cosmic ray removal residual: off
 
-  \• Poisson noise residual: on
+  * Poisson noise residual: on
 
-  \• Readnoise residual: on
+  * Readnoise residual: on
 
 .. code-block:: python
 
@@ -200,7 +200,7 @@ We will use the following residual settings:
             'offset_dec': 0.0,
             'offset_pa': 0.0
             }
-  
+
   residuals = {
                'residual_flat': False,
                'residual_dark': False,
