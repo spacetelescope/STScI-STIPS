@@ -18,11 +18,7 @@ import uuid
 # Local Modules
 from ..stellar_module import StarGenerator
 from ..astro_image import AstroImage
-from ..utilities import GetStipsData
-from ..utilities import OffsetPosition
-from ..utilities import SelectParameter
-from ..utilities import get_pandeia_background
-from ..utilities import StipsDataTable
+from ..utilities import GetStipsData, OffsetPosition, SelectParameter, get_pandeia_background, StipsDataTable
 from ..utilities.makePSF import PSF_GRID_SIZE
 
 class Instrument(object):
