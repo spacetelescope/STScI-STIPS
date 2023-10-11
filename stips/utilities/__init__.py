@@ -1,17 +1,17 @@
 __all__ = ['utilities']
 
 # Local Definitions
-from .utilities import StipsEnvironment
-from .utilities import SetupDataPaths
-from .utilities import DownloadReferenceData
-from .utilities import GetStipsDataDir
-from .utilities import GetStipsData
-from .utilities import SelectParameter
-from .utilities import OffsetPosition
-from .utilities import InstrumentList
-from .utilities import read_metadata
-from .utilities import read_table
-from .utilities import rind
-from .utilities import sersic_lum
-from .utilities import get_pandeia_background
-from .utilities import StipsDataTable
+from .DataTable import StipsDataTable
+from .utilities import (StipsEnvironment,
+						SetupDataPaths,
+						DownloadReferenceData,
+						GetStipsDataDir,
+						GetStipsData,
+						SelectParameter,
+						OffsetPosition,
+						InstrumentList,
+						read_metadata,
+						read_table,
+						rind,
+						sersic_lum,
+						get_pandeia_background)
