@@ -25,7 +25,7 @@ channels:
 dependencies:
   # Base dependencies
   - pip
-  - python>=3.8
+  - python>=3.10
   - jupyter
   - Cython
   - esutil # installed from conda because you need the pre-compiled binaries.
@@ -33,14 +33,14 @@ dependencies:
   - pip:
     # Special Modules. These are temporary entries and require documentation.
     - poppy==1.0.3
-  
+
     # Core Modules
     - webbpsf==1.1.1
     - pandeia.engine==3.0
     - synphot==1.1.1
     - stsynphot==1.1.0
     - soc_roman_tools
-    
+
     # Major modules
     - astropy
     - photutils
@@ -59,15 +59,18 @@ dependencies:
     - docutils
     - sphinx
     - sphinx_rtd_theme
-    - stsci_rtd_theme
+    # - stsci_rtd_theme
+    # (install stsci_rtd_theme from master until a post 1.0 release occurs
+    #  to prevent issues with bullets in the documentation)
+    - git+https://github.com/spacetelescope/stsci_rtd_theme.git@master
     - sphinx_automodapi
     - sphinx_autoapi
-    - astropy_helpers
+    - sphinx_astropy
 
     # Testing
     - tox
     - tox-conda
     - pytest-astropy
-    
+
     # Current package
     - .
