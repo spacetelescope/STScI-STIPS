@@ -81,15 +81,15 @@ Observation Keywords
 --------------------
 
 observation_default_background (default *0.0*)
-	The default sky background in counts/s/detector pixel. Currently this keyword can be set to
+	The default sky background in counts/s/detector pixel. Currently this keyword can be set to:
 
-		\• any integer or floating point value, in which case that value will be
-		used directly.
+	* any integer or floating point value, in which case that value will be
+	  used directly.
 
-		\• any of the string values 'none', 'low', 'avg', or 'high'. In this
-		case, 'none' is always treated as zero, and for any other keyword if the
-		value is defined for the instrument/detector selected, that value will
-		be used. If no such value can be found, the background will be set to 0.
+	* any of the string values 'none', 'low', 'avg', or 'high'. In this
+	  case, 'none' is always treated as zero, and for any other keyword if the
+	  value is defined for the instrument/detector selected, that value will
+	  be used. If no such value can be found, the background will be set to 0.
 
 	If used as a keyword argument, ``background`` can be used instead of
 	``observation_default_background`` for historical reasons.

@@ -4,7 +4,7 @@ import os
 
 __all__ = ['observation_module', 'scene_module']
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 version = __version__
 
 from .utilities import SetupDataPaths

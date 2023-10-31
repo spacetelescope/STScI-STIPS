@@ -27,23 +27,23 @@ In FITS tables, metadata is included as header keywords.
 STIPS Table Formats
 -------------------
 
-  \• :ref:`phoenix-tables`
+* :ref:`phoenix-tables`
 
-  \• :ref:`realtime-phoenix-tables`
+* :ref:`realtime-phoenix-tables`
 
-  \• :ref:`pandeia-tables`
+* :ref:`pandeia-tables`
 
-  \• :ref:`bc95-catalog`
+* :ref:`bc95-catalog`
 
-  \• :ref:`internal-catalog`
+* :ref:`internal-catalog`
 
-  \• :ref:`mixed-catalog`
+*  :ref:`mixed-catalog`
 
-  \• :ref:`multifilter-catalog`
+* :ref:`multifilter-catalog`
 
-  \• :ref:`generic-catalog`
+* :ref:`generic-catalog`
 
-  \• Output
+* Output
 
 .. _phoenix-tables:
 
@@ -58,29 +58,28 @@ combination is available in the grid) or at runtime (if the filter throughput
 can be calculated but is not present in the grid). A Phoenix table
 specifies each source with the following columns:
 
-  \• ID (used to report the source in output tables)
+* ID (used to report the source in output tables)
 
-  \• Dataset (all sources within a dataset must have the same age and metallicity)
+* Dataset (all sources within a dataset must have the same age and metallicity)
 
-  \• RA (decimal degrees)
+* RA (decimal degrees)
 
-  \• DEC (decimal degrees)
+* DEC (decimal degrees)
 
-  \• Age (years)
+* Age (years)
 
-  \• Metallicity ([Fe/H])
+* Metallicity ([Fe/H])
 
-  \• Distance (kpc)
+* Distance (kpc)
 
-  \• Mass (solar masses)
+* Mass (solar masses)
 
-  \• Binary status (whether or not the source is a binary companion of the previous
-  source)
+* Binary status (whether or not the source is a binary companion of the previous source)
 
 In order to identify a table as a Phoenix table, the following metadata must be
 present:
 
-  \• ``type=phoenix``
+* ``type=phoenix``
 
 Phoenix tables will be converted to the Internal input format by the STIPS
 Observation Module, and observed sources will be listed in an output table.
@@ -96,26 +95,26 @@ generated and observed at runtime. As a result, Realtime Phoenix tables are much
 slower to generate. A Realtime Phoenix table specifies each source with the
 following columns:
 
-  \• ID
+* ID
 
-  \• RA (decimal degrees)
+* RA (decimal degrees)
 
-  \• DEC (decimal degrees)
+* DEC (decimal degrees)
 
-  \• Teff
+* Teff
 
-  \• Log(g)
+* Log(g)
 
-  \• Metallicity ([Fe/H])
+* Metallicity ([Fe/H])
 
-  \• Apparent Magnitude
+* Apparent Magnitude
 
 In order to use a Realtime Phoenix table, the following metadata must be
 present:
 
-  \• ``type=phoenix_realtime``
+* ``type=phoenix_realtime``
 
-  \• ``bandpass`` (this must be set to the bandpass in which the effective magnitude
+* ``bandpass`` (this must be set to the bandpass in which the effective magnitude
   is measured)
 
 Realtime Phoenix tables will be converted to the Internal input format by the
@@ -132,15 +131,15 @@ in order to ensure that STIPS results are sufficiently close to the results
 produced by Pandeia. They are a variant of the Realtime Phoenix table, in which
 the following columns are present:
 
-  \• ID
+* ID
 
-  \• RA (decimal degrees)
+* RA (decimal degrees)
 
-  \• DEC (decimal degrees)
+* DEC (decimal degrees)
 
-  \• Key
+* Key
 
-  \• Apparent Magnitude
+* Apparent Magnitude
 
 Here the Key column replaces effective temperature, log(g), and metallicity,
 and it is set to the key that Pandeia uses in producing its own Phoenix model
@@ -150,9 +149,9 @@ keys in Pandeia.
 
 In order to use a Pandeia table, the following metadata must be present:
 
-  \• ``type=pandeia``
+* ``type=pandeia``
 
-  \• ``bandpass``
+* ``bandpass``
 
 Bandpass is treated as it is in Realtime Phoenix tables. Table conversions are
 done in exactly the same way as Realtime Phoenix tables.
@@ -168,38 +167,38 @@ Charlot Isochrone Synthesis Spectral Evolutionary Code (December 1995 version)
 A BC95 catalog is an extended-source catalog, and specifies sources with the
 following columns:
 
-  \• ID
+* ID
 
-  \• RA (decimal degrees)
+* RA (decimal degrees)
 
-  \• DEC (decimal degrees)
+* DEC (decimal degrees)
 
-  \• Redshift
+* Redshift
 
-  \• Model (one of 'a', 'b', 'c', 'd', or 'e', with the description of each model
+* Model (one of 'a', 'b', 'c', 'd', or 'e', with the description of each model
   provided in the
   `BC95 README <https://www.stsci.edu/hst/instrumentation/reference-data-for-calibration-and-tools/astronomical-catalogs/the-bruzual-charlot-atlas>`_
   file.
 
-  \• Age (one of 10E5, 25E5, 50E5, 76E5, 10E6, 25E6, 50E6, 10E7, 50E7, 10E8, 50E8,
+* Age (one of 10E5, 25E5, 50E5, 76E5, 10E6, 25E6, 50E6, 10E7, 50E7, 10E8, 50E8,
   10E9, years)
 
-  \• Profile (one of 'expdisk' or 'devauc')
+* Profile (one of 'expdisk' or 'devauc')
 
-  \• Radius (arcseconds)
+* Radius (arcseconds)
 
-  \• Axial Ratio
+* Axial Ratio
 
-  \• PA (degrees)
+* PA (degrees)
 
-  \• Apparent Surface Brightness
+* Apparent Surface Brightness
 
 In order to identify the catalog as a BC95 catalog, the following metadata
 must be present:
 
-  \• ``type=bc95``
+* ``type=bc95``
 
-  \• ``bandpass``
+* ``bandpass``
 
 During the observation, the catalog will be converted into an Internal format,
 with any necessary additional metadata added at this point. Galaxy spectra will
@@ -215,35 +214,35 @@ Internal Catalog
 An Internal catalog is intended to include either point or extended sources,
 but is limited to a single filter. It must contain the following columns:
 
-  \• ID
+* ID
 
-  \• RA (decimal degrees)
+* RA (decimal degrees)
 
-  \• DEC (decimal degrees)
+* DEC (decimal degrees)
 
-  \• FLUX (for point sources, count rate in the specified filter, counts/s. For
+* FLUX (for point sources, count rate in the specified filter, counts/s. For
   sersic profiles, surface brightness inside Re in the specified filter,
   counts/s)
 
-  \• TYPE (either 'point' or 'sersic')
+* TYPE (either 'point' or 'sersic')
 
-  \• N (Sersic profile index if TYPE is 'sersic', otherwise ignored)
+* N (Sersic profile index if TYPE is 'sersic', otherwise ignored)
 
-  \• Re (half-light radius in pixels if TYPE is 'sersic', otherwise ignored)
+* Re (half-light radius in pixels if TYPE is 'sersic', otherwise ignored)
 
-  \• Phi (angle of PA in degrees if TYPE is 'sersic', otherwise ignored)
+* Phi (angle of PA in degrees if TYPE is 'sersic', otherwise ignored)
 
-  \• Ratio (axial ratio if TYPE is 'sersic', otherwise ignored)
+* Ratio (axial ratio if TYPE is 'sersic', otherwise ignored)
 
-  \• Notes (any notes that are needed. Not used directly, but any notes will be
+* Notes (any notes that are needed. Not used directly, but any notes will be
   retained in the observed catalog produced during the observation.)
 
 In order to identify the catalog as an Internal catalog, and in order to use
 it for STIPS observations, the following columns must be present:
 
-  \• ``type=internal``
+* ``type=internal``
 
-  \• ``filter``
+* ``filter``
 
 ``filter`` is the filter to which the catalog has been calibrated. This
 catalog type will not be converted during observation, but an observed source
@@ -257,15 +256,15 @@ Mixed Catalog
 A Mixed catalog is identical to an Internal catalog, except that it
 contains one additional column:
 
-  \• Units (one of 'p' for photons/s, 'e' for electrons/s, 'j' for Jansky, or 'c'
+* Units (one of 'p' for photons/s, 'e' for electrons/s, 'j' for Jansky, or 'c'
   for counts/s.)
 
 In order to identify the catalog as a Mixed catalog, the following metadata
 must be present:
 
-  \• ``type=mixed``
+* ``type=mixed``
 
-  \• ``filter``
+* ``filter``
 
 This catalog will have its flux values converted to counts/s, and will then be
 treated as an Internal catalog.
@@ -282,7 +281,7 @@ provide the source count rate in that filter.
 
 A Multifilter catalog must have the following metadata:
 
-  \• ``type=multifilter``
+* ``type=multifilter``
 
 The appropriate filter's count rate will be renamed as 'flux' as the catalog
 is converted to Internal format.
@@ -294,13 +293,13 @@ Generic Catalog
 
 A Generic catalog is a point-source catalog with the following columns:
 
-  \• RA (decimal degrees)
+* RA (decimal degrees)
 
-  \• DEC (decimal degrees)
+* DEC (decimal degrees)
 
-  \• One column for each desired filter, showing the count rate in that filter.
+* One column for each desired filter, showing the count rate in that filter.
 
-  \• (Optional) an ID column for each source.
+* (Optional) an ID column for each source.
 
 No specific metadata is required.
 
