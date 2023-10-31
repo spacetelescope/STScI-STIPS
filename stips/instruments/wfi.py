@@ -1,11 +1,7 @@
 __filetype__ = "detector"
 
 # Local Modules
-from astropy import units as u
-from astropy.coordinates import SkyCoord, ICRS
 from .roman_instrument import RomanInstrument
-from soc_roman_tools.siaf import siaf
-import numpy as np
 
 
 class WFI(RomanInstrument):
@@ -24,163 +20,6 @@ class WFI(RomanInstrument):
         Initializes detectors (single detector for now).
         """
         self.classname = self.__class__.__name__
-
-        # N_DETECTORS is a set of options on how many of the instrument's detectors you want to use
-        self.N_DETECTORS = [1]
-        self.INSTRUMENT_OFFSET = (0., 0., 0.)  # Presumably there is one, but not determined
-        self.DETECTOR_SIZE = (4088, 4088)  # pixels
-        self.PIXEL_SIZE = 10.0  # um (Assume for now)
-        self.SCALE = [0.11, 0.11]  # Assume for now
-        self.FILTERS = ('F062', 'F087', 'F106', 'F129', 'F158', 'F184', 'F146')
-        self.DEFAULT_FILTER = 'F184'  # Assume for now
-        self.SCA_ROTATION = -60  # Rotation of SCA with respect to SIAF
-
-        # Get RA and DEC that will be used for detector offset calculations
-        # RA = kwargs.get('ra', 0)
-        DEC = kwargs.get('dec', 0)
-
-        # Calculate the detector offsets based on the Roman SIAF file from soc_roman_tools
-        # The telescope (tel) frame is defined such that (0, 0) is the center of the boresight
-        # path of the WFI in the observatory coordinate system.
-
-        # Get Roman SIAF
-        rsiaf = siaf.RomanSiaf()
-
-        # Make array of SCA's
-        self.SCA_NAMES = ["WFI01_FULL", "WFI02_FULL", "WFI03_FULL", "WFI04_FULL", "WFI05_FULL",
-                          "WFI06_FULL", "WFI07_FULL", "WFI08_FULL", "WFI09_FULL", "WFI10_FULL",
-                          "WFI11_FULL", "WFI12_FULL", "WFI13_FULL", "WFI14_FULL", "WFI15_FULL",
-                          "WFI16_FULL", "WFI17_FULL", "WFI18_FULL"]
-
-        # Default detector offsets in (arcseconds_ra,arcseconds_dec,degrees_angle)
-        self.DETECTOR_OFFSETS = [# SCA01           SCA02             SCA03
-                                 (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
-                                 # SCA04           SCA05             SCA06
-                                 (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
-                                 # SCA07           SCA08             SCA09
-                                 (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
-                                 # SCA10           SCA11             SCA12
-                                 (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
-                                 # SCA13           SCA14             SCA15
-                                 (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
-                                 # SCA16           SCA17             SCA18
-                                 (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]
-
-        # Reference point
-        s01 = rsiaf['WFI01_FULL'].sci_to_tel(self.DETECTOR_SIZE[0] / 2, self.DETECTOR_SIZE[1] / 2)
-        center = SkyCoord(s01[0] * u.arcsec, 
-                          s01[1] * u.arcsec).skyoffset_frame(self.SCA_ROTATION * u.deg)
-
-        for i, sca in enumerate(self.SCA_NAMES):
-            # Get V2, V3 coordinate pair in the telescope frame at the center of the SCA
-            V2, V3 = rsiaf[sca].sci_to_tel(self.DETECTOR_SIZE[0] / 2, self.DETECTOR_SIZE[1] / 2)
-            # Transform these to the center reference point
-            out = ICRS(V2 * u.arcsec, V3 * u.arcsec).transform_to(center)
-            # Get out offsets in X and Y direction of SCA array, convert to arcsec
-            X, Y = out.lon.value * 3600, out.lat.value * 3600
-            # Offset in arcsec, arcsec, and degrees angle, converting from deg to radians
-            self.DETECTOR_OFFSETS[i] = (X / np.cos(DEC / 180 * np.pi), Y, 0)
-
-        # Copy the results into these variables needed by some functions in STIPS
-        self.OFFSET_NAMES = ("SCA01", "SCA02", "SCA03", "SCA04", "SCA05", "SCA06",
-                             "SCA07", "SCA08", "SCA09", "SCA10", "SCA11", "SCA12",
-                             "SCA13", "SCA14", "SCA15", "SCA16", "SCA17", "SCA18")
-        self.N_OFFSET = {1: self.DETECTOR_OFFSETS[0], 2: self.DETECTOR_OFFSETS[1],
-                         3: self.DETECTOR_OFFSETS[2], 4: self.DETECTOR_OFFSETS[3],
-                         5: self.DETECTOR_OFFSETS[4], 6: self.DETECTOR_OFFSETS[5],
-                         7: self.DETECTOR_OFFSETS[6], 8: self.DETECTOR_OFFSETS[7],
-                         9: self.DETECTOR_OFFSETS[8], 10: self.DETECTOR_OFFSETS[9],
-                         11: self.DETECTOR_OFFSETS[10], 12: self.DETECTOR_OFFSETS[11],
-                         13: self.DETECTOR_OFFSETS[12], 14: self.DETECTOR_OFFSETS[13],
-                         15: self.DETECTOR_OFFSETS[14], 16: self.DETECTOR_OFFSETS[15],
-                         17: self.DETECTOR_OFFSETS[16], 18: self.DETECTOR_OFFSETS[17]}
-
-        # This is a set of offsets derived from "WFIRST-STSCI-TR1506A"
-        #   Further, it assumes no rotation or imperfection (see ASCII diagrams).
-        #       07             16
-        #       08 04       13 17
-        #       09    01 10    18
-        #          05       14
-        #          06 02 11 15
-        #             03 12
-        #
-        # The following positions come from the spreadsheet
-        # "GRISM off orders position_Zernikes_efficiency data_v4_20200424.xlsx" on
-        # the "WSM-GRISM" tab, with values in mm. Note that for all detectors values
-        # are taken from Field Position 1 (centre) for a wavelength of 1 micron.
-        #
-        # These are referred to as FPA positions because they are the detector
-        # positions on the focal plane array, albeit with the Y axis inverted to
-        # yield WFI-local co-ordinates rather than FPA-local co-ordinates.
-
-        self.FPA_GLOBAL_ROTATION = -120.  # degrees
-
-        # From WFIRST-STScI-TR1506A(3).pdf, 2.5mm=27.5", and 8.564mm=94.2"
-        self.DETECTOR_MM_ARCSEC = 11.
-
-        # I can't currently figure out rotation angles (or rather figure out which
-        # rotation angle to use), so I'm setting everything to just zero for now.
-        self.DETECTOR_ROTATION = (0., 0., 0., 0., 0., 0., 0., 0., 0.,
-                                  0., 0., 0., 0., 0., 0., 0., 0., 0.)
-
-        self.PSF_INSTRUMENT = "WFI"
-
-        # Reference Files
-        self.FLATFILE = 'err_flat_wfi.fits'  # Use for the moment
-        self.DARKFILE = 'err_rdrk_wfi.fits'  # IREF, IHB (use for the moment)
-
-        # Background Values
-        self.BACKGROUND = {'none': {'F062': 0., 'F087': 0., 'F106': 0.,
-                                    'F129': 0., 'F158': 0., 'F184': 0., 'F146': 0.},
-                           'avg':  {'F062': 1.401E+00, 'F087': 1.401E+00, 'F106': 1.401E+00, 'F129': 7.000E-01,
-                                    'F158': 7.521E-01, 'F184': 8.500E-01, 'F146': 7.000E-01}}
-        self.BACKGROUNDS_V = ['none', 'avg', 'med', 'max', 'min']
-        self.BACKGROUNDS = ['None', 'Average zodiacal background', 'Median zodiacal background',
-                            'Maximum zodiacal background', 'Minimum zodiacal background']
-        self.BGTEXT = {'none': 'None', 'avg': 'Average zodiacal background',
-                       'med': 'Median zodiacal background', 'max': 'Maximum zodiacal background',
-                       'min': 'Minimum zodiacal background', 'custom': 'Custom thermal background rate',
-                       'pandeia': 'Pandeia background rate'}
-        # PHOTFNU has units of Jy
-        # For now, just assuming similar PHOTFNU to WFC3IR.
-        # For now, just put them in the middle
-        self.PHOTPLAM = {'F062': 0.620, 'F087': 0.869, 'F106': 1.060, 'F129': 1.293,
-                         'F158': 1.577, 'F184': 1.842, 'F146': 1.464}
-
-        self.ZEROPOINTS_AB = {'F062': 26.73, 'F087': 26.39, 'F106': 26.41, 'F129': 26.43,
-                              'F158': 26.47, 'F184': 26.08, 'F146': 27.66}
-        self.PHOTFNU = {}
-        for i in self.ZEROPOINTS_AB:
-            self.PHOTFNU[i] = 10 ** (0.4 * (8.9 - self.ZEROPOINTS_AB[i]))
-
-        self.DITHERS = ("SUBPIXEL ONLY", "BOX-UVIS", "BLOB")  # Assume for now
-        self.DITHER_POINTS = {
-                                 "SUBPIXEL ONLY": ["0"],
-                                 "BOX-UVIS": ["4"],
-                                 "BLOB": ["1", "2"]
-                              }
-        self.DITHER_SIZE = {
-                             "SUBPIXEL ONLY": ["STABDARD"],
-                             "BOX-UVIS": ["Standard"],
-                             "BLOB": ["Standard"]
-                           }
-        self.DITHER_SUBPIXEL = {
-                                 "SUBPIXEL ONLY": ["LINE", "LINE-3PT", "BOX-MIN"],
-                                 "BOX-UVIS": ["NONE", "LINE", "LINE-3PT", "BOX-MIN"],
-                                 "BLOB": ["NONE", "LINE", "LINE-3PT", "BOX-MIN"]
-                               }
-        self.DITHER_OFFSETS = {
-                                 "BOX-UVIS": [(-11.071, -17.744), (11.947, -17.457), 
-                                                (11.071, 17.744), (-11.947, 17.457)],
-                                 "BLOB": [(-1.930, -1.729), (1.930, 1.729)],
-                                 "SUBPIXEL": {
-                                                 "NONE":     [(0.000, 0.000)],
-                                                 "BOX-MIN":  [(0.000, 0.000), (0.542, 0.182), (0.339, 0.485), (-0.203, 0.303)],
-                                                 "LINE":     [(0.000, 0.000), (0.474, 0.424)],
-                                                 "LINE-3PT": [(0.000, 0.000), (0.451, 0.403), (0.902, 0.806)]
-                                             }
-                              }
-
         # Initialize superclass
         super().__init__(**kwargs)
 
@@ -212,3 +51,170 @@ class WFI(RomanInstrument):
 
     INSTRUMENT = "WFI"
     DETECTOR = "WFI"
+
+    OFFSET_NAMES = ("SCA01", "SCA02", "SCA03", "SCA04", "SCA05", "SCA06",
+                    "SCA07", "SCA08", "SCA09", "SCA10", "SCA11", "SCA12",
+                    "SCA13", "SCA14", "SCA15", "SCA16", "SCA17", "SCA18")
+    N_OFFSET = {1:      (0.0,    0.0,  0.0),  2:     (0.0,  464.31, 0.0),  3:     (0.0,   995.32, 0.0),
+                4:   (-533.06, 131.74, 0.0),  5:  (-533.06, 596.05, 0.0),  6:  (-533.06, 1127.06, 0.0),
+                7:  (-1066.12, 338.76, 0.0),  8: (-1066.12, 803.07, 0.0),  9: (-1066.12, 1334.08, 0.0),
+                10:   (533.06,   0.0,  0.0), 11:   (533.06, 464.31, 0.0), 12:   (533.06,  995.32, 0.0),
+                13:  (1066.12, 131.74, 0.0), 14:  (1066.12, 596.05, 0.0), 15:  (1066.12, 1127.06, 0.0),
+                16:  (1599.18, 338.76, 0.0), 17:  (1599.18, 803.07, 0.0), 18:  (1599.18, 1334.08, 0.0)}
+
+    # Each detector is 450.56 x 450.56", and according to the WFIRST-STSCI-TR1506A
+    # Document, the offsets are (27.5”) in the long direction and (94.2" and 27.5")
+    # in the short direction. Assuming 0 offset for SCA01. Then RA offsets are equal
+    # to 478.06", and DEC offsets are 478.06" for the lower SCAs and 544.76 for the
+    # upper ones. Assuming no rotation offset.
+
+    # Offsets are in (arcseconds_ra,arcseconds_dec,degrees_angle)
+    '''
+    DETECTOR_OFFSETS = (# SCA01                                        SCA02                                         SCA03                                         SCA04
+                        ((2*27.5+478.06)*( 0),(478.06-27.5/2)*( 0),0.),            ((2*27.5+478.06)*( 0),(478.06-27.5/2)*( 1),0.),            ((2*27.5+478.06)*( 0),(478.06-27.5/2)*( 2)+66.7,0.),       ((2*27.5+478.06)*(-1),(478.06-27.5/2)*( 0)+188.2*0.7,0.),
+                        # SCA05                                        SCA06                                         SCA07                                         SCA08
+                        ((2*27.5+478.06)*(-1),(478.06-27.5/2)*( 1)+188.2*0.7,0.),      ((2*27.5+478.06)*(-1),(478.06-27.5/2)*( 2)+66.7+188.2*0.7,0.), ((2*27.5+478.06)*(-2),(478.06-27.5/2)*( 0)+376.4*0.9,0.),      ((2*27.5+478.06)*(-2),(478.06-27.5/2)*( 1)+376.4*0.9,0.),
+                        # SCA09                                        SCA10                                         SCA11                                         SCA12
+                        ((2*27.5+478.06)*(-2),(478.06-27.5/2)*( 2)+66.7+376.4*0.9,0.), ((2*27.5+478.06)*( 1),(478.06-27.5/2)*( 0),0.),            ((2*27.5+478.06)*( 1),(478.06-27.5/2)*( 1),0.),            ((2*27.5+478.06)*( 1),(478.06-27.5/2)*( 2)+66.7,0.),
+                        # SCA13                                        SCA14                                         SCA15                                         SCA16
+                        ((2*27.5+478.06)*( 2),(478.06-27.5/2)*( 0)+188.2*0.7,0.),      ((2*27.5+478.06)*( 2),(478.06-27.5/2)*( 1)+188.2*0.7,0.),      ((2*27.5+478.06)*( 2),(478.06-27.5/2)*( 2)+66.7+188.2*0.7,0.), ((2*27.5+478.06)*( 3),(478.06-27.5/2)*( 0)+376.4*0.9,0.),
+                        # SCA17                                        SCA18
+                        ((2*27.5+478.06)*( 3),(478.06-27.5/2)*( 1)+376.4*0.9,0.),      ((2*27.5+478.06)*( 3),(478.06-27.5/2)*( 2)+66.7+376.4*0.9,0.))
+    '''
+
+    DETECTOR_OFFSETS = (  # SCA01                  SCA02                    SCA03
+                        (0.0, 0.0, 0.0),         (0.0, 464.31, 0.0),      (0.0, 995.32, 0.0),
+                        # SCA04                  SCA05                    SCA06
+                        (-533.06, 131.74, 0.0),  (-533.06, 596.05, 0.0),  (-533.06, 1127.06, 0.0),
+                        # SCA07                  SCA08                    SCA09
+                        (-1066.12, 338.76, 0.0), (-1066.12, 803.07, 0.0), (-1066.12, 1334.08, 0.0),
+                        # SCA10                  SCA11                    SCA12
+                        (533.06, 0.0, 0.0),      (533.06, 464.31, 0.0),   (533.06, 995.32, 0.0),
+                        # SCA13                  SCA14                    SCA15
+                        (1066.12, 131.74, 0.0),  (1066.12, 596.05, 0.0),  (1066.12, 1127.06, 0.0),
+                        # SCA16                  SCA17                    SCA18
+                        (1599.18, 338.76, 0.0),  (1599.18, 803.07, 0.0),  (1599.18, 1334.08, 0.0))
+
+    # This is a set of offsets derived from "WFIRST-STSCI-TR1506A"
+    #
+    # Since that document doesn't actually cover the column offsets, they are
+    #   assumed to be 188.2" e.g. between 08 and 07, and 376.4" e.g. between
+    #   09 and 08 (and the same for each other column)(see ASCII diagrams).
+    #   Further, it assumes no rotation or imperfection.
+    #       09             18
+    #
+    #       08 06       15 17
+    #       07    03 12    16
+    #          05       14
+    #          04 02 11 13
+    #             01 10
+
+    # The detector positions WRT to WFI Local FOV are as follows (with the
+    # X-axis pointing right and the Y-axis pointing up):
+    #
+    #             01 10
+    #          04 02 11 13
+    #          05       14
+    #       07    03 12    16
+    #       08 06       15 17
+    #
+    #       09             18
+    #
+    # with the large gaps (e.g. 09-08) showing the larger offset between the
+    # bottom row of detectors and the top two rows, or, in the case of the
+    # offsets between columns (e.g. the Y positions of 07 vs. 04 vs. 01) the
+    # staggered offsets of the columns.
+    #
+    # The following positions come from the spreadsheet
+    # "GRISM off orders position_Zernikes_efficiency data_v4_20200424.xlsx" on
+    # the "WSM-GRISM" tab, with values in mm. Note that for all detectors values
+    # are taken from Field Position 1 (centre) for a wavelength of 1 micron.
+    #
+    # These are referred to as FPA positions because they are the detector
+    # positions on the focal plane array, albeit with the Y axis inverted to
+    # yield WFI-local co-ordinates rather than FPA-local co-ordinates.
+
+    FPA_GLOBAL_ROTATION = -120.  # degrees
+
+    # Values in mm. From "FPA Position" X and Y columns (F/G in xlsx)
+    # Specifically, 1.55 um is supposed to be the "undistorted" wavelength, so
+    # I'm using the detector centre at 1.55um.
+    DETECTOR_FPA = (  # SCA01                SCA02               SCA03
+                      (-22.029, -11.956), (-22.181, 36.421), (-22.331, 80.749),
+                    # SCA04                SCA05               SCA06
+                      (-65.558, -20.505), (-66.055, 27.856), (-66.543, 71.928),
+                    # SCA07                SCA08               SCA09
+                      (-109.05,  -41.316), (-109.83,   7.001), (-110.97,  50.358),
+                    # SCA10                SCA11               SCA12
+                      (21.509, -11.955), (21.65,  36.42),  (21.787, 80.747),
+                    # SCA13                SCA14               SCA15
+                      (65.03,  -20.503), (65.517, 27.854), (65.993, 71.923),
+                    # SCA16                SCA17               SCA18
+                      (108.507, -41.309), (109.282,  7.002), (110.409, 50.353),
+                   )
+
+    # From WFIRST-STScI-TR1506A(3).pdf, 2.5mm=27.5", and 8.564mm=94.2"
+    DETECTOR_MM_ARCSEC = 11.
+
+    # I can't currently figure out rotation angles (or rather figure out which
+    # rotation angle to use), so I'm setting everything to just zero for now.
+    DETECTOR_ROTATION = (0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                         0., 0., 0., 0., 0., 0., 0., 0., 0.)
+
+    # N_DETECTORS is a set of options on how many of the instrument's detectors you want to use
+    N_DETECTORS = [1]
+    INSTRUMENT_OFFSET = (0., 0., 0.)  # Presumably there is one, but not determined
+    DETECTOR_SIZE = (4088, 4088)  # pixels
+    PIXEL_SIZE = 10.0  # um (Assume for now)
+    SCALE = [0.11, 0.11]  # Assume for now
+    FILTERS = ('F062', 'F087', 'F106', 'F129', 'F158', 'F184', 'F146')
+    DEFAULT_FILTER = 'F184'  # Assume for now
+
+    PSF_INSTRUMENT = "WFI"
+
+    # Reference Files
+    FLATFILE = 'err_flat_wfi.fits'  # Use for the moment
+    DARKFILE = 'err_rdrk_wfi.fits'  # IREF, IHB (use for the moment)
+
+    # Background Values
+    BACKGROUND = {'none': {'F062': 0., 'F087': 0., 'F106': 0., 'F129': 0., 'F158': 0., 'F184': 0., 'F146': 0.},
+                  'avg':  {'F062': 1.401E+00, 'F087': 1.401E+00, 'F106': 1.401E+00, 'F129': 7.000E-01,
+                           'F158': 7.521E-01, 'F184': 8.500E-01, 'F146': 7.000E-01}}
+    BACKGROUNDS_V = ['none', 'avg', 'med', 'max', 'min']
+    BACKGROUNDS = ['None', 'Average zodiacal background', 'Median zodiacal background', 'Maximum zodiacal background', 'Minimum zodiacal background']
+    BGTEXT = {'none': 'None', 'avg': 'Average zodiacal background',
+              'med': 'Median zodiacal background', 'max': 'Maximum zodiacal background',
+              'min': 'Minimum zodiacal background', 'custom': 'Custom thermal background rate'}
+    # PHOTFNU has units of Jy
+    # For now, just assuming similar PHOTFNU to WFC3IR.
+    PHOTFNU = {'F062': 3.25e-08, 'F087': 8.87e-08, 'F106': 3.94e-08, 'F129': 3.51e-08, 'F158': 3.13e-08, 'F184': 1.18e-07, 'F146': 1.63e-08}
+    # PHOTPLAM has units of um
+    # For now, just put them in the middle
+    PHOTPLAM = {'F062': 0.6700, 'F087': 0.8735, 'F106': 1.0595, 'F129': 1.2925, 'F158': 1.577, 'F184': 1.5815, 'F146': 1.4635}
+    # For now, just put in HST-style dithers.
+    DITHERS = ("SUBPIXEL ONLY", "BOX-UVIS", "BLOB")  # Assume for now
+    DITHER_POINTS = {
+                        "SUBPIXEL ONLY": ["0"],
+                        "BOX-UVIS": ["4"],
+                        "BLOB": ["1", "2"]
+                     }
+    DITHER_SIZE = {
+                    "SUBPIXEL ONLY": ["STABDARD"],
+                    "BOX-UVIS": ["Standard"],
+                    "BLOB": ["Standard"]
+                  }
+    DITHER_SUBPIXEL = {
+                        "SUBPIXEL ONLY": ["LINE", "LINE-3PT", "BOX-MIN"],
+                        "BOX-UVIS": ["NONE", "LINE", "LINE-3PT", "BOX-MIN"],
+                        "BLOB": ["NONE", "LINE", "LINE-3PT", "BOX-MIN"]
+                      }
+    DITHER_OFFSETS = {
+                        "BOX-UVIS": [(-11.071, -17.744), (11.947, -17.457), (11.071, 17.744), (-11.947, 17.457)],
+                        "BLOB": [(-1.930, -1.729), (1.930, 1.729)],
+                        "SUBPIXEL": {
+                                        "NONE":     [(0.000, 0.000)],
+                                        "BOX-MIN":  [(0.000, 0.000), (0.542, 0.182), (0.339, 0.485), (-0.203, 0.303)],
+                                        "LINE":     [(0.000, 0.000), (0.474, 0.424)],
+                                        "LINE-3PT": [(0.000, 0.000), (0.451, 0.403), (0.902, 0.806)]
+                                    }
+                     }

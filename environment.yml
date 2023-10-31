@@ -31,15 +31,20 @@ dependencies:
   - esutil # installed from conda because you need the pre-compiled binaries.
 
   - pip:
+    #
     # Special Modules. These are temporary entries and require documentation.
+    #
+    # poppy 1.0.3 fixes a bug with the way poppy was calling factorial with non-integer
+    # values. Currently this is the only way to ensure that webbpsf picks up the correct
+    # poppy version. This peg should be removed as soon as webbpsf has updated to only
+    # use poppy versions that include this fix.
     - poppy==1.0.3
   
     # Core Modules
-    - webbpsf==1.1.1
-    - pandeia.engine==3.0
+    - webbpsf==1.0.0
+    - pandeia.engine==1.7
     - synphot==1.1.1
     - stsynphot==1.1.0
-    - soc_roman_tools
     
     # Major modules
     - astropy
