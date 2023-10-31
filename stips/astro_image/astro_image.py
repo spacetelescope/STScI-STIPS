@@ -354,10 +354,10 @@ class AstroImage(object):
             hdu.header['CDELT2'] = self.scale[0]/3600.
         # Apparently astropy refuses to add the identity matrix to a header
         if ('PA1_1' not in hdu.header) and ('CD1_1' not in hdu.header):
-            hdu.header['PA1_1'] = 1.
-            hdu.header['PA1_2'] = 0.
-            hdu.header['PA2_1'] = 0.
-            hdu.header['PA2_2'] = 1.
+            hdu.header['CD1_1'] = -self.scale[0]/3600.
+            hdu.header['CD1_2'] = 0.
+            hdu.header['CD2_1'] = 0.
+            hdu.header['CD2_2'] = self.scale[0]/3600.
         for k, v in self.header.items():
             hdu.header[k] = v
         for item in self.history:
@@ -782,7 +782,8 @@ class AstroImage(object):
         g = coords.Grid(1., 1., self.xsize, self.ysize)
         xc, yc = ix, iy
 
-        src = source.Source(config=source_dict)
+        # Roman is the only telescope supported
+        src = source.Source('roman', config=source_dict)
         src.grid = g
         sersic = profile.SersicDistribution(src)
         img = deepcopy(sersic.prof)*flux/np.sum(sersic.prof)
@@ -967,8 +968,19 @@ class AstroImage(object):
         not affect the data values, but it does affect errors residuals (e.g. dark
         current and cosmic ray count)
         """
+        factor = exptime / self.exptime
+        self.data *= factor
         self.exptime = exptime
         self.updateHeader('exptime', self.exptime)
+
+        #self.exptime = exptime
+        #self.updateHeader('exptime', self.exptime)
+
+    def setUnits(self):
+        """
+        Divide the image by the exposure time to the output is in e/s as opposed to e.
+        """
+        self.data /= self.exptime
 
     def addBackground(self, background):
         """

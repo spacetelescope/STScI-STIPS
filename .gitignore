@@ -24,6 +24,7 @@ MANIFEST
 # Sphinx
 docs/api
 docs/_build
+docs/_static
 
 # Eclipse editor project files
 .project
@@ -154,6 +155,7 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
+ref_data/
 
 # Translations #
 ################

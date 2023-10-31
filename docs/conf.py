@@ -48,7 +48,7 @@ setup_cfg = dict(conf.items('metadata'))
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('../'))
-
+'''
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
@@ -59,6 +59,15 @@ extensions = [
     'sphinx_automodapi.automodapi',
     'autoapi.extension',
     ]
+'''
+extensions = [
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.viewcode',
+    'sphinx_rtd_theme',
+]
 
 numpydoc_show_class_members = False
 
@@ -92,6 +101,7 @@ release = setup_cfg['version']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
+#pygments_style = 'default'
 
 # -- Options for HTML output --------------------------------------------------
 

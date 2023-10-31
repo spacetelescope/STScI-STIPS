@@ -44,10 +44,11 @@ dependencies:
     - poppy==1.0.3
   
     # Core Modules
-    - webbpsf==1.0.0
-    - pandeia.engine==1.7
+    - webbpsf==1.1.0
+    - pandeia.engine==3.0
     - synphot==1.1.1
     - stsynphot==1.1.0
+    - soc_roman_tools
     
     # Major modules
     - astropy

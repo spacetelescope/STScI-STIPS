@@ -25,16 +25,16 @@ from scipy import ndimage
 
 # Convolution Constants
 # Inter Pixel Capacitance
-IPC = np.array([[0.21,  1.62,  0.2],
+IPC = np.array([[0.21,  1.62,  0.20],
                 [1.88, 91.59,  1.87],
                 [0.21,  1.66,  0.22]]) / 100.0
 # Convolution array for creating a 4x upscaled ePSF, resulting
 # in the summ of the inner 3 pixels and a corresponding fraction
 # of the edges and corners to create an effective 4x4 pixels.
 EPSF4 = np.array([[0.25, 0.5, 0.5, 0.5, 0.25],
-                  [0.5,  1.,  1.,  1.,  0.5],
-                  [0.5,  1.,  1.,  1.,  0.5],
-                  [0.5,  1.,  1.,  1.,  0.5],
+                  [0.50, 1.0, 1.0, 1.0, 0.50],
+                  [0.50, 1.0, 1.0, 1.0, 0.50],
+                  [0.50, 1.0, 1.0, 1.0, 0.50],
                   [0.25, 0.5, 0.5, 0.5, 0.25]])
 
 # The ePSF is *always* 4x upscaled
@@ -129,7 +129,7 @@ def bicubic(epsf, iy, ix, fx, fy):
     """
     Perform the bi-cubic interpolation of an image from a center
     pixel and a pixel phase. Functions originally obtained from
-    Andrea Bellini's Fortran code
+    Andrea Bellini's Fortran code.
 
     This function is significantly faster than the more complex
     scipy.interpolate.interp2d, which differs from this at the level

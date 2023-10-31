@@ -55,7 +55,7 @@ population parameters.  In this example, we will create the following:
 
 #. A stellar population representing a global cluster with:
 
-   * 10000 stars
+   * 100 stars
    * An age of 7.5 billion years
    * A metallicity of -2.0
    * A Salpeter IMF with alpha = -2.35
@@ -81,12 +81,16 @@ population parameters.  In this example, we will create the following:
 
 .. code-block:: python
 
+  obs_prefix = 'notebook_example'
+  obs_ra = 150.0
+  obs_dec = -2.5
+
   from stips.scene_module import SceneModule
 
   scm = SceneModule(out_prefix=obs_prefix, ra=obs_ra, dec=obs_dec)
 
   stellar_parameters = {
-                        'n_stars': 10000,
+                        'n_stars': 100,
                         'age_low': 7.5e12,
                         'age_high': 7.5e12,
                         'z_low': -2.0,
@@ -98,12 +102,12 @@ population parameters.  In this example, we will create the following:
                         'distribution': 'invpow',
                         'radius': 100.0,
                         'radius_units': 'pc',
-                        'distance_low': 10.0,
-                        'distance_high': 10.0,
+                        'distance_low': 20.0,
+                        'distance_high': 20.0,
                         'offset_ra': 0.0,
-                        'offset_dec':0.0
-                        }
-
+                        'offset_dec': 0.0
+                       }
+   
   stellar_cat_file = scm.CreatePopulation(stellar_parameters)
   print("Stellar population saved to file {}".format(stellar_cat_file))
 
@@ -113,7 +117,7 @@ population parameters.  In this example, we will create the following:
                        'z_high': 0.2,
                        'rad_low': 0.01,
                        'rad_high': 2.0,
-                       'sb_v_low': 28.0,
+                       'sb_v_low': 30.0,
                        'sb_v_high': 25.0,
                        'distribution': 'uniform',
                        'clustered': False,
@@ -122,10 +126,9 @@ population parameters.  In this example, we will create the following:
                        'offset_ra': 0.0,
                        'offset_dec': 0.0,
                       }
-
+   
   galaxy_cat_file = scm.CreateGalaxies(galaxy_parameters)
-  print("Galaxy population saved to file{}".format(galaxy_cat_file))
-
+  print("Galaxy population saved to file {}".format(galaxy_cat_file))
 
 Creating a STIPS Observation
 ----------------------------
