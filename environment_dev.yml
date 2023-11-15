@@ -1,5 +1,5 @@
 # This file describes a conda environment that can be to install STIPS for development and
-# testing purposes. Note that this environment set-up installs the STIPS module in 
+# testing purposes. Note that this environment set-up installs the STIPS module in
 # editable mode, so any changes you make to the STIPS source will be reflected the next
 # time you run python.
 #
@@ -42,13 +42,14 @@ dependencies:
     # poppy version. This peg should be removed as soon as webbpsf has updated to only
     # use poppy versions that include this fix.
     - poppy==1.0.3
-  
+
     # Core Modules
-    - webbpsf==1.0.0
-    - pandeia.engine==1.7
+    - webbpsf==1.1.1
+    - pandeia.engine==3.0
     - synphot==1.1.1
     - stsynphot==1.1.0
-    
+    - soc_roman_tools
+
     # Major modules
     - astropy
     - photutils
@@ -67,15 +68,18 @@ dependencies:
     - docutils
     - sphinx
     - sphinx_rtd_theme
-    - stsci_rtd_theme
+    # - stsci_rtd_theme
+    # (install stsci_rtd_theme from master until a post 1.0 release occurs
+    #  to prevent issues with bullets in the documentation)
+    - git+https://github.com/spacetelescope/stsci_rtd_theme.git@master
     - sphinx_automodapi
     - sphinx_autoapi
-    - astropy_helpers
+    - sphinx_astropy
 
     # Testing
     - tox
     - tox-conda
     - pytest-astropy
-    
+
     # Current package
     - -e .
