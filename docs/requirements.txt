@@ -5,4 +5,4 @@ Cython
 astropy-helpers
 astropy
 sphinx-astropy
--e git+https://github.com/mperrin/poppy.git#egg=poppy
+poppy
