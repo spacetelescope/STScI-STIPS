@@ -354,7 +354,7 @@ class AstroImage(object):
             hdu.header['CDELT2'] = self.scale[0]/3600.
         # Apparently astropy refuses to add the identity matrix to a header
         if ('PA1_1' not in hdu.header) and ('CD1_1' not in hdu.header):
-            hdu.header['CD1_1'] = -self.scale[0]/3600.
+            hdu.header['CD1_1'] = self.scale[0]/3600.
             hdu.header['CD1_2'] = 0.
             hdu.header['CD2_1'] = 0.
             hdu.header['CD2_2'] = self.scale[0]/3600.
