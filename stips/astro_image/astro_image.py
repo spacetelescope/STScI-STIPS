@@ -65,6 +65,7 @@ class AstroImage(object):
             self.out_path = self.parent.out_path
             self.prefix = self.parent.prefix
             self.seed = self.parent.seed
+            self.fast_galaxy = self.parent.fast_galaxy
             self.telescope = self.parent.TELESCOPE.lower()
             self.instrument = self.parent.PSF_INSTRUMENT
             self.filter = self.parent.filter
@@ -93,6 +94,7 @@ class AstroImage(object):
             self.out_path = SelectParameter('out_path', kwargs)
             self.bright_limit = SelectParameter('psf_bright_limit', kwargs)
             self.xbright_limit = SelectParameter('psf_xbright_limit', kwargs)
+            self.fast_galaxy = SelectParameter('fast_galaxy', kwargs)
             self.shape = kwargs.get('shape', default['shape'])
             self._scale = kwargs.get('scale', np.array(default['scale']))
             self.prefix = kwargs.get('prefix', '')
@@ -391,7 +393,7 @@ class AstroImage(object):
         """Adds an entry to the header history list."""
         self.history.append(v)
 
-    def addTable(self, t, dist=False, *args, **kwargs):
+    def addTable(self, t, dist=False, fast_galaxy=False, *args, **kwargs):
         """
         Add a catalogue table to the Image. The Table must have the following columns:
             RA: RA of source
@@ -460,7 +462,10 @@ class AstroImage(object):
                 for (x, y, flux, n, re, phi, ratio, id) in zip(gxs, gys, gfluxes, gns, gres, gphis, gratios, gids):
                     item_index = np.where(ids == id)[0][0]
                     self._log("info", "Index is {}".format(item_index))
-                    central_flux = self.addSersicProfile(x, y, flux, n, re, phi, ratio, *args, **kwargs)
+                    if fast_galaxy:
+                        central_flux = self.oldSersicProfile(x, y, flux, n, re, phi, ratio, *args, **kwargs)
+                    else:
+                        central_flux = self.addSersicProfile(x, y, flux, n, re, phi, ratio, *args, **kwargs)
                     fluxes_observed[item_index] = central_flux
                     notes[item_index] = "{}: surface brightness {:.3f} yielded flux {:.3f}".format(notes[item_index], flux, central_flux)
                     self._log("info", "Finished Galaxy {} of {}".format(counter, total))
@@ -510,7 +515,7 @@ class AstroImage(object):
         current_chunk = in_data.read_chunk()
         while current_chunk is not None:
             table_length = len(current_chunk['id'])
-            out_chunk = self.addTable(current_chunk, dist, *args, **kwargs)
+            out_chunk = self.addTable(current_chunk, dist, fast_galaxy = self.fast_galaxy, *args, **kwargs)
             if out_chunk is not None:
                 out_data.write_chunk(out_chunk)
             counter += table_length
@@ -773,19 +778,19 @@ class AstroImage(object):
         source_dict['shape'] = {'geometry': 'sersic'}
         source_dict['shape']['major'] = re
         source_dict['shape']['minor'] = re*axialRatio
-        source_dict['sersic_index'] = n
+        source_dict['shape']['sersic_index'] = n
         source_dict['spectrum'] = {'redshift': 0., 'sed': {'sed_type': 'flat'}}
         source_dict['normalization'] = {'type': 'none'}
         source_dict['position'] = {'orientation': 90-phi}
-        source_dict['position']['x_offset'] = self.xsize - posX
-        source_dict['position']['y_offset'] = self.ysize - posY
+        source_dict['position']['x_offset'] = posX - self.xsize / 2
+        source_dict['position']['y_offset'] = self.ysize / 2 - posY
         g = coords.Grid(1., 1., self.xsize, self.ysize)
         xc, yc = ix, iy
 
         # Roman is the only telescope supported
         src = source.Source('roman', config=source_dict)
         src.grid = g
-        sersic = profile.SersicDistribution(src)
+        sersic = profile.SersicDistribution(src, 1)
         img = deepcopy(sersic.prof)*flux/np.sum(sersic.prof)
         central_flux = img[yc, xc]
 
@@ -796,9 +801,84 @@ class AstroImage(object):
         psf_data = np.zeros((boxsize, boxsize), dtype=np.float32)
         psf_x, psf_y = rind(boxsize/2), rind(boxsize/2)
         psf_data = place_source(psf_x, psf_y, 1., psf_data, epsf, boxsize=boxsize, psf_center=psf_middle)
-
         result = convolve_fft(img, psf_data)
         self.data += result
+        return central_flux
+
+
+    def oldSersicProfile(self, posX, posY, flux, n, re, phi, axialRatio, convolve_psf = False, *args, **kwargs):
+        """
+        Creates a simulated Sersic profile, including PSF convolution, using the old 
+        and faster Astropy Sersic2D model.
+
+        Parameters
+        ----------
+        id: int
+            The source ID of the sersic profile
+        gal_params: dict
+            A dictionary containing the galaxy parameters. These parameters are:
+            x, y: float
+                The position of the profile centre on the detector
+            flux: float
+                The surface brightness (in counts/s/pixel) at the half-light radius
+            n: float
+                The Sersic index. This must be between 0.3 and 6.2.
+            re: float
+                The half-light radius, in pixels.
+            phi: float
+                The position angle of the major axis, in degrees east of north
+            ratio: float
+                The ratio between the major and minor axes
+        psf_params: dict
+            A dictionary containing the PSF parameters. These parameters are:
+
+            psf_file: string
+                The name and location of the PSF file
+        xsize, ysize: int
+            The size of the detector
+        convolve_psf : bool, default False
+            Convolve the final image with the Roman PSF?
+        dir: string
+            The working directory to write model arrays to.
+        overrides: dict
+            Holds a copy of the AstroImage dictionary used to provide runtime parameter
+            setting.
+        logger: logging.logger
+            Logger to use for logging messages.
+
+        Returns
+        -------
+        fname: string
+            The name of the file in which the output numpy array was saved.
+        x,y: int
+            The position on the detector of the model centre
+        central_flux: float
+            The flux at the central pixel of the model
+        """
+        if flux == 0.:
+            return 0.
+
+        # Generate 2D Sersic profile
+        from astropy.modeling.models import Sersic2D
+        x, y = np.meshgrid(np.arange(self.xsize), np.arange(self.ysize))
+        mod = Sersic2D(amplitude=flux, r_eff=re, n=n, x_0=posX, y_0=posY, ellip=(1.-axialRatio), theta=(np.radians(phi) + 0.5*np.pi))
+        img = mod(x, y)
+
+        # Convolve with Roman PSF
+        if convolve_psf:
+            psf_array, psf_middle = self.make_epsf_array()
+            boxsize = rind(np.floor(psf_middle)/PSF_UPSCALE)
+            epsf = interpolate_epsf(posX, posY, psf_array, self.shape[0])
+            psf_data = np.zeros((boxsize, boxsize), dtype=np.float32)
+            psf_x, psf_y = rind(boxsize/2), rind(boxsize/2)
+            psf_data = place_source(psf_x, psf_y, 1., psf_data, epsf, boxsize=boxsize, psf_center=psf_middle)
+            result = convolve_fft(img, psf_data)
+            self.data += result
+        else:
+            self.data += img
+
+        # Calculate central flux
+        central_flux = mod(posX, posY)
         return central_flux
 
     def rotate(self, angle, reshape=False):
