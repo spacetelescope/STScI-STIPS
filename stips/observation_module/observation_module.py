@@ -63,6 +63,7 @@ class ObservationModule(object):
         self.excludes = obs.get('excludes', [])
         self.exptime = float(obs.get('exptime', 1.))
         self.fast_galaxy = obs.get('fast_galaxy', False)
+        self.convolve_galaxy = obs.get('convolve_galaxy', True)
         self.bright_limit = obs.get('bright_limit', 14.)
         self.xbright_limit = obs.get('xbright_limit', 3.)
         if len(self.filters) == 0 and 'filter' in obs:
