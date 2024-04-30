@@ -395,7 +395,7 @@ class AstroImage(object):
         """Adds an entry to the header history list."""
         self.history.append(v)
 
-    def addTable(self, t, dist=False, fast_galaxy=False, convolve_galaxy=False, *args, **kwargs):
+    def addTable(self, t, dist=False, fast_galaxy=False, convolve_galaxy=True, *args, **kwargs):
         """
         Add a catalogue table to the Image. The Table must have the following columns:
             RA: RA of source
