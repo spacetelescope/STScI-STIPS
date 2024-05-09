@@ -1,5 +1,5 @@
-# This file describes a conda environment that can be to install STIPS for development and
-# testing purposes. Note that this environment set-up installs the STIPS module in
+# This file describes a conda environment that can be used to install STIPS for development and
+# testing purposes. Note that this environment setup installs the STIPS module in
 # editable mode, so any changes you make to the STIPS source will be reflected the next
 # time you run python.
 #
