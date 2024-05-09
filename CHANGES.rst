@@ -11,6 +11,7 @@ Version 2.2.0
 - Fixed a bug related to the simulation of extended sources.
 - Fixed a bug related to the WCS.
 - Updated pandeia to version 3.1 and its corresponding reference files.
+- Changed the minimum required Python version to 3.10
 
 Version 2.1.0
 =============
