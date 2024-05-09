@@ -14,21 +14,21 @@ jobs:
       matrix:
         include:
 
-          - name: Python 3.8
+          - name: Python 3.10
             os: ubuntu-latest
-            python: 3.8
+            python: 3.10
 
-          - name: Python 3.9
+          - name: Python 3.11
             os: ubuntu-latest
-            python: 3.9
+            python: 3.11
 
-          - name: Python 3.9 Mac
+          - name: Python 3.11 Mac
             os: macos-latest
-            python: 3.9
+            python: 3.11
 
           - name: Python Long
             os: ubuntu-latest
-            python: 3.9
+            python: 3.11
 
     steps:
     - name: Checkout code
@@ -72,7 +72,7 @@ jobs:
       with:
         activate-environment: stips
         environment-file: environment.yml
-        python-version: 3.9
+        python-version: 3.11
         auto-activate-base: false
 
     - name: Build Docs

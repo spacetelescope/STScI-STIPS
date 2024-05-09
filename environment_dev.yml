@@ -28,7 +28,7 @@ channels:
 dependencies:
   # Base dependencies
   - pip
-  - python>=3.11
+  - python>=3.10
   - jupyter
   - Cython
   - esutil # installed from conda because you need the pre-compiled binaries.
