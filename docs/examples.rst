@@ -65,17 +65,18 @@ scene with the Roman WFI F129 filter offset by 0.5 degrees in RA and rotated by 
 
     fits_file, mosaic_file, params = obm.finalize(mosaic=False)
 
-In this case, the output catalog(s) will show the actual applied count rates. Whether there 
-is only one output catalog or two depends on the input catalog format.
+In this case, the output catalog(s) will show the actual applied count rates.
+Whether there is only one output catalog or two depends on the input catalog format.
 
 
 Fast Extended Sources
 ----------------------
 
-In STIPS 2.2 we included an option to inject extended sources in scenes using a sersic-profile
-approximation, which is less accurate than the current implementation, but ~8 times faster.
+As of version 2.2, STIPS includes an option to inject extended sources in scenes
+using a Sersic-profile approximation. This approximation is ~8 times faster than
+the current implementation, but it is also less accurate.
 
-To activate this feature, users must turn on the ``fast_galaxy`` flag. This is how the syntax 
+To activate this feature, users must turn on the ``fast_galaxy`` flag. This is how the syntax
 looks, starting from the examples listed in the :doc:`STIPS Basic Tutorial <basic_tutorial>`.
 
 .. code-block:: python

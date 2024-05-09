@@ -723,50 +723,31 @@ class AstroImage(object):
         self.shape = self.base_shape
         self.has_psf = False
 
-    def addSersicProfile(self, posX, posY, flux, n, re, phi, axialRatio, *args, **kwargs):
+    def addSersicProfile(self, posX, posY, flux, n, re, phi, axialRatio,
+                         *args, **kwargs):
         """
-        Creates a simulated Sersic profile, including PSF convolution, using pandeia's
-        SersicDistribution.
+        Create a simulated Sersic profile, including PSF convolution, using
+        Pandeia's SersicDistribution.
 
         Parameters
         ----------
-        id: int
-            The source ID of the sersic profile
-        gal_params: dict
-            A dictionary containing the galaxy parameters. These parameters are:
-            x, y: float
-                The position of the profile centre on the detector
-            flux: float
-                The surface brightness (in counts/s/pixel) at the half-light radius
-            n: float
-                The Sersic index. This must be between 0.3 and 6.2.
-            re: float
-                The half-light radius, in pixels.
-            phi: float
-                The position angle of the major axis, in degrees east of north
-            ratio: float
-                The ratio between the major and minor axes
-        psf_params: dict
-            A dictionary containing the PSF parameters. These parameters are:
-
-            psf_file: string
-                The name and location of the PSF file
-        xsize, ysize: int
-            The size of the detector
-        dir: string
-            The working directory to write model arrays to.
-        overrides: dict
-            Holds a copy of the AstroImage dictionary used to provide runtime parameter
-            setting.
-        logger: logging.logger
-            Logger to use for logging messages.
+        posX: float
+            The X position of the profile center on the detector.
+        posX: float
+            The Y position of the profile center on the detector.
+        flux: float
+            The surface brightness (in counts/s/pixel) at the half-light radius.
+        n: float
+            The Sersic index. This must be between 0.3 and 6.2.
+        re: float
+            The half-light radius, in pixels.
+        phi: float
+            The position angle of the major axis, in degrees east of north.
+        axialRatio: float
+            The ratio between the major and minor axes.
 
         Returns
         -------
-        fname: string
-            The name of the file in which the output numpy array was saved.
-        x,y: int
-            The position on the detector of the model centre
         central_flux: float
             The flux at the central pixel of the model
         """
@@ -808,52 +789,34 @@ class AstroImage(object):
         return central_flux
 
 
-    def oldSersicProfile(self, posX, posY, flux, n, re, phi, axialRatio, convolve_galaxy, *args, **kwargs):
+    def oldSersicProfile(self, posX, posY, flux, n, re, phi, axialRatio,
+                         convolve_galaxy, *args, **kwargs):
         """
-        Creates a simulated Sersic profile, including PSF convolution, using the old 
-        and faster Astropy Sersic2D model.
+        Create a simulated Sersic profile, including PSF convolution, using
+        the old (and faster) Astropy Sersic2D model.
 
         Parameters
         ----------
-        id: int
-            The source ID of the sersic profile
-        gal_params: dict
-            A dictionary containing the galaxy parameters. These parameters are:
-            x, y: float
-                The position of the profile centre on the detector
-            flux: float
-                The surface brightness (in counts/s/pixel) at the half-light radius
-            n: float
-                The Sersic index. This must be between 0.3 and 6.2.
-            re: float
-                The half-light radius, in pixels.
-            phi: float
-                The position angle of the major axis, in degrees east of north
-            ratio: float
-                The ratio between the major and minor axes
-        psf_params: dict
-            A dictionary containing the PSF parameters. These parameters are:
-
-            psf_file: string
-                The name and location of the PSF file
-        xsize, ysize: int
-            The size of the detector
-        convolve_galaxy : bool, default False
-            Convolve the final image with the Roman PSF?
-        dir: string
-            The working directory to write model arrays to.
-        overrides: dict
-            Holds a copy of the AstroImage dictionary used to provide runtime parameter
-            setting.
-        logger: logging.logger
-            Logger to use for logging messages.
+        posX: float
+            The X position of the profile center on the detector.
+        posX: float
+            The Y position of the profile center on the detector.
+        flux: float
+            The surface brightness (in counts/s/pixel) at the half-light radius.
+        n: float
+            The Sersic index. This must be between 0.3 and 6.2.
+        re: float
+            The half-light radius, in pixels.
+        phi: float
+            The position angle of the major axis, in degrees east of north.
+        axialRatio: float
+            The ratio between the major and minor axes.
+        convolve_galaxy : bool
+            Whether to convolve the final image with the Roman PSF.
+            [default: False]
 
         Returns
         -------
-        fname: string
-            The name of the file in which the output numpy array was saved.
-        x,y: int
-            The position on the detector of the model centre
         central_flux: float
             The flux at the central pixel of the model
         """

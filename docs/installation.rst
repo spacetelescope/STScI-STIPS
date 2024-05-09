@@ -9,7 +9,7 @@ in this section along with instructions.
 STIPS Requirements
 ##################
 
-* ``pandeia>=3.0``: Exposure time calculator.
+* ``pandeia>=3.1``: Exposure time calculator.
 
 * ``webbpsf==1.1.1``: Nancy Grace Roman PSF calculator. STIPS also requires that ``poppy``, a
   support package used by WebbPSF, have version ``>=1.0.3``.
@@ -80,9 +80,9 @@ Installing as a User
         conda activate stips
 
 
-   * Or, to install to or update an existing and currently active Conda environment::
+   * Or, to install to or update an existing Conda environment::
 
-        conda env update --file environment.yml
+        conda env update --name EXISTING-ENV --file environment.yml
 
 Installing as a Developer
 *************************
@@ -126,8 +126,8 @@ Testing Installation
 To test if all the required files have been installed, please import STIPS in Python::
 
     bash-3.2$ python
-    Python 3.7.3 | packaged by conda-forge | (default, Dec  6 2019, 08:36:57)
-    [Clang 9.0.0 (tags/RELEASE_900/final)] :: Anaconda, Inc. on darwin
+    Python 3.11.9 | packaged by conda-forge | (main, Apr 19 2024, 18:45:13)
+    [Clang 16.0.6 ] on darwin
     Type "help", "copyright", "credits" or "license" for more information.
 
     >>> import stips
