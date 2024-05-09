@@ -267,16 +267,15 @@ We use ``matplotlib`` to plot the resulting simulated image.
 .. code-block:: python
 
   import matplotlib
-  from matplotlib import style
+  import matplotlib.pyplot as plt
+  from astropy.io import fits
   matplotlib.rcParams['axes.grid'] = False
   matplotlib.rcParams['image.origin'] = 'lower'
-  import matplotlib.pyplot as plot
-  from astropy.io import fits
 
   with fits.open(fits_file) as result_file:
     result_data = result_file[1].data
 
-  fig1 = plot.figure()
-  im = plot.matshow(result_data)
+  fig1 = plt.figure()
+  im = plt.matshow(result_data)
 
 Alternatively, you can open the final ``.fits`` file in your preferred imaging software.
