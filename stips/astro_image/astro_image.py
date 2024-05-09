@@ -813,7 +813,7 @@ class AstroImage(object):
             The ratio between the major and minor axes.
         convolve_galaxy : bool
             Whether to convolve the final image with the Roman PSF.
-            [default: False]
+            [default: True]
 
         Returns
         -------

@@ -173,7 +173,7 @@ We will use a single offset with:
 
   * No centering (if an offset is centered, then, for a multi-detector observation, each
     detector is centered on the offset co-coordinates individually rather than the instrument
-    as a whole beinf centered there)
+    as a whole being centered there)
 
   * No change in RA, DEC, or PA from the center of the observation
 
@@ -237,7 +237,7 @@ Observing the Created Scene
 In order to observe the scene, we must add the scene catalogues created above to it, add
 in error residuals, and finalize the observation.  In so doing, we create output catalogues
 which are taken from the input catalogues, but only contain the sources visible to the
-detectors, and convert source brightness into unites of counts/s for the detectors.
+detectors, and convert source brightness into units of counts/s for the detectors.
 
 .. code-block:: python
 
