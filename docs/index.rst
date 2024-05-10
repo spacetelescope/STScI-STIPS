@@ -51,4 +51,5 @@ Using STIPS
   basic_tutorial
   examples
   bugs
+  release
   help
