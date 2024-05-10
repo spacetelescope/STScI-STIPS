@@ -173,7 +173,7 @@ We will use a single offset with:
 
   * No centering (if an offset is centered, then, for a multi-detector observation, each
     detector is centered on the offset co-coordinates individually rather than the instrument
-    as a whole beinf centered there)
+    as a whole being centered there)
 
   * No change in RA, DEC, or PA from the center of the observation
 
@@ -237,7 +237,7 @@ Observing the Created Scene
 In order to observe the scene, we must add the scene catalogues created above to it, add
 in error residuals, and finalize the observation.  In so doing, we create output catalogues
 which are taken from the input catalogues, but only contain the sources visible to the
-detectors, and convert source brightness into unites of counts/s for the detectors.
+detectors, and convert source brightness into units of counts/s for the detectors.
 
 .. code-block:: python
 
@@ -267,16 +267,15 @@ We use ``matplotlib`` to plot the resulting simulated image.
 .. code-block:: python
 
   import matplotlib
-  from matplotlib import style
+  import matplotlib.pyplot as plt
+  from astropy.io import fits
   matplotlib.rcParams['axes.grid'] = False
   matplotlib.rcParams['image.origin'] = 'lower'
-  import matplotlib.pyplot as plot
-  from astropy.io import fits
 
   with fits.open(fits_file) as result_file:
     result_data = result_file[1].data
 
-  fig1 = plot.figure()
-  im = plot.matshow(result_data)
+  fig1 = plt.figure()
+  im = plt.matshow(result_data)
 
 Alternatively, you can open the final ``.fits`` file in your preferred imaging software.

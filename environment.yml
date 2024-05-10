@@ -1,4 +1,4 @@
-# This file describes a conda environment that can be to install STIPS
+# This file describes a conda environment that can be used to install STIPS
 #
 # Run the following command to set up this environment:
 # $ conda env create -f environment.yml
@@ -25,7 +25,7 @@ channels:
 dependencies:
   # Base dependencies
   - pip
-  - python>=3.8
+  - python>=3.10
   - jupyter
   - Cython
   - esutil # installed from conda because you need the pre-compiled binaries.
@@ -36,7 +36,7 @@ dependencies:
 
     # Core Modules
     - webbpsf==1.1.1
-    - pandeia.engine==3.0
+    - pandeia.engine==3.1
     - synphot==1.1.1
     - stsynphot==1.1.0
     - soc_roman_tools

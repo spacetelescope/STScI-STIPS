@@ -5,6 +5,14 @@ Release Notes
 Version History and Change Log
 ------------------------------
 
+Version 2.2.0
+=============
+- Added a functionality to allow for faster simulations of extended sources.
+- Fixed a bug related to the simulation of extended sources.
+- Fixed a bug related to the WCS.
+- Updated pandeia to version 3.1 and its corresponding reference files.
+- Changed the minimum required Python version to 3.10
+
 Version 2.1.0
 =============
 - Updated the Flux PHOTFNU values to match Pandeia

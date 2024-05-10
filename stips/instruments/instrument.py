@@ -66,6 +66,8 @@ class Instrument(object):
         self.exptime = kwargs.get('exptime', 1.)
         self.bright_limit = kwargs.get('bright_limit', kwargs)
         self.xbright_limit = kwargs.get('xbright_limit', kwargs)
+        self.fast_galaxy = kwargs.get('fast_galaxy', kwargs)
+        self.convolve_galaxy = kwargs.get('convolve_galaxy', kwargs)
         self.filter = None
         self.detectors = None
         self.instrument = kwargs.get('instrument', 'wfi')

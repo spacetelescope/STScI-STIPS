@@ -14,27 +14,28 @@ jobs:
       matrix:
         include:
 
-          - name: Python 3.8
+          - name: Python 3.10
             os: ubuntu-latest
-            python: 3.8
+            python: "3.10"
 
-          - name: Python 3.9
+          - name: Python 3.11
             os: ubuntu-latest
-            python: 3.9
+            python: 3.11
 
-          - name: Python 3.9 Mac
+          - name: Python 3.11 Mac
             os: macos-latest
-            python: 3.9
+            python: 3.11
 
           - name: Python Long
             os: ubuntu-latest
-            python: 3.9
+            python: 3.11
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
+
     - name: Set up environment
       uses: conda-incubator/setup-miniconda@v2
       with:
@@ -42,11 +43,14 @@ jobs:
         environment-file: environment.yml
         python-version: ${{ matrix.python }}
         auto-activate-base: false
+        miniconda-version: "latest"  # Ensure Miniconda is installed if not found
+
     - name: Test with tox
       shell: bash -l {0}
       if: ${{ matrix.name != 'Python Long' }}
       run: |
         tox -e test
+
     - name: Test slow tests with pytest
       shell: bash -l {0}
       if: ${{ matrix.name == 'Python Long' }}
@@ -57,17 +61,20 @@ jobs:
     name: "docs_test"
     runs-on: ubuntu-latest
     steps:
+
     - name: Checkout code
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
+
     - name: Set up environment
       uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: stips
         environment-file: environment.yml
-        python-version: 3.9
+        python-version: 3.11
         auto-activate-base: false
+
     - name: Build Docs
       shell: bash -l {0}
       run: |

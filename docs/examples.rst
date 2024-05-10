@@ -65,5 +65,38 @@ scene with the Roman WFI F129 filter offset by 0.5 degrees in RA and rotated by 
 
     fits_file, mosaic_file, params = obm.finalize(mosaic=False)
 
-In this case, the output catalog(s) will show the actual applied count rates. Whether there 
-is only one output catalog or two depends on the input catalog format.
+In this case, the output catalog(s) will show the actual applied count rates.
+Whether there is only one output catalog or two depends on the input catalog format.
+
+
+Fast Extended Sources
+----------------------
+
+As of version 2.2, STIPS includes an option to inject extended sources in scenes
+using a Sersic-profile approximation. This approximation is ~8 times faster than
+the current implementation, but it is also less accurate.
+
+To activate this feature, users must turn on the ``fast_galaxy`` flag. This is how the syntax
+looks, starting from the examples listed in the :doc:`STIPS Basic Tutorial <basic_tutorial>`.
+
+.. code-block:: python
+
+    observation_parameters = {
+                              'instrument': 'WFI',
+                              'filters': ['F129'],
+                              'detectors': 1,
+                              'distortion': False,
+                              'background': 0.15,
+                              'fast_galaxy': True,
+                              'observations_id': 1,
+                              'exptime': 1000,
+                              'offsets': [offset]
+                              }
+
+.. note::
+
+    We caution however that while this method is a useful approximation, the resulting
+    integrated flux measurements can be off by a factor of ~2. Furthermore, the central
+    pixel at the core of the galaxy should not be trusted, since this can be off by
+    multiple orders of magnitude.
+
