@@ -69,7 +69,7 @@ Release creation (on GitHub)
 ----------------------------
 
 After the tests triggered by pushing the new tag succeed, follow these steps to
-manually create a new release in the ``STScI-STIPS`` GitHub repository.
+manually create a new release in the ``spacetelescope/STScI-STIPS`` GitHub repository.
 
 #. Click "Releases" on main repository page or `follow this link <https://github.com/spacetelescope/STScI-STIPS/releases>`_.
 #. Press the "Draft a new release" button above the list of releases.
@@ -126,7 +126,7 @@ Now, create the wheel and source distribution files:
 
 The resulting wheel file and tarball are located in the ``dist`` directory.
 
-Finally, upload them to PyPI. :
+Finally, upload them to PyPI:
 
 .. code-block:: text
 
@@ -143,8 +143,8 @@ Documentation
 =============
 
 Navigate to `the active STIPS ReadTheDocs page <https://readthedocs.org/projects/stips/>`_.
-(Note that the RTD project name is ``stips``, matching the package name but not
-the GitHub repository name.) Verify that new builds of ``latest`` and
+(Note that the ReadTheDocs project name is ``stips``, matching the package name
+but not the GitHub repository name.) Verify that new builds of ``latest`` and
 ``vX.Y.Z`` have been run successfully. If not, build them manually under the
 "Build a version" header. If you followed earlier instructions, the release
 commit will be the repository's current latest commit, so both versions should
@@ -153,3 +153,12 @@ be identical for the moment.
 The versions of the documentation that should be visible to the public and
 marked as "Active" on their "Edit" pages are ``latest`` and the new release,
 ``vX.Y.Z``. In the future, we may make past versions visible, too.
+
+Troubleshooting: webhooks
+-------------------------
+
+ReadTheDocs is connected to the ``spacetelescope/STScI-STIPS`` GitHub repository
+via a webhook, which can be found on `the repository's "Webhooks" page <https://github.com/spacetelescope/STScI-STIPS/settings/hooks>`_.
+If for any reason the link happens to break, the webhook can be re-linked by
+creating a new secret for the GitHub incoming webhook on `the ReadTheDocs "Integrations" page <https://readthedocs.org/dashboard/stips/integrations>`_
+and then pasting it to the webhook on GitHub with the matching Payload URL.
