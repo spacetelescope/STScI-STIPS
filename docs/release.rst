@@ -16,7 +16,7 @@ In addition to addressing any byproducts of the code review, you should be able
 to answer "yes" to all of the following questions before merging a pull request
 intended for a release:
 
-* Has ``setup.cfg`` been updated to reflect the release's new version number?
+* Have ``setup.cfg`` and ``stips/__init__.py`` been updated to reflect the release's new version number?
 
 * If any dependencies have changed, have you updated them in all applicable files? These include:
 
