@@ -9,6 +9,7 @@ Version 2.2.1
 =============
 - Fixed a bug on the version of STIPS in __init__.py
 - Updated WebbPSF version to be >= 1.1.1 instead of == 1.1.1
+- Updated synphot>=1.1.1 and stsynphot>=1.1.0 from forced to specific version.
 
 Version 2.2.0
 =============
