@@ -5,6 +5,11 @@ Release Notes
 Version History and Change Log
 ------------------------------
 
+Version 2.2.1
+=============
+- Fixed a bug on the version of STIPS in __init__.py
+- Updated WebbPSF version to be >= 1.1.1 instead of == 1.1.1
+
 Version 2.2.0
 =============
 - Added a functionality to allow for faster simulations of extended sources.
