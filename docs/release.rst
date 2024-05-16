@@ -75,7 +75,7 @@ manually create a new release in the ``spacetelescope/STScI-STIPS`` GitHub repos
 #. Press the "Draft a new release" button above the list of releases.
 #. Press "Choose a tag" and select the one you just pushed online. The target branch should already be selected as ``main``.
 #. Press "Generate release notes" to list the commits included in this release.
-#. In the "Release title" textbox, type ``Release X.Y.Z``, substituting in the proper version number.
+#. In the "Release title" textbox, type ``STIPS Version X.Y.Z``, substituting in the proper version number.
 #. Above the list of commits in the larger textbox for comments, write a single-sentence summary of the release's major updates.
 #. Press "Publish" to complete this section.
 
@@ -130,7 +130,7 @@ Finally, upload them to PyPI:
 
 .. code-block:: text
 
-    python setup.py sdist bdist_wheel
+    python -m twine upload dist/*
 
 Note that PyPI uploads now require an API token.
 `Refer to their instructions <https://pypi.org/help/#apitoken>`_ if you haven't
@@ -151,8 +151,14 @@ commit will be the repository's current latest commit, so both versions should
 be identical for the moment.
 
 The versions of the documentation that should be visible to the public and
-marked as "Active" on their "Edit" pages are ``latest`` and the new release,
-``vX.Y.Z``. In the future, we may make past versions visible, too.
+marked as "Active" on their "Edit" pages are ``main``, ``latest``, and the new
+release, ``vX.Y.Z``. On `the "Versions" page <https://readthedocs.org/projects/stips/versions/>`_,
+press "Edit" beside any other publicly visible versions and select the "Hidden"
+checkbox for them. In the future, we may make past versions visible, too.
+
+Finally, go to the "Admin" tab, make sure you're in the "Settings" section, and
+change the "Default branch" to the new ``vX.Y.Z``. (Note that this is different
+from the "Default version" setting further down the page, which should be ``latest``.)
 
 Troubleshooting: webhooks
 -------------------------
