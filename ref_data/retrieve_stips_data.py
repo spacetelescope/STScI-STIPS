@@ -6,7 +6,7 @@
 #       export WEBBPSF_PATH="<absolute_path_to_this_folder>/ref_data/webbpsf-data"
 #       export PYSYN_CDBS="<absolute_path_to_this_folder>/ref_data/grp/redcat/trds"
 #       export pandeia_refdata="<absolute_path_to_this_folder>/ref_data/pandeia_data-
-#       1.7_roman"
+#       2024.12-roman"
 # 2. In the ref_data folder, run the script: python retrieve_stips_data.py
 
 import stips

@@ -24,6 +24,7 @@ intended for a release:
     * ``environment.yml``
     * ``environment_dev.yml``
     * ``docs/installation.rst``
+    * ``ret_data/retrieve_stips_data.py``
 
 * Are you able to install the new version of STIPS locally with ``pip`` and ``conda``?
 
