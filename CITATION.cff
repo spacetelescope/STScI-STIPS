@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- name: "STIPS Development Team"
+- family-names: "Gomez"
+  given-names: "Sebastian"
+  orcid: "https://orcid.org/0000-0001-6395-6702"
+- family-names: "Bellini"
+  given-names: "Andrea"
+  orcid: "https://orcid.org/0000-0003-3858-637X"
+- family-names: "Al-Kowsi"
+  given-names: "Hanna"
+- family-names: "Desjardins"
+  given-names: "Tyler"
+  orcid: "https://orcid.org/0000-0001-6905-1859"
+- family-names: "Geda"
+  given-names: "Robel"
+  orcid: "https://orcid.org/0000-0003-1509-9966"
+- family-names: "Han"
+  given-names: "Eunkyu"
+  orcid: "https://orcid.org/0000-0001-9797-0019"
+- family-names: "Otor"
+  given-names: "O. Justin"
+  orcid: "https://orcid.org/0000-0002-4679-5692"
+- family-names: "Riedel"
+  given-names: "Adric"
+  orcid: "https://orcid.org/0000-0003-1645-8596"
+- family-names: "Ryan"
+  given-names: "Russell"
+  orcid: "https://orcid.org/0000-0003-0894-1588"
+- family-names: "Spitzer"
+  given-names: "Isaac"
+- family-names: "York"
+  given-names: "Brian"
+title: "STIPS"
+version: X.X.X
+doi: https://doi.org/XX.XXXX/zenodo.XXXXXXX
+date-released: 202X-XX-XX
+url: "https://github.com/spacetelescope/STScI-STIPS"
+
+# see a full list of contributors here: https://github.com/spacetelescope/STScI-STIPS/graphs/contributors
