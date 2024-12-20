@@ -45,6 +45,17 @@ Post-merge instructions
 Tagging the merge commit
 ------------------------
 
+On your machine, check out the branch that tracks the official ``main`` branch
+on the ``spacetelescope`` remote. Rebase it so it includes the newly merged pull
+request. (If your local names for that branch or the ``spacetelescope`` remote
+are different than the defaults – ``main`` and ``origin``, respectively – be
+sure to substitute them in below.)
+
+.. code-block:: text
+
+    git checkout origin main
+    git rebase origin/main
+
 Apply a tag to the merge commit, substituting in the proper version number.
 
 .. code-block:: text
@@ -58,9 +69,7 @@ Apply a tag to the merge commit, substituting in the proper version number.
    and `adding it to your account <https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-gpg-key-to-your-github-account>`_
    if you don't have one.
 
-Next, push the tag online. (If your remote that points to ``spacetelescope``'s
-online version of the repository is not named ``origin``, be sure to substitute
-its name in below.)
+Push the tag online.
 
 .. code-block:: text
 
@@ -131,7 +140,8 @@ Finally, upload them to PyPI:
 
 .. code-block:: text
 
-    python setup.py sdist bdist_wheel
+    twine upload dist/*
+    # (Try "python -m twine upload dist/*" instead if twine is "not found.")
 
 Note that PyPI uploads now require an API token.
 `Refer to their instructions <https://pypi.org/help/#apitoken>`_ if you haven't
