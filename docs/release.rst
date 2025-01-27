@@ -45,6 +45,17 @@ Post-merge instructions
 Tagging the merge commit
 ------------------------
 
+On your machine, check out the branch that tracks the official ``main`` branch
+on the ``spacetelescope`` remote. Rebase it so it includes the newly merged pull
+request. (If your local names for that branch or the ``spacetelescope`` remote
+are different than the defaults – ``main`` and ``origin``, respectively – be
+sure to substitute them in below.)
+
+.. code-block:: text
+
+    git checkout origin main
+    git rebase origin/main
+
 Apply a tag to the merge commit, substituting in the proper version number.
 
 .. code-block:: text
@@ -58,9 +69,7 @@ Apply a tag to the merge commit, substituting in the proper version number.
    and `adding it to your account <https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-gpg-key-to-your-github-account>`_
    if you don't have one.
 
-Next, push the tag online. (If your remote that points to ``spacetelescope``'s
-online version of the repository is not named ``origin``, be sure to substitute
-its name in below.)
+Push the tag online.
 
 .. code-block:: text
 
@@ -76,7 +85,7 @@ manually create a new release in the ``spacetelescope/STScI-STIPS`` GitHub repos
 #. Press the "Draft a new release" button above the list of releases.
 #. Press "Choose a tag" and select the one you just pushed online. The target branch should already be selected as ``main``.
 #. Press "Generate release notes" to list the commits included in this release.
-#. In the "Release title" textbox, type ``Release X.Y.Z``, substituting in the proper version number.
+#. In the "Release title" textbox, type ``STIPS Version X.Y.Z``, substituting in the proper version number.
 #. Above the list of commits in the larger textbox for comments, write a single-sentence summary of the release's major updates.
 #. Press "Publish" to complete this section.
 
@@ -131,7 +140,7 @@ Finally, upload them to PyPI:
 
 .. code-block:: text
 
-    python setup.py sdist bdist_wheel
+    python -m twine upload dist/*
 
 Note that PyPI uploads now require an API token.
 `Refer to their instructions <https://pypi.org/help/#apitoken>`_ if you haven't
@@ -152,8 +161,14 @@ commit will be the repository's current latest commit, so both versions should
 be identical for the moment.
 
 The versions of the documentation that should be visible to the public and
-marked as "Active" on their "Edit" pages are ``latest`` and the new release,
-``vX.Y.Z``. In the future, we may make past versions visible, too.
+marked as "Active" on their "Edit" pages are ``main``, ``latest``, and the new
+release, ``vX.Y.Z``. On `the "Versions" page <https://readthedocs.org/projects/stips/versions/>`_,
+press "Edit" beside any other publicly visible versions and select the "Hidden"
+checkbox for them. In the future, we may make past versions visible, too.
+
+Finally, go to the "Admin" tab, make sure you're in the "Settings" section, and
+change the "Default branch" to the new ``vX.Y.Z``. (Note that this is different
+from the "Default version" setting further down the page, which should be ``latest``.)
 
 Troubleshooting: webhooks
 -------------------------
