@@ -36,7 +36,7 @@ filters = {
                                             ]},
             'miri':         {'imaging': ["f560w", "f770w", "f1000w", "f1130w", "f1280w", "f1500w", "f1800w", "f2100w", "f2550w"]},
             'wfc3ir':       {'imaging': ["f110w", "f160w"]},
-            'wfi':          {'imaging': ['f062', 'f087', 'f106', 'f129', 'f146', 'f149', 'f158', 'f184']}}
+            'wfi':          {'imaging': ['f062', 'f087', 'f106', 'f129', 'f146', 'f149', 'f158', 'f184', 'f213']}}
 
 apertures = {
                 'nircamshort':  {'sw_imaging':  "sw"},

@@ -74,7 +74,7 @@ class AstroImage(object):
             self.xbright_limit = self.parent.xbright_limit
             self.shape = self.parent.DETECTOR_SIZE
             self._scale = self.parent.SCALE
-            self.zeropoint = self.parent.zeropoint
+            self.zeropoint = self.parent.ZEROPOINTS_AB[self.filter]
             self.photflam = self.parent.photflam
             self.photplam = self.parent.PHOTPLAM[self.filter]
             background = self.parent.background
@@ -440,12 +440,12 @@ class AstroImage(object):
             old_notes = t['notes'][to_keep]
             notes = np.empty_like(xs, dtype="S150")
             notes[:] = old_notes[:]
-            vegamags = -2.5 * np.log10(fluxes) - self.zeropoint
+            abmags = -2.5 * np.log10(fluxes) + self.zeropoint
             stmags = -2.5 * np.log10(fluxes * self.photflam) - 21.10
             stars_idx = np.where(types == 'point')
             if len(xs[stars_idx]) > 0:
                 self._log("info", "Writing {} stars".format(len(xs[stars_idx])))
-                self.addPSFs(xs[stars_idx], ys[stars_idx], fluxes[stars_idx], stmags[stars_idx], *args, **kwargs)
+                self.addPSFs(xs[stars_idx], ys[stars_idx], fluxes[stars_idx], abmags[stars_idx], *args, **kwargs)
                 fluxes_observed[stars_idx] = fluxes[stars_idx]
             gals_idx = np.where(types == 'sersic')
             if len(xs[gals_idx]) > 0:
@@ -461,7 +461,14 @@ class AstroImage(object):
                 counter = 1
                 total = len(gxs)
                 self._log('info', 'Starting Sersic Profiles at {}'.format(time.ctime()))
+
+
+                start_time = time.time()
+
+
                 for (x, y, flux, n, re, phi, ratio, id) in zip(gxs, gys, gfluxes, gns, gres, gphis, gratios, gids):
+                    step_time = time.time()
+
                     item_index = np.where(ids == id)[0][0]
                     self._log("info", "Index is {}".format(item_index))
                     if fast_galaxy:
@@ -472,12 +479,19 @@ class AstroImage(object):
                     notes[item_index] = "{}: surface brightness {:.3f} yielded flux {:.3f}".format(notes[item_index], flux, central_flux)
                     self._log("info", "Finished Galaxy {} of {}".format(counter, total))
                     counter += 1
+
+                    end_time = time.time()
+                    running_total = end_time - start_time
+                    step_duration = end_time - step_time
+                    
+                    print(f"\nStep {item_index} duration in {self.detector} with fast_galaxy={fast_galaxy} and convolve_galaxy={convolve_galaxy}: {step_duration:.4f} seconds, Running total: {running_total:.4f} seconds")
+
                 self._log('info', 'Finishing Sersic Profiles at {}'.format(time.ctime()))
             ot = Table()
             ot['x'] = Column(data=xfs+self.out_origin, unit='pixel')
             ot['y'] = Column(data=yfs+self.out_origin, unit='pixel')
             ot['type'] = Column(data=types)
-            ot['vegamag'] = Column(data=vegamags)
+            ot['abmag'] = Column(data=abmags)
             ot['stmag'] = Column(data=stmags)
             ot['countrate'] = Column(data=fluxes_observed, unit=(u.photon/u.second))
             ot['id'] = Column(data=ids)
@@ -525,7 +539,7 @@ class AstroImage(object):
         self._log("info", "Added catalogue {} to AstroImage {}".format(catname, self.name))
         return obsname
 
-    def make_epsf_array(self, psf_type='normal'):
+    def make_epsf_array(self, psf_type='normal', **kwargs):
         """
         Import the 9 PSFs per detector, one in each corner and middle
         of the detector. These 9 PSFs will be used to interpolate the
@@ -561,8 +575,8 @@ class AstroImage(object):
                                                    self.filter,
                                                    self.detector.lower())
 
-        psf_cache_dir = SelectParameter('psf_cache_location')
-        psf_cache_name = SelectParameter('psf_cache_directory')
+        psf_cache_dir = SelectParameter('psf_cache_location', kwargs)
+        psf_cache_name = SelectParameter('psf_cache_directory', kwargs)
         if psf_cache_name not in psf_cache_dir:
             psf_cache_dir = os.path.join(psf_cache_dir, psf_cache_name)
         if SelectParameter('psf_cache_enable'):
@@ -649,7 +663,7 @@ class AstroImage(object):
         image_size = self.data.shape[0]
 
         # Read input PSF files
-        psf_array, psf_middle = self.make_epsf_array()
+        psf_array, psf_middle = self.make_epsf_array('normal', **kwargs)
         boxsize = np.floor(psf_middle)/PSF_UPSCALE
 
         # Are there bright stars?
@@ -657,10 +671,10 @@ class AstroImage(object):
         are_xbright = np.any(mags < self.xbright_limit)
         # If so, generate extra ePSF arrays
         if are_bright:
-            bright_psf_array, bright_psf_middle = self.make_epsf_array('bright')
+            bright_psf_array, bright_psf_middle = self.make_epsf_array('bright', **kwargs)
             bright_boxsize = np.floor(bright_psf_middle)/PSF_UPSCALE
         if are_xbright:
-            xbright_psf_array, xbright_psf_middle = self.make_epsf_array('xbright')
+            xbright_psf_array, xbright_psf_middle = self.make_epsf_array('xbright', **kwargs)
             xbright_boxsize = np.floor(xbright_psf_middle)/PSF_UPSCALE
 
         for k, (xpix, ypix, flux, mag) in enumerate(zip(xs, ys, fluxes, mags)):
@@ -778,7 +792,7 @@ class AstroImage(object):
         central_flux = img[yc, xc]
 
         # Read input PSF files
-        psf_array, psf_middle = self.make_epsf_array()
+        psf_array, psf_middle = self.make_epsf_array('normal', **kwargs)
         boxsize = rind(np.floor(psf_middle)/PSF_UPSCALE)
         epsf = interpolate_epsf(posX, posY, psf_array, self.shape[0])
         psf_data = np.zeros((boxsize, boxsize), dtype=np.float32)
@@ -831,7 +845,7 @@ class AstroImage(object):
 
         # Convolve with Roman PSF
         if convolve_galaxy:
-            psf_array, psf_middle = self.make_epsf_array()
+            psf_array, psf_middle = self.make_epsf_array('normal', **kwargs)
             boxsize = rind(np.floor(psf_middle)/PSF_UPSCALE)
             epsf = interpolate_epsf(posX, posY, psf_array, self.shape[0])
             psf_data = np.zeros((boxsize, boxsize), dtype=np.float32)
