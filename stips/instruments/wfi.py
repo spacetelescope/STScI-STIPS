@@ -31,7 +31,7 @@ class WFI(RomanInstrument):
         self.DETECTOR_SIZE = (4088, 4088)  # pixels
         self.PIXEL_SIZE = 10.0  # um (Assume for now)
         self.SCALE = [0.11, 0.11]  # Assume for now
-        self.FILTERS = ('F062', 'F087', 'F106', 'F129', 'F158', 'F184', 'F146')
+        self.FILTERS = ('F062', 'F087', 'F106', 'F129', 'F158', 'F184', 'F146', 'F213')
         self.DEFAULT_FILTER = 'F184'  # Assume for now
         self.SCA_ROTATION = -60  # Rotation of SCA with respect to SIAF
 
@@ -130,10 +130,10 @@ class WFI(RomanInstrument):
         self.DARKFILE = 'err_rdrk_wfi.fits'  # IREF, IHB (use for the moment)
 
         # Background Values
-        self.BACKGROUND = {'none': {'F062': 0., 'F087': 0., 'F106': 0.,
-                                    'F129': 0., 'F158': 0., 'F184': 0., 'F146': 0.},
-                           'avg':  {'F062': 1.401E+00, 'F087': 1.401E+00, 'F106': 1.401E+00, 'F129': 7.000E-01,
-                                    'F158': 7.521E-01, 'F184': 8.500E-01, 'F146': 7.000E-01}}
+        self.BACKGROUND = {'none': {'F062': 0., 'F087': 0., 'F106': 0., 'F129': 0.,
+                                    'F158': 0., 'F184': 0., 'F146': 0., 'F213': 0.},
+                           'avg':  {'F062': 0.253, 'F087': 0.254, 'F106': 0.280, 'F129': 0.270,
+                                    'F158': 0.292, 'F184': 0.296, 'F146': 4.498, 'F213': 1.811}}
         self.BACKGROUNDS_V = ['none', 'avg', 'med', 'max', 'min']
         self.BACKGROUNDS = ['None', 'Average zodiacal background', 'Median zodiacal background',
                             'Maximum zodiacal background', 'Minimum zodiacal background']
@@ -145,10 +145,10 @@ class WFI(RomanInstrument):
         # For now, just assuming similar PHOTFNU to WFC3IR.
         # For now, just put them in the middle
         self.PHOTPLAM = {'F062': 0.620, 'F087': 0.869, 'F106': 1.060, 'F129': 1.293,
-                         'F158': 1.577, 'F184': 1.842, 'F146': 1.464}
+                         'F158': 1.577, 'F184': 1.842, 'F146': 1.464, 'F213': 2.125}
 
-        self.ZEROPOINTS_AB = {'F062': 26.73, 'F087': 26.39, 'F106': 26.41, 'F129': 26.43,
-                              'F158': 26.47, 'F184': 26.08, 'F146': 27.66}
+        self.ZEROPOINTS_AB = {'F062': 26.77, 'F087': 26.43, 'F106': 26.45, 'F129': 26.47,
+                              'F158': 26.50, 'F184': 26.12, 'F146': 27.70, 'F213': 26.06}
         self.PHOTFNU = {}
         for i in self.ZEROPOINTS_AB:
             self.PHOTFNU[i] = 10 ** (0.4 * (8.9 - self.ZEROPOINTS_AB[i]))
