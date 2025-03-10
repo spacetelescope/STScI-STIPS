@@ -115,7 +115,7 @@ def get_compressed_file(url, file_name, path="", dirs_to_remove=""):
             members = remove_subfolder(input_file, dirs_to_remove)
         else:
             members = input_file.getmembers()
-        input_file.extractall(path=path, members=members)
+        input_file.extractall(path=path, members=members, filter=None)
     os.remove(file_name)
 
 
@@ -325,7 +325,7 @@ def DownloadReferenceData():
 
     # webbpsf
     print("Checking webbpsf data")
-    webbpsf_url = "https://stsci.box.com/shared/static/t90gqazqs82d8nh25249oq1obbjfstq8.gz"
+    webbpsf_url = "https://stsci.box.com/shared/static/qxpiaxsjwo15ml6m4pkhtk36c9jgj70k.gz"
     webbpsf_data_path = os.environ[GetParameter("webbpsf_data_name", use_data=False)]
     webbpsf_data_file = "webbpsf_data.tar.gz"
     if not os.path.isdir(webbpsf_data_path):
