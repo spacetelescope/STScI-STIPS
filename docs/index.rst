@@ -16,7 +16,7 @@ It does not include instrument saturation effects.
 
 Why use STIPS?
 --------------
-STIPS is intended to produce quick simulations of Level 2 (L2) images, and is provided for
+STIPS is intended to produce quick simulations of Level 3 (L3) images, and is provided for
 cases where `Pandeia <https://pypi.org/project/pandeia.engine/>`_ does not
 provide a large enough simulation area (e.g., full-detector or multiple-detector
 observations). STIPS obtains its Roman instrument and filter values from

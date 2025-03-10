@@ -5,6 +5,13 @@ Release Notes
 Version History and Change Log
 ------------------------------
 
+Version 2.3
+=============
+- Added support for F213 filter
+- Allow users to specify `psf_cache_location` in `addCatalogue` function.
+- Updated WebbPSF version to be >= 1.3
+- Updated documentation to reflect the fact that STIPS creates L3 images.
+
 Version 2.2.2
 =============
 - Updated pandeia.engine version to be >= 3.1 instead of == 3.1
