@@ -36,7 +36,7 @@ dependencies:
 
     # Core Modules
     - webbpsf>=1.3
-    - pandeia.engine>=3.1
+    - pandeia.engine>=2025.3
     - synphot>=1.1.1
     - stsynphot>=1.1.0
     - soc_roman_tools
