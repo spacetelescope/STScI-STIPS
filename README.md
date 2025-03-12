@@ -44,3 +44,27 @@ developed by Andrea Bellini ([@AndreaBellini](https://github.com/AndreaBellini))
 
 ![Alt text](docs/roman_figures/stips_demo.png?raw=true "Roman WFI Image of a Star Cluster and Background Galaxies")
 
+## Citation
+
+If you use STIPS, please cite the [STIPS PASP Paper](https://ui.adsabs.harvard.edu/abs/2024PASP..136l4502S/abstract) that describes the code.
+
+```
+@ARTICLE{2024PASP..136l4502S,
+       author = {{Stips Development Team} and {Gomez}, Sebastian and {Bellini}, Andrea and {Al-Kowsi}, Hanna and {Desjardins}, Tyler and {Geda}, Robel and {Han}, Eunkyu and {Otor}, O. Justin and {Riedel}, Adric and {Ryan}, Russell and {Spitzer}, Isaac and {York}, Brian},
+        title = "{STIPS: The Nancy Grace Roman Space Telescope Imaging Product Simulator}",
+      journal = {\pasp},
+     keywords = {Astronomical techniques, Telescopes, Astronomical methods, 1684, 1689, 1043, Astrophysics - Instrumentation and Methods for Astrophysics},
+         year = 2024,
+        month = dec,
+       volume = {136},
+       number = {12},
+          eid = {124502},
+        pages = {124502},
+          doi = {10.1088/1538-3873/ad9524},
+archivePrefix = {arXiv},
+       eprint = {2411.11978},
+ primaryClass = {astro-ph.IM},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2024PASP..136l4502S},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+```
