@@ -11,7 +11,7 @@ Version 2.3
 - Allow users to specify `psf_cache_location` in `addCatalogue` function.
 - Updated Pandeia version to be >= 2025.3
 - Updated WebbPSF version to be >= 1.3
-- Updated documentation to reflect the fact that STIPS creates L3 images.
+- Updated documentation to reflect the fact that STIPS an intermediate product between L2 and L3 images.
 - Added citation to STIPS paper.
 
 Version 2.2.2
