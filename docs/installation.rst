@@ -9,7 +9,7 @@ in this section along with instructions.
 STIPS Requirements
 ##################
 
-* ``pandeia>=3.1``: Exposure time calculator.
+* ``pandeia>=2024.12``: Exposure time calculator.
 
 * ``webbpsf>=1.3``: Nancy Grace Roman PSF calculator. STIPS also requires that ``poppy``, a
   support package used by WebbPSF, have version ``>=1.0.3``.
