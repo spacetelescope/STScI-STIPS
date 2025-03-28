@@ -208,29 +208,29 @@ class StipsEnvironment(object):
         return 'NO REFERENCE DATA SET'
 
     @classproperty
-    def __webbpsf__version__(self):
-        import webbpsf
-        if hasattr(webbpsf, '__version__'):
-            return webbpsf.__version__
+    def __stpsf__version__(self):
+        import stpsf
+        if hasattr(stpsf, '__version__'):
+            return stpsf.__version__
         return 'UNKNOWN'
 
     @classproperty
-    def __webbpsf__data__location__(self):
-        if 'WEBBPSF_PATH' in os.environ:
-            return os.environ['WEBBPSF_PATH']
+    def __stpsf__data__location__(self):
+        if 'STPSF_PATH' in os.environ:
+            return os.environ['STPSF_PATH']
         return 'UNSET'
 
     @classproperty
-    def __webbpsf__data__version__(self):
-        if 'WEBBPSF_PATH' in os.environ:
-            fname = os.path.join(os.environ['WEBBPSF_PATH'], 'version.txt')
+    def __stpsf__data__version__(self):
+        if 'STPSF_PATH' in os.environ:
+            fname = os.path.join(os.environ['STPSF_PATH'], 'version.txt')
             if os.path.isfile(fname):
                 with open(fname, 'r') as inf:
                     line = inf.readline()
                     while len(line.strip()) == 0:
                         line = inf.readline()
                     return line.strip()
-            return 'WEBBPSF_PATH HAS NO version.txt FILE'
+            return 'STPSF_PATH HAS NO version.txt FILE'
         return 'NO REFERENCE DATA SET'
 
     @classproperty
@@ -246,9 +246,9 @@ class StipsEnvironment(object):
                     'pandeia_version': env.__pandeia__version__,
                     'pandeia_data_location': env.__pandeia__data__location__,
                     'pandeia_data_version': env.__pandeia__data__version__,
-                    'webbpsf_version': env.__webbpsf__version__,
-                    'webbpsf_data_location': env.__webbpsf__data__location__,
-                    'webbpsf_data_version': env.__webbpsf__data__version__,
+                    'stpsf_version': env.__stpsf__version__,
+                    'stpsf_data_location': env.__stpsf__data__location__,
+                    'stpsf_data_version': env.__stpsf__data__version__,
                     'astropy_version': astropy.__version__,
                     'photutils_version': photutils.__version__
                    }
@@ -266,15 +266,15 @@ class StipsEnvironment(object):
         report += "STIPS Version {} with Data Version {} at {}.\n".format(env['stips_version'], env['stips_data_version'], env['stips_data_location'])
         report += "\tSTIPS Grid Generated with {}\n".format(env['stips_grid_version'])
         report += "Pandeia Version {} with Data Version {} at {}.\n".format(env['pandeia_version'], env['pandeia_data_version'], env['pandeia_data_location'])
-        report += "Webbpsf Version {} with Data Version {} at {}.\n".format(env['webbpsf_version'], env['webbpsf_data_version'], env['webbpsf_data_location'])
+        report += "stpsf Version {} with Data Version {} at {}.\n".format(env['stpsf_version'], env['stpsf_data_version'], env['stpsf_data_location'])
         return report
 
 
 def SetupDataPaths():
     """
-    Set up the STIPS, synphot, webbpsf, and pandeia reference data environment variables.
+    Set up the STIPS, synphot, stpsf, and pandeia reference data environment variables.
     """
-    for item in ["stips", "synphot", "webbpsf", "pandeia"]:
+    for item in ["stips", "synphot", "stpsf", "pandeia"]:
         var_name = GetParameter(item+"_data_name", use_data=False)
         if var_name not in os.environ:
             var_path = GetParameter(item+"_data", use_data=False)
@@ -292,7 +292,7 @@ def SetupDataPaths():
 
 def DownloadReferenceData():
     """
-    Set up the STIPS, synphot, webbpsf, and pandeia reference data environment variables.
+    Set up the STIPS, synphot, stpsf, and pandeia reference data environment variables.
     """
     SetupDataPaths()
 
@@ -323,18 +323,18 @@ def DownloadReferenceData():
     else:
         print("Found at {}".format(synphot_data_path))
 
-    # webbpsf
-    print("Checking webbpsf data")
-    webbpsf_url = "https://stsci.box.com/shared/static/qxpiaxsjwo15ml6m4pkhtk36c9jgj70k.gz"
-    webbpsf_data_path = os.environ[GetParameter("webbpsf_data_name", use_data=False)]
-    webbpsf_data_file = "webbpsf_data.tar.gz"
-    if not os.path.isdir(webbpsf_data_path):
-        print("Downloading webbpsf data to {}".format(webbpsf_data_path))
-        os.makedirs(webbpsf_data_path)
-        get_compressed_file(webbpsf_url, webbpsf_data_file, webbpsf_data_path,
+    # stpsf
+    print("Checking stpsf data")
+    stpsf_url = "https://stsci.box.com/shared/static/qxpiaxsjwo15ml6m4pkhtk36c9jgj70k.gz"
+    stpsf_data_path = os.environ[GetParameter("stpsf_data_name", use_data=False)]
+    stpsf_data_file = "webbpsf_data.tar.gz"
+    if not os.path.isdir(stpsf_data_path):
+        print("Downloading stpsf data to {}".format(stpsf_data_path))
+        os.makedirs(stpsf_data_path)
+        get_compressed_file(stpsf_url, stpsf_data_file, stpsf_data_path,
                             "webbpsf-data/")
     else:
-        print("Found at {}".format(webbpsf_data_path))
+        print("Found at {}".format(stpsf_data_path))
 
     # pandeia
     print("Checking pandeia data")

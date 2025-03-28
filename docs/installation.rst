@@ -11,8 +11,8 @@ STIPS Requirements
 
 * ``pandeia>=2024.12``: Exposure time calculator.
 
-* ``webbpsf>=1.3``: Nancy Grace Roman PSF calculator. STIPS also requires that ``poppy``, a
-  support package used by WebbPSF, have version ``>=1.0.3``.
+* ``stpsf>=2.0.0``: Nancy Grace Roman PSF calculator. STIPS also requires that ``poppy``, a
+  support package used by STPSF (Formerly WebbPSF), have version ``>=1.0.3``.
 
 * ``astropy``: STIPS uses Astropy in order to:
 
@@ -97,7 +97,7 @@ Installing as a Developer
 Downloading Required Reference Data
 ************************************
 
-STIPS, Pandeia, and WebbPSF need the reference datasets.
+STIPS, Pandeia, and STPSF need the reference datasets.
 You will need to download the data and add them to your environmental path.
 
 1. Add the following paths to your bash environmental path. It is recommended that you add the path to your ``.bash_profile`` file:
@@ -105,7 +105,7 @@ You will need to download the data and add them to your environmental path.
 .. code-block:: text
 
 	export stips_data="<absolute_path_to_this_folder>/ref_data/stips_data"
-	export WEBBPSF_PATH="<absolute_path_to_this_folder>/ref_data/webbpsf-data"
+	export STPSF_PATH="<absolute_path_to_this_folder>/ref_data/stpsf-data"
 	export PYSYN_CDBS="<absolute_path_to_this_folder>/ref_data/grp/redcat/trds"
 	export pandeia_refdata="<absolute_path_to_this_folder>/ref_data/pandeia_data-x.x.x_roman"
 
@@ -144,7 +144,7 @@ You should receive an output of the following form:
 
   Pandeia version a.b.c with Data Version a.b.c. at /Some/Path/To/pandeia_refdata
 
-  Webbpsf Version d.e.f with Data Version d.e.f at /Some/Path/To/webbpsf_data_path
+  STPSF Version d.e.f with Data Version d.e.f at /Some/Path/To/stpsf_data_path
 
 
 Ignore the following warning message if it appears:

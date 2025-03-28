@@ -4,7 +4,7 @@ The STIPS PSF Grid
 Overview
 --------
 
-As of version 2.0.0, STIPS uses WebbPSF PSF grids to implement an ePSF. The ePSF
+As of version 2.0.0, STIPS uses STPSF PSF grids to implement an ePSF. The ePSF
 uses a 3x3 grid of PSFs to handle PSF variation across the detector, and an oversample of
 4x4 to handle sub-pixel positioning. Each point source has its PSF calculated individually
 as it is added to the detector.

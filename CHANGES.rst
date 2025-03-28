@@ -10,7 +10,7 @@ Version 2.3
 - Added support for F213 filter
 - Allow users to specify `psf_cache_location` in `addCatalogue` function.
 - Updated pandeia version to be >= 2024.12
-- Updated WebbPSF version to be >= 1.3
+- Updated WebbPSF to STPSF and constrained version to be >= 2.0.0
 - Updated documentation to reflect the fact that STIPS an intermediate product between L2 and L3 images.
 - Added citation to STIPS paper.
 

@@ -371,12 +371,12 @@ class AstroImage(object):
 
     @property
     def psf_constructor(self):
-        import webbpsf
-        if not hasattr(webbpsf, self.telescope.lower()) and self.telescope.lower() == 'roman':
-            return getattr(getattr(webbpsf, 'roman'), self.instrument)()
-        if hasattr(webbpsf, self.instrument):
-            return getattr(webbpsf, self.instrument)()
-        return getattr(getattr(webbpsf, self.telescope), self.instrument)()
+        import stpsf
+        if not hasattr(stpsf, self.telescope.lower()) and self.telescope.lower() == 'roman':
+            return getattr(getattr(stpsf, 'roman'), self.instrument)()
+        if hasattr(stpsf, self.instrument):
+            return getattr(stpsf, self.instrument)()
+        return getattr(getattr(stpsf, self.telescope), self.instrument)()
 
     def toFits(self, outFile):
         """Create a FITS file from the current state of the AstroImage data."""
@@ -587,7 +587,7 @@ class AstroImage(object):
             self._log("info", "PSF File is {}".format(psf_file))
             if os.path.exists(psf_file):
                 try:
-                    from webbpsf.utils import to_griddedpsfmodel
+                    from stpsf.utils import to_griddedpsfmodel
                     self.psf = to_griddedpsfmodel(psf_file)
                     have_psf = True
                 except Exception as e:
@@ -597,7 +597,7 @@ class AstroImage(object):
             ins = self.psf_constructor
             ins.filter = self.filter
             ins.detector = self.detector
-            # Supersample the pixel scale to get WebbPSF to output
+            # Supersample the pixel scale to get STPSF to output
             # PSF models with even supersampling centered at the center of a pixel
             ins.pixelscale = self.scale[0] / PSF_UPSCALE
             # Figure out PSF size:
