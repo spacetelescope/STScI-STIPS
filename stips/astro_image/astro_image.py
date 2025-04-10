@@ -483,7 +483,7 @@ class AstroImage(object):
                     end_time = time.time()
                     running_total = end_time - start_time
                     step_duration = end_time - step_time
-                    
+
                     print(f"\nStep {item_index} duration in {self.detector} with fast_galaxy={fast_galaxy} and convolve_galaxy={convolve_galaxy}: {step_duration:.4f} seconds, Running total: {running_total:.4f} seconds")
 
                 self._log('info', 'Finishing Sersic Profiles at {}'.format(time.ctime()))
@@ -575,15 +575,15 @@ class AstroImage(object):
                                                    self.filter,
                                                    self.detector.lower())
 
-        psf_cache_dir = SelectParameter('psf_cache_location', kwargs)
-        psf_cache_name = SelectParameter('psf_cache_directory', kwargs)
-        if psf_cache_name not in psf_cache_dir:
-            psf_cache_dir = os.path.join(psf_cache_dir, psf_cache_name)
+        psf_cache_location = SelectParameter('psf_cache_location', kwargs)
+        psf_cache_directory = SelectParameter('psf_cache_directory', kwargs)
+        psf_cache_path = os.path.join(psf_cache_location, psf_cache_directory)
+
         if SelectParameter('psf_cache_enable'):
-            if not os.path.exists(psf_cache_dir):
-                os.makedirs(psf_cache_dir)
-            psf_file = os.path.join(psf_cache_dir, psf_name)
-            self._log("info", "PSF File {} to be put at {}".format(psf_name, psf_cache_dir))
+            if not os.path.exists(psf_cache_path):
+                os.makedirs(psf_cache_path)
+            psf_file = os.path.join(psf_cache_path, psf_name)
+            self._log("info", "PSF File {} to be put at {}".format(psf_name, psf_cache_path))
             self._log("info", "PSF File is {}".format(psf_file))
             if os.path.exists(psf_file):
                 try:
@@ -627,7 +627,7 @@ class AstroImage(object):
             self.psf = ins.psf_grid(all_detectors=False, num_psfs=num_psfs,
                                     fov_pixels=fov_pix, normalize='last',
                                     oversample=1, save=save,
-                                    outdir=psf_cache_dir, outfile=psf_file,
+                                    outdir=psf_cache_path, outfile=psf_file,
                                     overwrite=overwrite)
             msg = "{}: Finished PSF Grid creation at {}"
             self._log("info", msg.format(self.name, time.ctime()))
