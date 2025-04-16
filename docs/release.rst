@@ -24,13 +24,15 @@ intended for a release:
     * ``environment.yml``
     * ``environment_dev.yml``
     * ``docs/installation.rst``
-    * ``ret_data/retrieve_stips_data.py``
+    * ``ref_data/retrieve_stips_data.py``
 
 * Are you able to install the new version of STIPS locally with ``pip`` and ``conda``?
 
 * Can you run the example notebooks in the ``notebooks/`` directory without encountering errors?
 
 * Has ``CHANGES.rst`` been updated to include the current release and its associated updates at the top?
+
+* Has ``CITATION.cff`` been updated with the relevant values in its ``version`` and ``date-released`` fields?
 
 * Are all CI tests in the release's pull request passing?
 
