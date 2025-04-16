@@ -16,7 +16,7 @@ It does not include instrument saturation effects.
 
 Why use STIPS?
 --------------
-STIPS is intended to produce quick simulations that are corrected for distoriton, but not mosaicked.
+STIPS is intended to produce quick simulations that are corrected for distortion, but not mosaicked.
 We note there is no equivalent flight product, since Roman Level 3 (L3) files are both distortion
 corrected and mosaicked, while Level 2 (L2) files are neither. STIPS is ideal for
 cases where `Pandeia <https://pypi.org/project/pandeia.engine/>`_ does not

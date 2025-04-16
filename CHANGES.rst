@@ -5,7 +5,7 @@ Release Notes
 Version History and Change Log
 ------------------------------
 
-Version 2.3
+Version 2.3.0
 =============
 - Added support for F213 filter
 - Allow users to specify `psf_cache_location` in `addCatalogue` function.
