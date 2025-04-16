@@ -2,6 +2,7 @@
 
 [![Build Status](https://github.com/spacetelescope/STScI-STIPS/actions/workflows/ci_workflows.yml/badge.svg?branch=main)](https://github.com/spacetelescope/STScI-STIPS/actions/workflows/ci_workflows.yml?query=branch:main)
 [![STScI](https://img.shields.io/badge/powered%20by-STScI-blue.svg?colorA=707170&colorB=3e8ddd&style=flat)](http://www.stsci.edu)
+[![DOI](https://zenodo.org/badge/94350619.svg)](https://zenodo.org/badge/latestdoi/94350619)
 
 For documentation and installation instructions please visit https://stips.readthedocs.io
 
