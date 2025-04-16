@@ -5,6 +5,15 @@ Release Notes
 Version History and Change Log
 ------------------------------
 
+Version 2.3.0
+=============
+- Added support for F213 filter
+- Allow users to specify `psf_cache_location` in `addCatalogue` function.
+- Updated pandeia version to be >= 2024.12
+- Updated WebbPSF to STPSF and constrained version to be >= 2.0.0
+- Updated documentation to reflect the fact that STIPS an intermediate product between L2 and L3 images.
+- Added citation to STIPS paper.
+
 Version 2.2.2
 =============
 - Updated pandeia.engine version to be >= 3.1 instead of == 3.1

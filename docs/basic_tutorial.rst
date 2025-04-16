@@ -29,7 +29,7 @@ an output set of the following form:
 
     Pandeia version a.b.c with Data Version a.b.c. at /Some/Path/To/pandeia_refdata
 
-    Webbpsf Version d.e.f with Data Version d.e.f at /Some/Path/To/webbpsf_data_path
+    STPSF Version d.e.f with Data Version d.e.f at /Some/Path/To/stpsf_data_path
 
 
 Setting Up Some Basics
