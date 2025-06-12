@@ -24,15 +24,12 @@ class RomanInstrument(Instrument):
                         'comptable': self.COMPFILES[-1],
                         'graphtable': self.GRAPHFILES[-1],
                         'thermtable': self.THERMFILES[-1],
-                        'area': 45238.93416,
+                        'area': 36076.7,
                         'waveset': (500, 26000, 10000., 'log')
                     }
 
     TELESCOPE = 'ROMAN'
-    # WARNING : The definition of the area is currently under discussion, the 
-    # value presented here is simply pi * r^2, where r = 0.6m, half the diameter
-    # of the Roman mirror. This is subject to change.
-    AREA = 45238.93416
+    AREA = 36076.7
     DBNAME = "IsochroneGrid.db"
     MODE = 'imaging'
     APERTURE = 'any'

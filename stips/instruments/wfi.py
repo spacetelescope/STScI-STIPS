@@ -68,7 +68,7 @@ class WFI(RomanInstrument):
 
         # Reference point
         s01 = rsiaf['WFI01_FULL'].sci_to_tel(self.DETECTOR_SIZE[0] / 2, self.DETECTOR_SIZE[1] / 2)
-        center = SkyCoord(s01[0] * u.arcsec, 
+        center = SkyCoord(s01[0] * u.arcsec,
                           s01[1] * u.arcsec).skyoffset_frame(self.SCA_ROTATION * u.deg)
 
         for i, sca in enumerate(self.SCA_NAMES):
@@ -141,14 +141,16 @@ class WFI(RomanInstrument):
                        'med': 'Median zodiacal background', 'max': 'Maximum zodiacal background',
                        'min': 'Minimum zodiacal background', 'custom': 'Custom thermal background rate',
                        'pandeia': 'Pandeia background rate'}
-        # PHOTFNU has units of Jy
-        # For now, just assuming similar PHOTFNU to WFC3IR.
-        # For now, just put them in the middle
-        self.PHOTPLAM = {'F062': 0.620, 'F087': 0.869, 'F106': 1.060, 'F129': 1.293,
-                         'F158': 1.577, 'F184': 1.842, 'F146': 1.464, 'F213': 2.125}
+
+        # PHOTPLAM values from RDox as of June 10, 2025:
+        # https://roman-docs.stsci.edu/roman-instruments-home/wfi-imaging-mode-user-guide/wfi-design/wfi-optical-elements
+        self.PHOTPLAM = {'F062': 0.6291, 'F087': 0.8696, 'F106': 1.0567, 'F129': 1.2901,
+                         'F158': 1.5749, 'F184': 1.8394, 'F146': 1.4378, 'F213': 2.1230}
 
         self.ZEROPOINTS_AB = {'F062': 26.77, 'F087': 26.43, 'F106': 26.45, 'F129': 26.47,
                               'F158': 26.50, 'F184': 26.12, 'F146': 27.70, 'F213': 26.06}
+
+        # PHOTFNU has units of Jy
         self.PHOTFNU = {}
         for i in self.ZEROPOINTS_AB:
             self.PHOTFNU[i] = 10 ** (0.4 * (8.9 - self.ZEROPOINTS_AB[i]))
@@ -170,7 +172,7 @@ class WFI(RomanInstrument):
                                  "BLOB": ["NONE", "LINE", "LINE-3PT", "BOX-MIN"]
                                }
         self.DITHER_OFFSETS = {
-                                 "BOX-UVIS": [(-11.071, -17.744), (11.947, -17.457), 
+                                 "BOX-UVIS": [(-11.071, -17.744), (11.947, -17.457),
                                                 (11.071, 17.744), (-11.947, 17.457)],
                                  "BLOB": [(-1.930, -1.729), (1.930, 1.729)],
                                  "SUBPIXEL": {
