@@ -594,9 +594,14 @@ class AstroImage(object):
                     self._log("error", "Creating psf from file {}  failed with {}".format(psf_file, e))
 
         if not have_psf:
+            from stpsf import __version__ as stpsf_version
+            from packaging.version import Version
             ins = self.psf_constructor
             ins.filter = self.filter
-            ins.detector = self.detector
+            if Version(stpsf_version) > Version('2.0.0'):
+                ins.detector = self.detector
+            else:
+                ins.detector = self.detector.replace('WFI', 'SCA')
             # Supersample the pixel scale to get STPSF to output
             # PSF models with even supersampling centered at the center of a pixel
             ins.pixelscale = self.scale[0] / PSF_UPSCALE

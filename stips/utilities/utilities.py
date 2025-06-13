@@ -326,14 +326,14 @@ def DownloadReferenceData():
 
     # stpsf
     print("Checking stpsf data")
-    stpsf_url = "https://stsci.box.com/shared/static/qxpiaxsjwo15ml6m4pkhtk36c9jgj70k.gz"
+    stpsf_url = "https://stsci.box.com/shared/static/kqfolg2bfzqc4mjkgmujo06d3iaymahv.gz"
     stpsf_data_path = os.environ[GetParameter("stpsf_data_name", use_data=False)]
-    stpsf_data_file = "webbpsf_data.tar.gz"
+    stpsf_data_file = "stpsf_data.tar.gz"
     if not os.path.isdir(stpsf_data_path):
         print("Downloading stpsf data to {}".format(stpsf_data_path))
         os.makedirs(stpsf_data_path)
         get_compressed_file(stpsf_url, stpsf_data_file, stpsf_data_path,
-                            "webbpsf-data/")
+                            "stpsf-data/")
     else:
         print("Found at {}".format(stpsf_data_path))
 
