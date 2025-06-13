@@ -115,7 +115,9 @@ class AstroImage(object):
         # Will only be used for the output catalog file, you can change this one.
         self.out_origin = 1
 
-        self.name = kwargs.get('detname', default['detector'][self.instrument])
+        name = kwargs.get('detname', default['detector'][self.instrument])
+        # support old-style WFI detector names (e.g., "SCA01" for "WFI01")
+        self.name = name.upper().replace('SCA', 'WFI')
         self.detector = self.name
 
         data = kwargs.get('data', None)
@@ -549,7 +551,7 @@ class AstroImage(object):
         Parameters
         ----------
         detector : str
-            Name of WFI detector, e.g. 'SCA01'
+            Name of WFI detector, e.g. 'WFI01'
         band : str
             Name of filter, e.g. 'F087'
         psf_type : str
@@ -1398,7 +1400,7 @@ class AstroImage(object):
                             'instrument': 'WFI',
                             'filter': 'F062',
                             'detector': {
-                                            'WFI': 'SCA01',
+                                            'WFI': 'WFI01',
                                             'NIRCam': "NRCA1",
                                             'MIRI': 'MIRI'
                                         },

@@ -37,7 +37,7 @@ def rind(x):
 # Import the .fits PSF file, which will be the test PSF against which we can run all
 # comparative tests and select the part of the data we'll use to construct the test PSF
 file_dir = os.path.dirname(os.path.abspath(__file__))
-data_dir = os.path.join(file_dir, "..", "..", "data", "psf_WFI_2.0.0_F129_sca01.fits")
+data_dir = os.path.join(file_dir, "..", "..", "data", "psf_WFI_2.0.0_F129_wfi01.fits")
 file = fits.open(data_dir)
 
 file_in = file[0].data[0]

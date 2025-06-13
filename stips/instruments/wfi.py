@@ -46,24 +46,31 @@ class WFI(RomanInstrument):
         # Get Roman SIAF
         rsiaf = siaf.RomanSiaf()
 
-        # Make array of SCA's
-        self.SCA_NAMES = ["WFI01_FULL", "WFI02_FULL", "WFI03_FULL", "WFI04_FULL", "WFI05_FULL",
-                          "WFI06_FULL", "WFI07_FULL", "WFI08_FULL", "WFI09_FULL", "WFI10_FULL",
-                          "WFI11_FULL", "WFI12_FULL", "WFI13_FULL", "WFI14_FULL", "WFI15_FULL",
-                          "WFI16_FULL", "WFI17_FULL", "WFI18_FULL"]
+        # Make array of detectors
+        # self.SCA_NAMES = ["WFI01_FULL", "WFI02_FULL", "WFI03_FULL", "WFI04_FULL", "WFI05_FULL",
+        #                   "WFI06_FULL", "WFI07_FULL", "WFI08_FULL", "WFI09_FULL", "WFI10_FULL",
+        #                   "WFI11_FULL", "WFI12_FULL", "WFI13_FULL", "WFI14_FULL", "WFI15_FULL",
+        #                   "WFI16_FULL", "WFI17_FULL", "WFI18_FULL"]
+        self.DETECTOR_NAMES = ["WFI01_FULL", "WFI02_FULL", "WFI03_FULL",
+                               "WFI04_FULL", "WFI05_FULL", "WFI06_FULL",
+                               "WFI07_FULL", "WFI08_FULL", "WFI09_FULL",
+                               "WFI10_FULL", "WFI11_FULL", "WFI12_FULL",
+                               "WFI13_FULL", "WFI14_FULL", "WFI15_FULL",
+                               "WFI16_FULL", "WFI17_FULL", "WFI18_FULL"]
+        self.SCA_NAMES = self.DETECTOR_NAMES.copy()  # for legacy compatibility?
 
         # Default detector offsets in (arcseconds_ra,arcseconds_dec,degrees_angle)
-        self.DETECTOR_OFFSETS = [# SCA01           SCA02             SCA03
+        self.DETECTOR_OFFSETS = [# WFI01           WFI02             WFI03
                                  (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
-                                 # SCA04           SCA05             SCA06
+                                 # WFI04           WFI05             WFI06
                                  (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
-                                 # SCA07           SCA08             SCA09
+                                 # WFI07           WFI08             WFI09
                                  (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
-                                 # SCA10           SCA11             SCA12
+                                 # WFI10           WFI11             WFI12
                                  (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
-                                 # SCA13           SCA14             SCA15
+                                 # WFI13           WFI14             WFI15
                                  (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
-                                 # SCA16           SCA17             SCA18
+                                 # WFI16           WFI17             WFI18
                                  (0.0, 0.0, 0.0),  (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]
 
         # Reference point
@@ -71,9 +78,9 @@ class WFI(RomanInstrument):
         center = SkyCoord(s01[0] * u.arcsec,
                           s01[1] * u.arcsec).skyoffset_frame(self.SCA_ROTATION * u.deg)
 
-        for i, sca in enumerate(self.SCA_NAMES):
+        for i, det in enumerate(self.DETECTOR_NAMES):
             # Get V2, V3 coordinate pair in the telescope frame at the center of the SCA
-            V2, V3 = rsiaf[sca].sci_to_tel(self.DETECTOR_SIZE[0] / 2, self.DETECTOR_SIZE[1] / 2)
+            V2, V3 = rsiaf[det].sci_to_tel(self.DETECTOR_SIZE[0] / 2, self.DETECTOR_SIZE[1] / 2)
             # Transform these to the center reference point
             out = ICRS(V2 * u.arcsec, V3 * u.arcsec).transform_to(center)
             # Get out offsets in X and Y direction of SCA array, convert to arcsec
@@ -82,9 +89,9 @@ class WFI(RomanInstrument):
             self.DETECTOR_OFFSETS[i] = (X / np.cos(DEC / 180 * np.pi), Y, 0)
 
         # Copy the results into these variables needed by some functions in STIPS
-        self.OFFSET_NAMES = ("SCA01", "SCA02", "SCA03", "SCA04", "SCA05", "SCA06",
-                             "SCA07", "SCA08", "SCA09", "SCA10", "SCA11", "SCA12",
-                             "SCA13", "SCA14", "SCA15", "SCA16", "SCA17", "SCA18")
+        self.OFFSET_NAMES = ("WFI01", "WFI02", "WFI03", "WFI04", "WFI05", "WFI06",
+                             "WFI07", "WFI08", "WFI09", "WFI10", "WFI11", "WFI12",
+                             "WFI13", "WFI14", "WFI15", "WFI16", "WFI17", "WFI18")
         self.N_OFFSET = {1: self.DETECTOR_OFFSETS[0], 2: self.DETECTOR_OFFSETS[1],
                          3: self.DETECTOR_OFFSETS[2], 4: self.DETECTOR_OFFSETS[3],
                          5: self.DETECTOR_OFFSETS[4], 6: self.DETECTOR_OFFSETS[5],
