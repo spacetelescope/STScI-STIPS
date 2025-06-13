@@ -2,10 +2,13 @@ from astropy.io import fits
 from astropy import units as u
 import numpy as np
 import os
+import pdb
+import pickle
 import stsynphot as stsyn
 import synphot as syn
 import sys
 import time
+import warnings
 
 from stips.utilities import InstrumentList
 from stips import __version__ as stips_version_info
@@ -49,7 +52,7 @@ area = {
         'nircamshort':  253260.0,
         'miri':         253260.0,
         'wfc3ir':       45238.93416,
-        'wfi':          45238.93416}
+        'wfi':          36076.7}  # in cm^2
 
 
 def get_grid_points():
@@ -62,7 +65,7 @@ def get_grid_points():
             teff = np.append(teff, float(items[0]))
             Z = np.append(Z, float(items[1]))
             logg = np.append(logg, float(items[2]))
-    return np.array((np.unique(Z), np.unique(logg), np.unique(teff), np.arange(-5.5, 16.0)))
+    return [np.unique(Z), np.unique(logg), np.unique(teff), np.arange(-5.5, 16.0)]
 
 
 if __name__ == '__main__':
@@ -104,6 +107,12 @@ if __name__ == '__main__':
                         counts = True
                 except stsyn.exceptions.ParameterOutOfBounds:
                     counts = False
+                    warnings.warn(f"Teff: {teff}, Z: {Z}, logg: {logg} is "
+                                  'out of bounds for stsyn.grid_to_spec')
+                except ValueError:
+                    counts = False
+                    warnings.warn(f"Teff: {teff}, Z: {Z}, logg: {logg} causes "
+                                  'ValueError with stsyn.grid_to_spec')
                 for l, mag in enumerate(coords[3]):
                     msg = "\t\t\t{:6d} of {}: {}: Starting Z = {}, log(g) = {}, Teff = {:7.1f}, Mabs = {:>4}"
                     print(msg.format(n+1, total, time.ctime(), Z, logg, teff, mag), end='')
@@ -124,10 +133,11 @@ if __name__ == '__main__':
                     n += 1
 
     print("{}: Saving files...".format(time.ctime()), end='')
-    with open(os.path.join(os.getcwd(), "grid", "VERSION.txt"), "wt") as outf:
+    with open(os.path.join(os.getcwd(), 'grid', 'VERSION.txt'), 'wt') as outf:
         outf.write("Pandeia: {}\n".format(pandeia_version_info))
         outf.write("STIPS: {}\n".format(stips_version_info))
-    np.save(os.path.join(os.getcwd(), 'grid', 'input.npy'), coords)
+    with open(os.path.join(os.getcwd(), 'grid', 'input.pkl'), 'wb') as inpf:
+        pickle.dump(coords, inpf)
     for instrument in instruments:
         for mode in modes[instrument.lower()]:
             for filter in filters[instrument.lower()][mode]:

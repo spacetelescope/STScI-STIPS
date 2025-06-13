@@ -253,9 +253,9 @@ class StarGenerator(object):
         filter = ins.filter
         instrument = ins.DETECTOR
         try:
-            coords = np.load(os.path.join(self.gridpath, 'input.npy'), allow_pickle=True)
+            coords = np.load(os.path.join(self.gridpath, 'input.pkl'), allow_pickle=True)
         except UnicodeError:
-            coords = np.load(os.path.join(self.gridpath, 'input.npy'), allow_pickle=True, encoding='bytes')
+            coords = np.load(os.path.join(self.gridpath, 'input.pkl'), allow_pickle=True, encoding='bytes')
         m, t, g, i = self.get_star_info()
         temps = np.interp(masses, m, t)
         gravs = np.interp(masses, m, g)

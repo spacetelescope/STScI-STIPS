@@ -299,8 +299,8 @@ def DownloadReferenceData():
 
     # STIPS
     print("Checking STIPS data")
-    stips_data_file = "stips_data-1.0.9.tgz"
-    stips_url = "https://stsci.box.com/shared/static/4nebx2ndxr7c77lgocfbvxo7c2hyd3in.tgz"
+    stips_data_file = "stips_data-1.0.10.tgz"
+    stips_url = "https://stsci.box.com/shared/static/761vz7zav7pux03fg0hhqq7z2uw8nmqw.tgz"
     stips_data_path = os.environ[GetParameter("stips_data_name", use_data=False)]
     if not os.path.isdir(stips_data_path):
         print("Downloading STIPS data to {}".format(stips_data_path))
