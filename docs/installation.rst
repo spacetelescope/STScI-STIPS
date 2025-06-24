@@ -97,7 +97,7 @@ Installing as a Developer
 Downloading Required Reference Data
 ************************************
 
-STIPS, Pandeia, and STPSF need the reference datasets.
+STIPS, Pandeia, and STPSF require additional reference datasets.
 You will need to download the data and add them to your environmental path.
 
 1. Add the following paths to your bash environmental path. It is recommended that you add the path to your ``.bash_profile`` file:
@@ -119,6 +119,13 @@ You will need to download the data and add them to your environmental path.
 
 		python retrieve_stips_data.py
 
+.. caution::
+
+  Running ``retrieve_stips_data.py`` will fetch the latest versions of each
+  package's reference data. If you have manually configured your software
+  environment to use other versions of any of these packages, download their
+  reference data separately and configure your environment variables
+  appropriately to avoid confusion.
 
 Testing Installation
 *********************

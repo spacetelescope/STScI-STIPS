@@ -12,12 +12,9 @@ import warnings
 
 from stips.utilities import InstrumentList
 from stips import __version__ as stips_version_info
+from synphot import __version__ as synphot_version_info
+from stsynphot import __version__ as stsynphot_version_info
 
-
-pandeia_version_file = os.path.join(os.environ["pandeia_refdata"], "VERSION_PSF")
-with open(pandeia_version_file, 'r') as inf:
-    pandeia_version_info = inf.readline().strip()
-print("Pandeia Version: {}".format(pandeia_version_info))
 
 file_dir = os.path.basename(os.path.abspath(__file__))
 stips_dir = os.path.abspath(os.path.join(file_dir, "..", ".."))
@@ -134,8 +131,9 @@ if __name__ == '__main__':
 
     print("{}: Saving files...".format(time.ctime()), end='')
     with open(os.path.join(os.getcwd(), 'grid', 'VERSION.txt'), 'wt') as outf:
-        outf.write("Pandeia: {}\n".format(pandeia_version_info))
-        outf.write("STIPS: {}\n".format(stips_version_info))
+        outf.write(f"STIPS: {stips_version_info}\n")
+        outf.write(f"stsynphot: {stsynphot_version_info}\n")
+        outf.write(f"synphot: {synphot_version_info}\n")
     with open(os.path.join(os.getcwd(), 'grid', 'input.pkl'), 'wb') as inpf:
         pickle.dump(coords, inpf)
     for instrument in instruments:
