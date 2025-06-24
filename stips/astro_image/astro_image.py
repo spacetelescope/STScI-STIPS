@@ -495,7 +495,7 @@ class AstroImage(object):
             ot['type'] = Column(data=types)
             ot['abmag'] = Column(data=abmags)
             ot['stmag'] = Column(data=stmags)
-            ot['countrate'] = Column(data=fluxes_observed, unit=(u.photon/u.second))
+            ot['countrate'] = Column(data=fluxes_observed, unit=(u.count/u.second))
             ot['id'] = Column(data=ids)
             ot['notes'] = Column(data=notes)
         return ot
