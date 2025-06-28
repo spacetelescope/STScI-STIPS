@@ -23,7 +23,6 @@ name: stips_dev
 channels:
   - conda-forge
   - astropy
-  - defaults
 
 dependencies:
   # Base dependencies
