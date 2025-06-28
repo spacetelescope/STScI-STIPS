@@ -2,9 +2,41 @@
 Developer Release Instructions
 ******************************
 
-This page offers a complete walkthrough on how to prepare and release a new
-version of STIPS on GitHub and PyPI, as well as how to sync the ReadTheDocs
-documentation with the new release.
+This page offers a complete walkthrough on how to update the STIPS reference
+data, prepare and release a new version of STIPS on GitHub and PyPI, and sync
+the ReadTheDocs documentation with the new release.
+
+Reference data
+==============
+
+**Not every release will require an update to the reference data.** If one is
+necessary, begin by incrementing the version number in ``VERSION.txt`` at the
+base of the reference data directory.
+
+Next, regenerate the Phoenix grid by running ``stips/data/CreatePhoenixGrid.py``
+from the STIPS GitHub repository. (The file may run for an extended period.)
+Save the results to the reference data directory's ``grid/`` folder. There
+should be a ``.npy`` file for each WFI imaging filter, a coordinates file
+(``input.pkl``), and a grid-specific version file.
+
+Copy existing files from the ``test/`` folder and, if necessary, add any that
+are needed to run new tests added to the GitHub codebase during the development
+cycle. The ``.db`` files and ``residual_files`` folder at the base of the
+reference data directory can be copied as they are.
+
+Add notes on any oddities or adjustments to the reference data in ``NOTES.txt``
+at the base of the reference data directory. Finally, use the following command
+to compress the files while making sure that they will have the name STIPS
+expects (``stips_data``) when they are unzipped. Don't accidentally delete the carat (^):
+
+.. code-block:: text
+
+    tar -czvf stips_data-X.Y.Z.tgz -s /^YOUR-DIR-NAME/stips_data/ YOUR-DIR-NAME
+
+Upload the zipped reference data file to Box with the name
+``stips_data-X.Y.Z.tgz``, substituting in the version numbers selected in the
+first paragraph. **Wait to update** ``stips_data_current.tgz`` until you've
+completed the software release on GitHub.
 
 Pre-merge instructions
 ======================
@@ -147,6 +179,12 @@ Finally, upload them to PyPI:
 Note that PyPI uploads now require an API token.
 `Refer to their instructions <https://pypi.org/help/#apitoken>`_ if you haven't
 yet set one up.
+
+
+.. note::
+
+  If you updated the reference data, now is the proper time to update
+  ``stips_data_current.tgz`` on Box.
 
 While the official release is now complete, keep reading for instructions on
 updating the documentation on ReadTheDocs.

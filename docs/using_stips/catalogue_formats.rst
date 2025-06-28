@@ -238,7 +238,7 @@ but is limited to a single filter. It must contain the following columns:
   retained in the observed catalog produced during the observation.)
 
 In order to identify the catalog as an Internal catalog, and in order to use
-it for STIPS observations, the following columns must be present:
+it for STIPS observations, the following metadata must be present:
 
 * ``type=internal``
 

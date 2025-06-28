@@ -33,8 +33,8 @@ authors:
 - family-names: "York"
   given-names: "Brian"
 title: "STIPS"
-version: X.X.X
-doi: https://doi.org/XX.XXXX/zenodo.XXXXXXX
+version: 2.3.0
+doi: https://doi.org/10.5281/zenodo.15232587
 date-released: 202X-XX-XX
 url: "https://github.com/spacetelescope/STScI-STIPS"
 

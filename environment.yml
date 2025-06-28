@@ -35,8 +35,8 @@ dependencies:
     - poppy==1.0.3
 
     # Core Modules
-    - webbpsf>=1.1.1
-    - pandeia.engine>=3.1
+    - stpsf>=2.0.0
+    - pandeia.engine>=2024.12
     - synphot>=1.1.1
     - stsynphot>=1.1.0
     - soc_roman_tools

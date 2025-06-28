@@ -22,8 +22,10 @@ It does not include instrument saturation effects.
 
 ## Why use STIPS?
 
-STIPS is intended to produce quick simulations of Level 2 (L2) images, and is provided for
-cases where [Pandeia](https://pypi.org/project/pandeia.engine) does not
+STIPS is intended to produce quick simulations that are corrected for distortion, but not mosaicked.
+We note there is no equivalent flight product, since Roman Level 3 (L3) files are both distortion
+corrected and mosaicked, while Level 2 (L2) files are neither. STIPS is ideal for
+cases where `Pandeia <https://pypi.org/project/pandeia.engine/>`_ does not
 provide a large enough simulation area (e.g., full-detector or multiple-detector
 observations). STIPS obtains its Roman instrument and filter values from
 Pandeia, so it should produce output within 10% of output produced by Pandeia.
@@ -44,3 +46,27 @@ developed by Andrea Bellini ([@AndreaBellini](https://github.com/AndreaBellini))
 
 ![Alt text](docs/roman_figures/stips_demo.png?raw=true "Roman WFI Image of a Star Cluster and Background Galaxies")
 
+## Citation
+
+If you use STIPS, please cite the [STIPS PASP Paper](https://ui.adsabs.harvard.edu/abs/2024PASP..136l4502S/abstract) that describes the code.
+
+```
+@ARTICLE{2024PASP..136l4502S,
+       author = {{Stips Development Team} and {Gomez}, Sebastian and {Bellini}, Andrea and {Al-Kowsi}, Hanna and {Desjardins}, Tyler and {Geda}, Robel and {Han}, Eunkyu and {Otor}, O. Justin and {Riedel}, Adric and {Ryan}, Russell and {Spitzer}, Isaac and {York}, Brian},
+        title = "{STIPS: The Nancy Grace Roman Space Telescope Imaging Product Simulator}",
+      journal = {\pasp},
+     keywords = {Astronomical techniques, Telescopes, Astronomical methods, 1684, 1689, 1043, Astrophysics - Instrumentation and Methods for Astrophysics},
+         year = 2024,
+        month = dec,
+       volume = {136},
+       number = {12},
+          eid = {124502},
+        pages = {124502},
+          doi = {10.1088/1538-3873/ad9524},
+archivePrefix = {arXiv},
+       eprint = {2411.11978},
+ primaryClass = {astro-ph.IM},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2024PASP..136l4502S},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+```

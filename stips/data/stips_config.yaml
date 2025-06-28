@@ -93,9 +93,9 @@ stips_data_name : "stips_data"
 synphot_data : "$local"
 synphot_data_name : "PYSYN_CDBS"
 
-# webbpsf data directory
-webbpsf_data : "$local"
-webbpsf_data_name : "WEBBPSF_PATH"
+# stpsf data directory
+stpsf_data : "$local"
+stpsf_data_name : "STPSF_PATH"
 
 # pandeia data directory
 pandeia_data : "$local"

@@ -5,6 +5,19 @@ Release Notes
 Version History and Change Log
 ------------------------------
 
+Version 2.3.0
+=============
+- Added support for F213 filter.
+- Updated constants for PHOTPLAM (pivot wavelength) and mirror area.
+- Allowed users to specify `psf_cache_location` in `addCatalogue` function.
+- Transitioned detector naming convention from 'SCANN' to 'WFINN' to match other Roman SOC simulation tools.
+- Fixed bug with reading Internal tables.
+- Updated pandeia version to be >= 2024.12
+- Updated WebbPSF to STPSF and constrained version to be >= 2.0.0
+- Updated documentation to reflect that STIPS creates an intermediate product between L2 and L3 images.
+- Added documentation on (non-physical) gaps in the Phoenix grid.
+- Added citation to STIPS paper.
+
 Version 2.2.2
 =============
 - Updated pandeia.engine version to be >= 3.1 instead of == 3.1

@@ -80,7 +80,7 @@ class Instrument(object):
         self.DETECTOR_OFFSETS = self.DETECTOR_OFFSETS[:n_detectors]
         self.OFFSET_NAMES = self.OFFSET_NAMES[:n_detectors]
         if hasattr(self, "N_OFFSET"):
-            # Set the central offset to SCA01
+            # Set the central offset to detector WFI01
             self.CENTRAL_OFFSET = self.N_OFFSET[1]
         msg = "{} with {} detectors. Central offset {}"
         self._log('info', msg.format(self.DETECTOR, n_detectors,
@@ -876,8 +876,14 @@ class Instrument(object):
             decs = table['dec'].filled()
         else:
             decs = table['dec']
-        rates = table[self.filter.lower()]
-        if 'id' in table:
+        if 'flux' in table.colnames:
+            if isinstance(table['flux'], MaskedColumn):
+                rates = table['flux'].filled()
+            else:
+                rates = table['flux']
+        else:
+            rates = table[self.filter.lower()]
+        if 'id' in table.colnames:
             if isinstance(table['id'], MaskedColumn):
                 ids = table['id'].filled()
             else:
