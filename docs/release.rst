@@ -57,6 +57,7 @@ intended for a release:
     * ``environment_dev.yml``
     * ``docs/installation.rst``
     * ``ref_data/retrieve_stips_data.py``
+    * ``utilities/utilities.py`` (if any reference data links have changed)
 
 * Are you able to install the new version of STIPS locally with ``pip`` and ``conda``?
 
