@@ -114,11 +114,9 @@ observation_distortion_enable (default *false*)
 PSF Convolution Configuration
 -----------------------------
 
-psf_grid_default_size (default *1*)
+psf_grid_size (fixed to *3*)
 	What size PSF grid should be created. Note that this value is expressed as
-	a side length, so if psf_grid_default_size is set to n, STPSF will create
-	a total of n^2 PSF images. If used as a keyword argument, ``psf_grid_size``
-	can be used instead of ``psf_grid_default_size`` for historical reasons.
+	a side length, and STIPS is using a fixed grid size of 3x3. 
 
 psf_cache_enable (default *true*)
 	Whether PSF grids created by STPSF should be cached after creation for

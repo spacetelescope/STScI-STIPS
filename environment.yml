@@ -34,7 +34,7 @@ dependencies:
 
     # Core Modules
     - stpsf>=2.0.0
-    - pandeia.engine>=2024.12
+    - pandeia.engine>=2025.9
     - synphot>=1.1.1
     - stsynphot>=1.1.0
     - soc_roman_tools

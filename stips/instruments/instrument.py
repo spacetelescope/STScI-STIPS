@@ -1135,9 +1135,14 @@ class Instrument(object):
             self._log("info", msg.format(bkg, self.background_value))
             return bkg*u.ct/u.s
         elif self.background_value == 'pandeia':
-            msg = "Returning background {} for 'pandeia'"
+            msg = "Returning background {} for 'pandeia' and converting to counts/s"
             self.custom_background = get_pandeia_background(self.filter)
             self._log("info", msg.format(self.custom_background))
+            # get_pandeia_background returns the background in e-/s
+            # Converting the background in counts/s assuming the quantum yield of 1 (photons=electrons)
+            self.photfnu = self.PHOTFNU[self.filter]
+            self.photplam = self.PHOTPLAM[self.filter]
+            self.custom_background *= self.convertToCounts('p')
             return self.custom_background*u.ct/u.s
         elif self.background_value == 'custom':
             msg = "Returning background {} for 'custom'"

@@ -154,9 +154,14 @@ class WFI(RomanInstrument):
         self.PHOTPLAM = {'F062': 0.6291, 'F087': 0.8696, 'F106': 1.0567, 'F129': 1.2901,
                          'F158': 1.5749, 'F184': 1.8394, 'F146': 1.4378, 'F213': 2.1230}
 
-        self.ZEROPOINTS_AB = {'F062': 26.77, 'F087': 26.43, 'F106': 26.45, 'F129': 26.47,
-                              'F158': 26.50, 'F184': 26.12, 'F146': 27.70, 'F213': 26.06}
+        # The zeropoints are from Roman Technical repo
+        # https://github.com/RomanSpaceTelescope/roman-technical-information/blob/main/data/WideFieldInstrument/Imaging/ZeroPoints/Roman_zeropoints_20240301.ecsv
+        self.ZEROPOINTS_AB = {'F062': 26.5755, 'F087': 26.2262, 'F106': 26.3152, 'F129': 26.3194,
+                              'F158': 26.3225, 'F184': 25.8546, 'F146': 27.5386, 'F213': 25.8149}
 
+        # self.ZEROPOINTS_AB = {'F062': 26.77, 'F087': 26.43, 'F106': 26.45, 'F129': 26.47,
+        #                       'F158': 26.50, 'F184': 26.12, 'F146': 27.70, 'F213': 26.06}
+        
         # PHOTFNU has units of Jy
         self.PHOTFNU = {}
         for i in self.ZEROPOINTS_AB:
