@@ -9,18 +9,14 @@ in this section along with instructions.
 STIPS Requirements
 ##################
 
-* ``pandeia>=2024.12``: Exposure time calculator.
+* ``pandeia>=2025.9``: Exposure time calculator.
 
 * ``stpsf>=2.0.0``: Nancy Grace Roman PSF calculator. STIPS also requires that ``poppy``, a
   support package used by STPSF (Formerly WebbPSF), have version ``>=1.0.3``.
 
-* ``astropy``: STIPS uses Astropy in order to:
-
-    * Read and write FITS files.
-
-    * Read and write ASCII tables (specifically in the IPAC format).
-
-    * Generate Sersic profile models (if any are in the generated scene).
+* ``astropy``: STIPS uses Astropy in order to read and write ASCII tables
+  (specifically in the IPAC format) and FITS files, as well as to generate
+  Sersic profile models (if any are in the generated scene).
 
 * ``montage_wrapper``: STIPS uses ``montage`` to generate mosaics. It is
   only imported if STIPS is asked to generate a multi-detector image.
