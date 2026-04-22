@@ -2,12 +2,9 @@ name: stips
 
 channels:
   - conda-forge
-  - astropy
-  - http://ssb.stsci.edu/astroconda
-  - defaults
 
 dependencies:
-  - python>=3.7
+  - python>=3.10
   - astropy
 
   # Docs
