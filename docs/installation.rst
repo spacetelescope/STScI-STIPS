@@ -45,14 +45,18 @@ STIPS Requirements
 Finally, STIPS requires a set of data files whose location is marked by setting the
 environment variable ``stips_data``, which will be installed as part of these instructions.
 
-Installing Using Conda and Source Code
-######################################
+Installing Using a Package Manager and Source Code
+##################################################
 
-STIPS can be installed using the source code and a Conda environment file.
-If you do not have Anaconda or Miniconda installed, please visit the
-`Anaconda docs <https://docs.anaconda.com/anaconda/install/>`_ for installation instructions.
-We have included a Conda environment file for easily installing or updating Conda packages
-to meet STIPS requirements.  Please follow the steps below to install STIPS:
+STIPS can be installed using one of the YAML files provided in its source code.
+These YAML files define an environment that a package manager like
+`Micromamba <https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html>`_,
+`Mamba <https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html>`_,
+`Conda <https://docs.anaconda.com/anaconda/install/>`_, or another can read and
+install on your machine.
+(If you don't have a package manager, follow any of the preceding links for
+installation instructions.) The YAML files include all packages required by
+STIPS. Please follow the steps below to install STIPS.
 
 .. _installing-as-a-user:
 
@@ -70,15 +74,19 @@ Installing as a User
 
 #. The environment file can be used in two ways:
 
-   * To create a new Conda environment named ``stips``::
+   * To create a new environment named ``stips``::
 
         conda env create -f environment.yml
         conda activate stips
 
 
-   * Or, to install to or update an existing Conda environment::
+   * Or, to install to or update an existing environment::
 
-        conda env update --name EXISTING-ENV --file environment.yml
+        conda env update --name <EXISTING-ENV> --file environment.yml
+
+(If you are using mamba, substitute it for ``conda`` in the commands above.
+If you are using micromamba, substitute it for ``conda`` and also remove
+``env`` in the commands above.)
 
 Installing as a Developer
 *************************
@@ -89,6 +97,13 @@ Installing as a Developer
    ``environment_dev.yml`` file instead of ``environment.yml``.
 
 .. _downloading-required-ref-data:
+
+Installing with pip
+*******************
+
+While it is possible to install STIPS with ``pip`` instead of a package manager,
+we recommend the latter due to the aforementioned warning about using ``pip``
+with the ``esutil`` package.
 
 Downloading Required Reference Data
 ************************************
@@ -111,7 +126,7 @@ You will need to download the data and add them to your environmental path.
 
 2. ``cd`` into the ``ref_data`` directory in your ``STScI-STIPS`` clone.
 
-3. Run the following code (after ensuring your ``stips`` Conda environment is active)::
+3. Run the following code (after ensuring your package manager's ``stips`` environment is active)::
 
 		python retrieve_stips_data.py
 
