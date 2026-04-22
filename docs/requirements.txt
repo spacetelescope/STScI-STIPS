@@ -1,9 +1,7 @@
-git+https://github.com/spacetelescope/stsci_rtd_theme.git@master#egg=stsci_rtd_theme
-# (install stsci_rtd_theme from master until a post 1.0 release occurs
-#  to prevent issues with bullets in the documentation)
+stsci_rtd_theme
 numpy >= 1.13
 matplotlib
 Cython
 astropy
 sphinx-astropy
-poppy
+poppy >= 1.0.3

@@ -30,7 +30,11 @@ dependencies:
 
   - pip:
     # Special Modules. These are temporary entries and require documentation.
-    - poppy==1.0.3
+
+    # poppy 1.0.3 fixes a bug with how poppy calls factorial with non-integer
+    # values. through v2.2.0, stpsf only requires poppy 1.0.0, so a
+    # separate peg for poppy is necessary to guarantee the presence of the fix.
+    - poppy>=1.0.3
 
     # Core Modules
     - stpsf>=2.0.0
@@ -57,10 +61,7 @@ dependencies:
     - docutils
     - sphinx
     - sphinx_rtd_theme
-    # - stsci_rtd_theme
-    # (install stsci_rtd_theme from master until a post 1.0 release occurs
-    #  to prevent issues with bullets in the documentation)
-    - git+https://github.com/spacetelescope/stsci_rtd_theme.git@master
+    - stsci_rtd_theme
     - sphinx_automodapi
     - sphinx_autoapi
     - sphinx_astropy
