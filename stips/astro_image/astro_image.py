@@ -490,8 +490,8 @@ class AstroImage(object):
 
                 self._log('info', 'Finishing Sersic Profiles at {}'.format(time.ctime()))
             ot = Table()
-            ot['x_epsf'] = Column(data=xfs+self.out_origin, unit='pixel')
-            ot['y_epsf'] = Column(data=yfs+self.out_origin, unit='pixel')
+            ot['x'] = Column(data=xfs+self.out_origin, unit='pixel')
+            ot['y'] = Column(data=yfs+self.out_origin, unit='pixel')
             ot['x_input'] = Column(data=self.out_origin, unit='pixel')
             ot['y_input'] = Column(data=self.out_origin, unit='pixel')
             ot['type'] = Column(data=types)
@@ -605,7 +605,7 @@ class AstroImage(object):
             if Version(stpsf_version) > Version('2.0.0'):
                 ins.detector = self.detector
             else:
-                ins.detector = self.detector.replace('SCA', 'WFI')
+                ins.detector = self.detector.replace('WFI', 'SCA')
             # Supersample the pixel scale to get STPSF to output
             # PSF models with even supersampling centered at the center of a pixel
             ins.pixelscale = self.scale[0] / PSF_UPSCALE
