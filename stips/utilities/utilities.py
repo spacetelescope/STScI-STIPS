@@ -340,7 +340,7 @@ def DownloadReferenceData():
     # pandeia
     print("Checking pandeia data")
     pandeia_data_file = f"pandeia_data-{__pandeia__version__}-roman.tar.gz"
-    pandeia_url = "https://stsci.box.com/shared/static/0qjvuqwkurhx1xd13i63j760cosep9wh.gz"
+    pandeia_url = "https://stsci.box.com/shared/static/uoigtyglqkdoyjr4a8xy2f0nx2e8xla8.gz"
     pandeia_data_path = os.environ[GetParameter("pandeia_data_name", use_data=False)]
     if not os.path.isdir(pandeia_data_path):
         print("Downloading pandeia data to {}".format(pandeia_data_path))

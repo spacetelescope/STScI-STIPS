@@ -5,6 +5,18 @@ Release Notes
 Version History and Change Log
 ------------------------------
 
+Version 2.3.1
+=============
+- Fixed a bug with unit conversion for Pandeia backgrounds
+- Fixed a bug that prevented use of cached PSFs with STPSF v2.0.0, slowing ``fast_galaxy`` simulations
+- Added FITS header outputs for original input X and Y positions alongside those for the PSF interpolation
+- Updated zero points to match Roman Technical Repo
+- Added documentation about the now uneditable 3x3 ``psf_grid_size``
+- Added documentation about installing STIPS with alternate package managers
+- Updated pandeia version to be >= 2025.9
+- Allowed newer versions of poppy >= 1.0.3
+- Updated contact information for Roman Help Desk
+
 Version 2.3.0
 =============
 - Added support for F213 filter.
