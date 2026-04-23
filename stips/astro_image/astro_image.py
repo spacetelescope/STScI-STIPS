@@ -573,11 +573,19 @@ class AstroImage(object):
         if psf_type != 'normal':
             prefix = psf_type+'_'
 
+        # Adjust expected PSF grid file name based on STPSF version
+        from stpsf import __version__ as stpsf_version
+        from packaging.version import Version
+        if Version(stpsf_version) > Version('2.0.0'):
+            detector = self.detector
+        else:
+            detector = self.detector.replace('WFI', 'SCA')
+
         psf_name = "{}psf_{}_{}_{}_{}.fits".format(prefix,
                                                    self.instrument,
                                                    stips_version,
                                                    self.filter,
-                                                   self.detector.lower())
+                                                   detector.lower())
 
         psf_cache_location = SelectParameter('psf_cache_location', kwargs)
         psf_cache_directory = SelectParameter('psf_cache_directory', kwargs)
@@ -598,14 +606,9 @@ class AstroImage(object):
                     self._log("error", "Creating psf from file {}  failed with {}".format(psf_file, e))
 
         if not have_psf:
-            from stpsf import __version__ as stpsf_version
-            from packaging.version import Version
             ins = self.psf_constructor
             ins.filter = self.filter
-            if Version(stpsf_version) > Version('2.0.0'):
-                ins.detector = self.detector
-            else:
-                ins.detector = self.detector.replace('WFI', 'SCA')
+            ins.detector = detector
             # Supersample the pixel scale to get STPSF to output
             # PSF models with even supersampling centered at the center of a pixel
             ins.pixelscale = self.scale[0] / PSF_UPSCALE
