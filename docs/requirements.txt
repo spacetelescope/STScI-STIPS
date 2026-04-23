@@ -4,4 +4,5 @@ matplotlib
 Cython
 astropy
 sphinx-astropy
+sphinx_issues
 poppy >= 1.0.3

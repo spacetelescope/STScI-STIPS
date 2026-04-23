@@ -68,6 +68,7 @@ dependencies:
     - sphinx_automodapi
     - sphinx_autoapi
     - sphinx_astropy
+    - sphinx_issues
 
     # Testing
     - tox
