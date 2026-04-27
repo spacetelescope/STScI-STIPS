@@ -1,11 +1,13 @@
 __filetype__ = "detector"
 
-# Local Modules
+# External Modules
 from astropy import units as u
 from astropy.coordinates import SkyCoord, ICRS
-from .roman_instrument import RomanInstrument
 from soc_roman_tools.siaf import siaf
 import numpy as np
+
+# Local Modules
+from .roman_instrument import RomanInstrument
 
 
 class WFI(RomanInstrument):
@@ -150,10 +152,8 @@ class WFI(RomanInstrument):
         self.PHOTPLAM = {'F062': 0.6291, 'F087': 0.8696, 'F106': 1.0567, 'F129': 1.2901,
                          'F158': 1.5749, 'F184': 1.8394, 'F146': 1.4378, 'F213': 2.1230}
 
-        # The zeropoints are for detector WFI01 and from Roman Technical repo:
-        # https://github.com/RomanSpaceTelescope/roman-technical-information/blob/main/data/WideFieldInstrument/Imaging/ZeroPoints/Roman_zeropoints_20240301.ecsv
-        self.ZEROPOINTS_AB = {'F062': 26.5755, 'F087': 26.2262, 'F106': 26.3152, 'F129': 26.3194,
-                              'F158': 26.3225, 'F184': 25.8546, 'F146': 27.5386, 'F213': 25.8149}
+        # See method docstring for more on zeropoint calculation
+        self.ZEROPOINTS_AB = self._calc_zeropoints_ab()
 
         # PHOTFNU has units of Jy
         self.PHOTFNU = {}
@@ -190,6 +190,63 @@ class WFI(RomanInstrument):
 
         # Initialize superclass
         super().__init__(**kwargs)
+
+    def _calc_zeropoints_ab(self):
+        """
+        Dynamically calculate zeropoints to match those used by the local
+        Pandeia installation by reading from WFI bandpass files in Pandeia
+        installation's reference data. All zeropoints are calculated for
+        detector WFI01 in AB magnitudes.
+
+        With Pandeia versions from 2024 onward, the zeropoints calculated here
+        should match those found in the latest matching file from the Roman
+        Technical Information repository that existed at the time of release:
+
+        https://github.com/RomanSpaceTelescope/roman-technical-information/blob/main/data/WideFieldInstrument/Imaging/ZeroPoints
+
+        As of April 2026, the approximate zeropoints are:
+        {'F062': 26.5755, 'F087': 26.2262, 'F106': 26.3152, 'F129': 26.3194,
+         'F158': 26.3225, 'F184': 25.8546, 'F146': 27.5386, 'F213': 25.8149}
+
+        (Adapted from RTI zeropoint calculation code from Tyler D. Desjardins.)
+        """
+        from astropy.io import fits
+        from synphot.models import Empirical1D
+        from synphot.spectrum import SpectralElement
+        from synphot.units import convert_flux
+        import glob
+        import os
+        import re
+
+        # collect per-filter bandpasses from Pandeia ref data
+        thpt_files_path = os.path.join(os.environ['pandeia_refdata'],
+                                       'roman', 'wfi', 'filters', '*')
+        thpt_files = [file for file in glob.glob(thpt_files_path)
+                      # if no per-detector files, use all (e.g., pandeia <=3.1)
+                      if not re.search(r'_(sca|wfi)\d{2}_', file)
+                      # if yes, use SCA01/WFI01 (e.g., pandeia 2024+)
+                      or re.search(r'_(sca|wfi)01_', file)]
+
+        zp_ab_dict = {}
+
+        for f in sorted(thpt_files):
+            # retrieve throughputs and wavelengths for this WFI filter
+            data = fits.getdata(f)
+            wvlns, thpts = data['WAVELENGTH'], data['THROUGHPUT']
+            eff_areas = thpts * (self.AREA / 1e4)  # area from cm^2 to m^2
+
+            # calulate zeropoint from effective areas in AB mag
+            band = SpectralElement(Empirical1D, points=wvlns * u.micron,
+                                   lookup_table=eff_areas)
+            pw = band.pivot()
+            zp = band.unit_response(area=1 * u.m**2)
+            zp_ab = convert_flux(pw, zp, u.ABmag).value
+
+            # update zeropoint dictionary with filter from file name ('_fnnn_')
+            flt = re.search(r'(?<=_)f\d{3}(?=_)', f).group().upper()
+            zp_ab_dict[flt] = zp_ab
+
+        return zp_ab_dict
 
     def generateReadnoise(self):
         """
