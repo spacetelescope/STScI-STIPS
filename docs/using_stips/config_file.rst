@@ -84,14 +84,25 @@ observation_default_background (default *0.0*)
 	The default sky background in counts/s/detector pixel. Currently this keyword can be set to:
 
 	* any integer or floating point value, in which case that value will be
-	  used directly.
+	  used directly. The default value is 0.
 
 	* any of the string values 'none', 'low', 'avg', or 'high'. In this
 	  case, 'none' is always treated as zero, and for any other keyword if the
 	  value is defined for the instrument/detector selected, that value will
 	  be used. If no such value can be found, the background will be set to 0.
 
-	If used as a keyword argument, ``background`` can be used instead of
+	* the string value 'pandeia', which will use Pandeia to calculate the total
+	  background for the active filter. Pandeia calculates backgrounds in
+	  electrons/s, so STIPS converts the value to counts/s for consistency. The
+	  conversion assumes a quantum yield of 1, where photons are equivalent to
+	  electrons.
+
+	* the string value 'jbt', which will use the JBT background tool to
+	  calculate the background. 'jbt:val' can return different values depending
+	  on whether 'val' is 'min', 'mean', 'median', or 'max'.
+
+	Outside of a configuration file (e.g., as a keyword argument to a STIPS
+	Python object), ``background`` should be used instead of
 	``observation_default_background`` for historical reasons.
 
 observation_jbt_location (default *$WEB*)

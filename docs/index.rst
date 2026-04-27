@@ -1,10 +1,6 @@
 Documentation
 =============
 
-.. note::
-
-  As of version 2.0, STIPS no longer offers support for HST or JWST.
-
 Overview
 --------
 STIPS is the Space Telescope Imaging Product Simulator. It is designed to create
@@ -13,6 +9,10 @@ Space Telescope's Wide-Field Instrument (WFI). STIPS has the ability to add
 instrumental distortion (if available) as well as calibration residuals from flatfields,
 dark currents, and cosmic rays. It automatically includes Poisson noise and readout noise.
 It does not include instrument saturation effects.
+
+.. note::
+
+  As of version 2.0, STIPS no longer offers support for HST or JWST.
 
 Why use STIPS?
 --------------
