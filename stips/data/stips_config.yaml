@@ -101,3 +101,7 @@ stpsf_data_name : "STPSF_PATH"
 # pandeia data directory
 pandeia_data : "$local"
 pandeia_data_name : "pandeia_refdata"
+
+# pandeia PSF data directory (only needed for versions 2026+)
+pandeia_psf_data : "$local"
+pandeia_psf_data_name : "PSF_DIR"

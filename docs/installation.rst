@@ -143,9 +143,8 @@ Testing Installation
 
 To test if all the required files have been installed, please import STIPS in Python::
 
-    bash-3.2$ python
-    Python 3.11.9 | packaged by conda-forge | (main, Apr 19 2024, 18:45:13)
-    [Clang 16.0.6 ] on darwin
+    bash-3.2$ python3
+    Python 3.11.15 | packaged by conda-forge | (main, Mar  5 2026, 16:58:53) [Clang 19.1.7 ] on darwin
     Type "help", "copyright", "credits" or "license" for more information.
 
     >>> import stips
@@ -156,13 +155,13 @@ You should receive an output of the following form:
 
 .. code-block:: text
 
-  STIPS Version x.y.z with Data Version x.y.z at /Some/Path/To/stips_data
+  STIPS Version x.y.z with Data Version a.b.c at /Some/Path/To/stips_data.
 
-  STIPS Grid Generated with x.y.z
+  STIPS Grid Generated with STIPS Version x.y.z.
 
-  Pandeia version a.b.c with Data Version a.b.c. at /Some/Path/To/pandeia_refdata
+  Pandeia Version YYYY.n with Data Version YYYY.n at /Some/Path/To/pandeia_refdata.
 
-  STPSF Version d.e.f with Data Version d.e.f at /Some/Path/To/stpsf_data_path
+  STPSF Version d.e.f with Data Version d.e.f at /Some/Path/To/stpsf_data_path.
 
 
 Ignore the following warning message if it appears:
