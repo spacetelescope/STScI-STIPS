@@ -286,7 +286,9 @@ class Instrument(object):
         """
         Convert input to Counts.
 
-        unit: one of 'p' (photons/s), 'e' (erg/s), 'c' (counts/s), 'j' (Jansky), 's' (W/m/m^2/Sr)
+        unit: one of 'p' (photons/s), 'c' (counts/s), 'j' (Jansky),
+        's' (W/m/m^2/Sr), or 'e' (treated as equivalent to 'p' because STIPS
+        assumes a quantum efficiency of 1)
 
         scale: needed for surface brightness conversions. Arcseconds/pixel
 
@@ -300,13 +302,10 @@ class Instrument(object):
             return 1.
         elif unit == 'j':
             return 1./self.photfnu
-        elif unit == 'p':
+        elif unit in ('p', 'e'):
             freq = 299792458000000. / self.photplam  # c in um/s
             energy = 6.6260755e-27 * freq  # h in erg*s to give energy in ergs
             return 1.e23 * energy / (self.photfnu * self.AREA * freq)
-        elif unit == 'e':
-            freq = 299792458000000. / self.photplam  # c in um/s
-            return 1.e23 / (self.photfnu * self.AREA * freq)
         else:  # unit == 's'
             # W/m/m^2/Sr -> Jy = 1.e14 * photplam^2 * (scalex*scaley/206265.^2) / 3.e8
             # Jy -> counts = 1./photfnu
