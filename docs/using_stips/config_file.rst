@@ -97,23 +97,9 @@ observation_default_background (default *0.0*)
 	  conversion assumes a quantum yield of 1, where photons are equivalent to
 	  electrons.
 
-	* the string value 'jbt', which will use the JBT background tool to
-	  calculate the background. 'jbt:val' can return different values depending
-	  on whether 'val' is 'min', 'mean', 'median', or 'max'.
-
 	Outside of a configuration file (e.g., as a keyword argument to a STIPS
 	Python object), ``background`` should be used instead of
 	``observation_default_background`` for historical reasons.
-
-observation_jbt_location (default *$WEB*)
-	If JBT is being used to determine the background, this tells STIPS where the
-	JBT data is located. ``$WEB`` indicates that the value should be fetched
-	from online, ``$DATA`` indicates that the value should be taken from a
-	directory named ``background`` in the ``stips_data`` directory. Otherwise,
-	the value should be the path to a directory containing a local cache of the
-	data. If used as a keyword argument, ``background_location`` or
-	``jbt_location`` can be used instead of ``observation_jbt_location`` for
-	historical reasons.
 
 observation_distortion_enable (default *false*)
 	Whether co-ordinate distortion information should be included in the

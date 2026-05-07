@@ -29,9 +29,6 @@ random_seed : 1234
 #   - can be a floating point (0 by default)
 #   - can be 'none', 'low', 'avg', or 'high' as keywords
 #   - can be 'pandeia' to let Pandeia calculate filter-specific total background
-#   - can be 'jbt' to use the JBT background tool. If 'jbt' will return the mean
-#       value. If 'jbt:val', will return val, where val is one of
-#       min/mean/median/max
 observation_default_background : 0.0
 
 # Include distortion parameters (if available)
