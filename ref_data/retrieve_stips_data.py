@@ -4,8 +4,9 @@
 #       export stips_data="<absolute_path_to_this_folder>/ref_data/stips_data"
 #       export STPSF_PATH="<absolute_path_to_this_folder>/ref_data/stpsf-data"
 #       export PYSYN_CDBS="<absolute_path_to_this_folder>/ref_data/grp/redcat/trds"
-#       export pandeia_refdata="<absolute_path_to_this_folder>/ref_data/pandeia_data-
-#       2024.12-roman"
+#       export pandeia_refdata="<absolute_path_to_this_folder>/ref_data/pandeia_data-XXXX.X-roman"
+#       # if your Pandeia installation is 2026.1 or higher, add the following:
+#       export PSF_DIR="<absolute_path_to_this_folder>/ref_data/pandeia_psfs-XXXX.X-roman"
 #
 # 2. In the ref_data folder, run the script: python retrieve_stips_data.py
 

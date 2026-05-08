@@ -26,11 +26,9 @@ random_seed : 1234
 ####
 
 # Default Background
-#   - can be none/low/avg/high as keywords
-#   - can be 'jbt' to use the JBT background tool. If 'jbt' will return the mean
-#       value. If jbt:val, will return val, where val is one of 
-#       min/mean/median/max
-#   - can be a floating point
+#   - can be a floating point (0 by default)
+#   - can be 'none', 'low', 'avg', or 'high' as keywords
+#   - can be 'pandeia' to let Pandeia calculate filter-specific total background
 observation_default_background : 0.0
 
 # Include distortion parameters (if available)
@@ -100,3 +98,7 @@ stpsf_data_name : "STPSF_PATH"
 # pandeia data directory
 pandeia_data : "$local"
 pandeia_data_name : "pandeia_refdata"
+
+# pandeia PSF data directory (only needed for versions 2026+)
+pandeia_psf_data : "$local"
+pandeia_psf_data_name : "PSF_DIR"

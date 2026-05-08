@@ -1,5 +1,4 @@
 FROM continuumio/miniconda3
-MAINTAINER Space Telescope Science Institute <help@stsci.edu>
 
 #########
 # Setup #

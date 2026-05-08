@@ -56,6 +56,7 @@ intended for a release:
     * ``environment.yml``
     * ``environment_dev.yml``
     * ``docs/installation.rst``
+    * ``docs/requirements.txt``
     * ``ref_data/retrieve_stips_data.py``
     * ``utilities/utilities.py`` (if any reference data links have changed)
 

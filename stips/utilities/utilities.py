@@ -17,6 +17,7 @@ import tarfile
 import yaml
 from astropy.io import ascii
 from astropy.table import Table
+from packaging.version import Version
 from scipy.special import gamma, gammaincinv
 
 from .. import __version__ as __stips__version__
@@ -91,29 +92,35 @@ def get_pandeia_background(wfi_filter, webapp = False):
 
     return total_back
 
-def remove_subfolder(tar_file, subfolder):
+
+def remove_subfolder(tar_file, strip_components):
     """
-    Utility function to take a tar file and remove a set of leading folders from each
-    member in the tar file.
+    Utility function to take a tar file and remove a number of leading folders
+    from each member in the tar file. Members with that number of leading
+    folders or fewer are not yielded.
     """
-    subfolder_len = len(subfolder)
     for member in tar_file.getmembers():
-        if member.path.startswith(subfolder):
-            member.path = member.path[subfolder_len:]
+        components = member.name.strip('/').split('/')
+        if len(components) <= strip_components:
+            continue
+        else:
+            member.path = '/'.join(components[strip_components:])
             yield member
 
 
-def get_compressed_file(url, file_name, path="", dirs_to_remove=""):
+def get_compressed_file(url, file_name, path="", strip_n_dirs=0):
     """
-    Utility function to retrieve a .tgz compressed file from a given URL, and extract it
-    to a provided path.
+    Utility function to retrieve a .tgz compressed file from a given URL and
+    extract it to a provided path. Optionally drops a number of the extracted
+    members' leading folders (e.g., if strip_n_dirs=1,
+    'archive/subfolder/file' is extracted as 'subfolder/file').
     """
     r = requests.get(url, allow_redirects=True)
     with open(file_name, 'wb') as output_file:
         output_file.write(r.content)
     with tarfile.open(file_name) as input_file:
-        if len(dirs_to_remove) > 0:
-            members = remove_subfolder(input_file, dirs_to_remove)
+        if strip_n_dirs:
+            members = remove_subfolder(input_file, strip_n_dirs)
         else:
             members = input_file.getmembers()
         input_file.extractall(path=path, members=members, filter=None)
@@ -196,9 +203,34 @@ class StipsEnvironment(object):
         return 'UNSET'
 
     @classproperty
+    def __pandeia__psf__location__(self):
+        if 'PSF_DIR' in os.environ:
+            return os.environ["PSF_DIR"]
+        return 'UNSET'
+
+    @classproperty
     def __pandeia__data__version__(self):
         if 'pandeia_refdata' in os.environ:
-            fname = os.path.join(os.environ['pandeia_refdata'], 'VERSION_PSF')
+            # version file name depends on installed Pandeia version
+            if Version(__pandeia__version__) > Version('2026'):
+                fname = os.path.join(os.environ['pandeia_refdata'],
+                                     'VERSION_DATA')
+            else:
+                fname = os.path.join(os.environ['pandeia_refdata'],
+                                     'VERSION_PSF')
+            if os.path.isfile(fname):
+                with open(fname, 'r') as inf:
+                    line = inf.readline()
+                    while len(line.strip()) == 0:
+                        line = inf.readline()
+                    return line.strip()
+            return 'NO VERSION_PSF FILE FOUND'
+        return 'NO REFERENCE DATA SET'
+
+    @classproperty
+    def __pandeia__psf__version__(self):
+        if 'PSF_DIR' in os.environ:
+            fname = os.path.join(os.environ['PSF_DIR'], 'VERSION_PSF')
             if os.path.isfile(fname):
                 with open(fname, 'r') as inf:
                     line = inf.readline()
@@ -252,7 +284,14 @@ class StipsEnvironment(object):
                     'stpsf_data_version': env.__stpsf__data__version__,
                     'astropy_version': astropy.__version__,
                     'photutils_version': photutils.__version__
-                   }
+            }
+        # include extra Pandeia ref data if using v2026.1 or newer
+        if Version(env_dict['pandeia_version']) > Version('2026'):
+            env_dict.update(
+                    pandeia_psf_location=env.__pandeia__psf__location__,
+                    pandeia_psf_version=env.__pandeia__psf__version__
+            )
+
         return env_dict
 
     @classproperty
@@ -265,8 +304,13 @@ class StipsEnvironment(object):
         env = StipsEnvironment.__stips__environment__dict__
         report = ""
         report += "STIPS Version {} with Data Version {} at {}.\n".format(env['stips_version'], env['stips_data_version'], env['stips_data_location'])
-        report += "\tSTIPS Grid Generated with {}\n".format(env['stips_grid_version'])
-        report += "Pandeia Version {} with Data Version {} at {}.\n".format(env['pandeia_version'], env['pandeia_data_version'], env['pandeia_data_location'])
+        report += "STIPS Grid Generated with STIPS Version {}.\n".format(env['stips_grid_version'])
+        report += "Pandeia Version {} with Data Version {} at {}".format(env['pandeia_version'], env['pandeia_data_version'], env['pandeia_data_location'])
+        try:
+            # include extra Pandeia ref data if using v2026.1 or newer
+            report += " and PSF Version {} at {}.\n".format(env['pandeia_psf_version'], env['pandeia_psf_location'])
+        except KeyError:
+            report += ".\n"
         report += "stpsf Version {} with Data Version {} at {}.\n".format(env['stpsf_version'], env['stpsf_data_version'], env['stpsf_data_location'])
         return report
 
@@ -275,11 +319,10 @@ def SetupDataPaths():
     """
     Set up the STIPS, synphot, stpsf, and pandeia reference data environment variables.
     """
-    for item in ["stips", "synphot", "stpsf", "pandeia"]:
+    for item in ["stips", "synphot", "stpsf", "pandeia", "pandeia_psf"]:
         var_name = GetParameter(item+"_data_name", use_data=False)
         if var_name not in os.environ:
             var_path = GetParameter(item+"_data", use_data=False)
-#             print("Setting up {} to {}".format(var_name, var_path))
             if var_path == "$local":
                 if item == "stips":
                     file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -288,7 +331,6 @@ def SetupDataPaths():
                     data_dir = os.path.join(os.environ["stips_data"], "ref", var_name)
                 var_path = os.path.normpath(data_dir)
             os.environ[var_name] = var_path
-#             print("Set {} to {}".format(var_name, var_path))
 
 
 def DownloadReferenceData():
@@ -299,13 +341,15 @@ def DownloadReferenceData():
 
     # STIPS
     print("Checking STIPS data")
-    stips_data_file = "stips_data-1.0.10.tgz"
     stips_url = "https://stsci.box.com/shared/static/761vz7zav7pux03fg0hhqq7z2uw8nmqw.tgz"
+    stips_data_file = "stips_data-1.0.10.tgz"
     stips_data_path = os.environ[GetParameter("stips_data_name", use_data=False)]
     if not os.path.isdir(stips_data_path):
         print("Downloading STIPS data to {}".format(stips_data_path))
         os.makedirs(stips_data_path)
-        get_compressed_file(stips_url, stips_data_file, stips_data_path, "stips_data/")
+        get_compressed_file(stips_url, stips_data_file, stips_data_path,
+                            # strip "stips_data/" directory
+                            strip_n_dirs=1)
     else:
         print("Found at {}".format(stips_data_path))
 
@@ -320,37 +364,59 @@ def DownloadReferenceData():
             file_name = "synphot{}.tar.gz".format(i)
             print("\tDownloading {}".format(file_name))
             url = synphot_url+"/"+file_name
-            get_compressed_file(url, file_name, synphot_data_path, "grp/redcat/trds/")
+            get_compressed_file(url, file_name, synphot_data_path,
+                                # strip "grp/redcat/trds/" directories
+                                strip_n_dirs=3)
     else:
         print("Found at {}".format(synphot_data_path))
 
     # stpsf
     print("Checking stpsf data")
     stpsf_url = "https://stsci.box.com/shared/static/kqfolg2bfzqc4mjkgmujo06d3iaymahv.gz"
-    stpsf_data_path = os.environ[GetParameter("stpsf_data_name", use_data=False)]
     stpsf_data_file = "stpsf_data.tar.gz"
+    stpsf_data_path = os.environ[GetParameter("stpsf_data_name", use_data=False)]
     if not os.path.isdir(stpsf_data_path):
         print("Downloading stpsf data to {}".format(stpsf_data_path))
         os.makedirs(stpsf_data_path)
         get_compressed_file(stpsf_url, stpsf_data_file, stpsf_data_path,
-                            "stpsf-data/")
+                            # strip "stpsf-data/" directory
+                            strip_n_dirs=1)
     else:
         print("Found at {}".format(stpsf_data_path))
 
     # pandeia
     print("Checking pandeia data")
-    pandeia_data_file = f"pandeia_data-{__pandeia__version__}-roman.tar.gz"
-    pandeia_url = "https://stsci.box.com/shared/static/0qjvuqwkurhx1xd13i63j760cosep9wh.gz"
+    if Version(__pandeia__version__) > Version('2026'):
+        # version 2026.1
+        pandeia_url = "https://stsci.box.com/shared/static/j3rx9dz3e27oxd4o69vnccikwkgglnxe.gz"
+    else:
+        # version 2025.9
+        pandeia_url = "https://stsci.box.com/shared/static/uoigtyglqkdoyjr4a8xy2f0nx2e8xla8.gz"
+    pandeia_data_file = "pandeia_data-roman.tar.gz"
     pandeia_data_path = os.environ[GetParameter("pandeia_data_name", use_data=False)]
     if not os.path.isdir(pandeia_data_path):
         print("Downloading pandeia data to {}".format(pandeia_data_path))
         os.makedirs(pandeia_data_path)
         get_compressed_file(pandeia_url, pandeia_data_file, pandeia_data_path,
-                            f"pandeia_data-{__pandeia__version__}-roman/")
+                            # strip "pandeia_data-NNNN.N-roman/" directory
+                            strip_n_dirs=1)
     else:
         print("Found at {}".format(pandeia_data_path))
 
-    # Done.
+    # pandeia PSFs, if installation is v2026.1 or newer
+    print("Checking pandeia PSF data")
+    pandeia_psf_url = "https://stsci.box.com/shared/static/qiib69fwu0l1lli5u2om7a9abt8xosgz.gz"
+    pandeia_psf_file = "pandeia_psfs-roman.tar.gz"
+    pandeia_psf_path = os.environ[GetParameter("pandeia_psf_data_name", use_data=False)]
+    if (  Version(__pandeia__version__) > Version('2026')
+          and not os.path.isdir(pandeia_psf_path)  ):
+        print("Downloading pandeia PSF data to {}".format(pandeia_psf_path))
+        os.makedirs(pandeia_psf_path)
+        get_compressed_file(pandeia_psf_url, pandeia_psf_file, pandeia_psf_path,
+                            # strip "pandeia_psfs-NNNN.N-roman/" directory
+                            strip_n_dirs=1)
+    elif Version(__pandeia__version__) > Version('2026'):
+        print("Found at {}".format(pandeia_psf_path))
 
 
 def GetStipsDataDir():

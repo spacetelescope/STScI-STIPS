@@ -47,7 +47,6 @@ scene with the Roman WFI F129 filter offset by 0.5 degrees in RA and rotated by 
             'filters': ['F129'],
             'detectors': 1,
             'distortion': False,
-            'oversample': 5,
             'pupil_mask': '',
             'background': 'avg',
             'observations_id': 1,

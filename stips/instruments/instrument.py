@@ -145,9 +145,9 @@ class Instrument(object):
                 msg = "Filter {} is not a valid {} filter"
                 raise ValueError(msg.format(filter, self.instrument))
             self.filter = filter
-            self.background = self.pixel_background
             self.photfnu = self.PHOTFNU[self.filter]
             self.photplam = self.PHOTPLAM[self.filter]
+            self.background = self.pixel_background
             if hasattr(self, "_bp"):
                 del self._bp
         if detectors:
@@ -286,7 +286,10 @@ class Instrument(object):
         """
         Convert input to Counts.
 
-        unit: one of 'p' (photons/s), 'e' (erg/s), 'c' (counts/s), 'j' (Jansky), 's' (W/m/m^2/Sr)
+        unit: one of 'p' (photons/s), 'e' (erg/s), 'c' (counts/s),
+        'j' (Jansky), or 's' (W/m/m^2/Sr). (Note that because STIPS assumes a
+        quantum efficiency and gain of 1, data in electrons/s can be treated as
+        equivalent to photons/s.)
 
         scale: needed for surface brightness conversions. Arcseconds/pixel
 
@@ -1135,9 +1138,13 @@ class Instrument(object):
             self._log("info", msg.format(bkg, self.background_value))
             return bkg*u.ct/u.s
         elif self.background_value == 'pandeia':
-            msg = "Returning background {} for 'pandeia'"
-            self.custom_background = get_pandeia_background(self.filter)
-            self._log("info", msg.format(self.custom_background))
+            # get_pandeia_background returns the background in e-/s, so convert
+            # it to counts/s assuming a quantum yield of 1 (photons=electrons)
+            msg = "Returning background {} for '{}'"
+            self.custom_background = (get_pandeia_background(self.filter)
+                                      * self.convertToCounts('p'))
+            self._log("info", msg.format(self.custom_background,
+                                         self.background_value))
             return self.custom_background*u.ct/u.s
         elif self.background_value == 'custom':
             msg = "Returning background {} for 'custom'"

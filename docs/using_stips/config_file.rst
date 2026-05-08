@@ -84,25 +84,22 @@ observation_default_background (default *0.0*)
 	The default sky background in counts/s/detector pixel. Currently this keyword can be set to:
 
 	* any integer or floating point value, in which case that value will be
-	  used directly.
+	  used directly. The default value is 0.
 
 	* any of the string values 'none', 'low', 'avg', or 'high'. In this
 	  case, 'none' is always treated as zero, and for any other keyword if the
 	  value is defined for the instrument/detector selected, that value will
 	  be used. If no such value can be found, the background will be set to 0.
 
-	If used as a keyword argument, ``background`` can be used instead of
-	``observation_default_background`` for historical reasons.
+	* the string value 'pandeia', which will use Pandeia to calculate the total
+	  background for the active filter. Pandeia calculates backgrounds in
+	  electrons/s, so STIPS converts the value to counts/s for consistency. The
+	  conversion assumes a quantum yield of 1, where photons are equivalent to
+	  electrons.
 
-observation_jbt_location (default *$WEB*)
-	If JBT is being used to determine the background, this tells STIPS where the
-	JBT data is located. ``$WEB`` indicates that the value should be fetched
-	from online, ``$DATA`` indicates that the value should be taken from a
-	directory named ``background`` in the ``stips_data`` directory. Otherwise,
-	the value should be the path to a directory containing a local cache of the
-	data. If used as a keyword argument, ``background_location`` or
-	``jbt_location`` can be used instead of ``observation_jbt_location`` for
-	historical reasons.
+	Outside of a configuration file (e.g., as a keyword argument to a STIPS
+	Python object), ``background`` should be used instead of
+	``observation_default_background`` for historical reasons.
 
 observation_distortion_enable (default *false*)
 	Whether co-ordinate distortion information should be included in the
@@ -113,12 +110,6 @@ observation_distortion_enable (default *false*)
 
 PSF Convolution Configuration
 -----------------------------
-
-psf_grid_default_size (default *1*)
-	What size PSF grid should be created. Note that this value is expressed as
-	a side length, so if psf_grid_default_size is set to n, STPSF will create
-	a total of n^2 PSF images. If used as a keyword argument, ``psf_grid_size``
-	can be used instead of ``psf_grid_default_size`` for historical reasons.
 
 psf_cache_enable (default *true*)
 	Whether PSF grids created by STPSF should be cached after creation for
@@ -139,6 +130,9 @@ psf_convolution_max_size (default *8192*)
 	argument, ``convolve_size`` can be used instead of
 	``psf_convolution_max_size`` for historical reasons.
 
+The side length of the PSF grid created by STIPS was formerly editable with a
+PSF convolution configuration option called ``psf_grid_size``. **It is now
+fixed at 3.**
 
 Error Residual Configuration
 ----------------------------

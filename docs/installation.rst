@@ -9,18 +9,14 @@ in this section along with instructions.
 STIPS Requirements
 ##################
 
-* ``pandeia>=2024.12``: Exposure time calculator.
+* ``pandeia>=2025.9``: Exposure time calculator.
 
 * ``stpsf>=2.0.0``: Nancy Grace Roman PSF calculator. STIPS also requires that ``poppy``, a
   support package used by STPSF (Formerly WebbPSF), have version ``>=1.0.3``.
 
-* ``astropy``: STIPS uses Astropy in order to:
-
-    * Read and write FITS files.
-
-    * Read and write ASCII tables (specifically in the IPAC format).
-
-    * Generate Sersic profile models (if any are in the generated scene).
+* ``astropy``: STIPS uses Astropy in order to read and write ASCII tables
+  (specifically in the IPAC format) and FITS files, as well as to generate
+  Sersic profile models (if any are in the generated scene).
 
 * ``montage_wrapper``: STIPS uses ``montage`` to generate mosaics. It is
   only imported if STIPS is asked to generate a multi-detector image.
@@ -49,14 +45,18 @@ STIPS Requirements
 Finally, STIPS requires a set of data files whose location is marked by setting the
 environment variable ``stips_data``, which will be installed as part of these instructions.
 
-Installing Using Conda and Source Code
-######################################
+Installing Using a Package Manager and Source Code
+##################################################
 
-STIPS can be installed using the source code and a Conda environment file.
-If you do not have Anaconda or Miniconda installed, please visit the
-`Anaconda docs <https://docs.anaconda.com/anaconda/install/>`_ for installation instructions.
-We have included a Conda environment file for easily installing or updating Conda packages
-to meet STIPS requirements.  Please follow the steps below to install STIPS:
+STIPS can be installed using one of the YAML files provided in its source code.
+These YAML files define an environment that a package manager like
+`Micromamba <https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html>`_,
+`Mamba <https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html>`_,
+`Conda <https://docs.anaconda.com/anaconda/install/>`_, or another can read and
+install on your machine.
+(If you don't have a package manager, follow any of the preceding links for
+installation instructions.) The YAML files include all packages required by
+STIPS. Please follow the steps below to install STIPS.
 
 .. _installing-as-a-user:
 
@@ -74,15 +74,19 @@ Installing as a User
 
 #. The environment file can be used in two ways:
 
-   * To create a new Conda environment named ``stips``::
+   * To create a new environment named ``stips``::
 
         conda env create -f environment.yml
         conda activate stips
 
 
-   * Or, to install to or update an existing Conda environment::
+   * Or, to install to or update an existing environment::
 
-        conda env update --name EXISTING-ENV --file environment.yml
+        conda env update --name <EXISTING-ENV> --file environment.yml
+
+(If you are using mamba, substitute it for ``conda`` in the commands above.
+If you are using micromamba, substitute it for ``conda`` and also remove
+``env`` in the commands above.)
 
 Installing as a Developer
 *************************
@@ -93,6 +97,13 @@ Installing as a Developer
    ``environment_dev.yml`` file instead of ``environment.yml``.
 
 .. _downloading-required-ref-data:
+
+Installing with pip
+*******************
+
+While it is possible to install STIPS with ``pip`` instead of a package manager,
+we recommend the latter due to the aforementioned warning about using ``pip``
+with the ``esutil`` package.
 
 Downloading Required Reference Data
 ************************************
@@ -107,7 +118,10 @@ You will need to download the data and add them to your environmental path.
 	export stips_data="<absolute_path_to_this_folder>/ref_data/stips_data"
 	export STPSF_PATH="<absolute_path_to_this_folder>/ref_data/stpsf-data"
 	export PYSYN_CDBS="<absolute_path_to_this_folder>/ref_data/grp/redcat/trds"
-	export pandeia_refdata="<absolute_path_to_this_folder>/ref_data/pandeia_data-x.x.x_roman"
+	export pandeia_refdata="<absolute_path_to_this_folder>/ref_data/pandeia_data-xxxx.x_roman"
+
+  # if your Pandeia installation is 2026.1 or higher, add the following:
+  export PSF_DIR="<absolute_path_to_this_folder>/ref_data/pandeia_psfs-xxxx.x_roman"
 
 .. note::
 
@@ -115,7 +129,7 @@ You will need to download the data and add them to your environmental path.
 
 2. ``cd`` into the ``ref_data`` directory in your ``STScI-STIPS`` clone.
 
-3. Run the following code (after ensuring your ``stips`` Conda environment is active)::
+3. Run the following code (after ensuring your package manager's ``stips`` environment is active)::
 
 		python retrieve_stips_data.py
 
@@ -132,9 +146,8 @@ Testing Installation
 
 To test if all the required files have been installed, please import STIPS in Python::
 
-    bash-3.2$ python
-    Python 3.11.9 | packaged by conda-forge | (main, Apr 19 2024, 18:45:13)
-    [Clang 16.0.6 ] on darwin
+    bash-3.2$ python3
+    Python 3.11.15 | packaged by conda-forge | (main, Mar  5 2026, 16:58:53) [Clang 19.1.7 ] on darwin
     Type "help", "copyright", "credits" or "license" for more information.
 
     >>> import stips
@@ -145,13 +158,13 @@ You should receive an output of the following form:
 
 .. code-block:: text
 
-  STIPS Version x.y.z with Data Version x.y.z at /Some/Path/To/stips_data
+  STIPS Version x.y.z with Data Version a.b.c at /Some/Path/To/stips_data.
 
-  STIPS Grid Generated with x.y.z
+  STIPS Grid Generated with STIPS Version x.y.z.
 
-  Pandeia version a.b.c with Data Version a.b.c. at /Some/Path/To/pandeia_refdata
+  Pandeia Version YYYY.n with Data Version YYYY.n at /Some/Path/To/pandeia_refdata.
 
-  STPSF Version d.e.f with Data Version d.e.f at /Some/Path/To/stpsf_data_path
+  STPSF Version d.e.f with Data Version d.e.f at /Some/Path/To/stpsf_data_path.
 
 
 Ignore the following warning message if it appears:

@@ -67,6 +67,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx_rtd_theme',
+    'sphinx_issues'
 ]
 
 numpydoc_show_class_members = False
@@ -186,4 +187,4 @@ if eval(setup_cfg.get('edit_on_github')):
     edit_on_github_doc_root = "docs"
 
 # -- Resolving issue number to links in changelog -----------------------------
-github_issues_url = 'https://github.com/{0}/issues/'.format(setup_cfg['github_project'])
+issues_default_group_project = setup_cfg['github_project']  # for sphinx_issues
