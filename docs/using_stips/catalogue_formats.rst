@@ -256,9 +256,9 @@ Mixed Catalog
 A Mixed catalog is identical to an Internal catalog, except that it
 contains one additional column:
 
-* Units (one of 'p' for photons/s, 'j' for Jansky, or 'c' for counts/s.
-  'e' is also allowed but is treated as equivalent to 'p' because STIPS assumes
-  a quantum efficiency of 1.)
+* Units (one of 'p' for photons/s, 'e' for ergs/s, 'j' for Jansky,
+  or 'c' for counts/s. Because STIPS assumes a quantum efficiency and gain of 1,
+  data in electrons/s can be treated as equivalent to photons/s.)
 
 In order to identify the catalog as a Mixed catalog, the following metadata
 must be present:
