@@ -9,17 +9,19 @@ import numpy as np
 # Local Modules
 from .roman_instrument import RomanInstrument
 
+__all__ = ['WFI']
+
 
 class WFI(RomanInstrument):
-    __classtype__ = "detector"
     """
     The WFI class contains the necessary constants and modifications to run WFI
     observations.
 
-        detectors : array of detectors, each an AstroImage, and each with its own RA/DEC
-        instrument: string, which instrument this is
-        filter    : string, what filter of the instrument is being observed
+        - detectors : array of detectors, each an AstroImage, and each with its own RA/DEC
+        - instrument: string, which instrument this is
+        - filter    : string, what filter of the instrument is being observed
     """
+    __classtype__ = "detector"
 
     def __init__(self, **kwargs):
         """

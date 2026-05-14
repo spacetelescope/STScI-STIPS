@@ -1,8 +1,1 @@
-stsci_rtd_theme
-numpy >= 1.13
-matplotlib
-Cython
-astropy
-sphinx-astropy
-sphinx_issues
-poppy >= 1.0.3
+-e .[docs]

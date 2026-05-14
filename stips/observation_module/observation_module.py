@@ -10,6 +10,8 @@ from ..utilities import OffsetPosition
 from ..utilities import SelectParameter
 from ..utilities.makePSF import PSF_GRID_SIZE
 
+__all__ = ['ObservationModule']
+
 
 class ObservationModule(object):
 

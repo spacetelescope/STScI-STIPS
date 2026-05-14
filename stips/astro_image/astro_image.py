@@ -28,20 +28,21 @@ from ..utilities.makePSF import interpolate_epsf, make_epsf, place_source
 # PSF constants
 from ..utilities.makePSF import PSF_BOXSIZE, PSF_BRIGHT_BOXSIZE, PSF_EXTRA_BRIGHT_BOXSIZE, PSF_GRID_SIZE, PSF_UPSCALE
 
+__all__ = ['AstroImage']
 stips_version = StipsEnvironment.__stips__version__
 
 
 class AstroImage(object):
     """
-    The AstroImage class represents a generic astronomical image. The image has the following
-    data associated with it:
-        _file   : string of file name (including path) containing mem-mapped numpy array.
-        data    : mem-mapped numpy double-precision 2D array of image data, in counts
-        scale   : array of 2 double-precision floating point values, forming X and Y scale in
-                  arcseconds/pixel
-        wcs     : astropy WCS object containing image WCS information.
-        header  : key/value array. Contains FITS header information and metadata
-        history : array of strings holding the FITS HISTORY section
+    The AstroImage class represents a generic astronomical image. The image has
+    the following data associated with it:
+
+    - _file   : string of file name (including path) containing mem-mapped numpy array.
+    - data    : mem-mapped numpy double-precision 2D array of image data, in counts
+    - scale   : array of 2 double-precision floating point values, forming X and Y scale in arcseconds/pixel
+    - wcs     : astropy WCS object containing image WCS information.
+    - header  : key/value array. Contains FITS header information and metadata
+    - history : array of strings holding the FITS HISTORY section
     """
 
     def __init__(self, **kwargs):
@@ -400,6 +401,7 @@ class AstroImage(object):
     def addTable(self, t, dist=False, fast_galaxy=False, convolve_galaxy=True, *args, **kwargs):
         """
         Add a catalogue table to the Image. The Table must have the following columns:
+
             RA: RA of source
             DEC: DEC of source
             FLUX: flux of source
@@ -410,11 +412,14 @@ class AstroImage(object):
             Ratio: axial ratio of the Sersic profile
             ID: id of source in catalogue
             Notes: any notes of important
+
         The following will then be done:
+
             - the table will be shifted from RA,DEC to X,Y (and items outside the FOV will be omitted)
             - the table will be split into point sources and sersic profiles
             - the point sources will be added via addPoints
             - the Sersic Profiles will be iteratively added via addSersicProfile
+
         The converted table (with X,Y instead of ra,dec and non-visible points removed) will be returned.
         """
         self._log("info", "Determining pixel co-ordinates")
@@ -505,19 +510,22 @@ class AstroImage(object):
     def addCatalogue(self, cat, dist=False, *args, **kwargs):
         """
         Add a catalogue to the Image. The Catalogue must have the following columns:
-            RA: RA of source
-            DEC: DEC of source
-            FLUX: flux of source
-            TYPE: type of source (point, sersic)
-            N: sersic index
-            Re: radius containing half of the light of the sersic profile
-            Phi: angle of the major axis of the sersic profile
-            Ratio: axial ratio of the Sersic profile
-            ID: id of source in catalogue
-            Notes: any notes of important
+
+            - RA: RA of source
+            - DEC: DEC of source
+            - FLUX: flux of source
+            - TYPE: type of source (point, sersic)
+            - N: sersic index
+            - Re: radius containing half of the light of the sersic profile
+            - Phi: angle of the major axis of the sersic profile
+            - Ratio: axial ratio of the Sersic profile
+            - ID: id of source in catalogue
+            - Notes: any notes of important
+
         The following will then be done:
-            - the catalogue will be shifted from RA,DEC to X,Y (and items outside the FOV will be
-                omitted)
+
+            - the catalogue will be shifted from RA,DEC to X,Y
+              (and items outside the FOV will be omitted)
             - the catalogue will be split into point sources and sersic profiles
             - the point sources will be added via addPoints
             - the Sersic Profiles will be iteratively added via addSersicProfile
@@ -1305,7 +1313,7 @@ class AstroImage(object):
         world_coords = np.array((wcs.wcs.crval, wcs.wcs.crval+offset_value))
         pix_coords = wcs.wcs_world2pix(world_coords, self.wcs_origin)
         offset = (pix_coords[1] - pix_coords[0])
-#         offset = offset / scale # Divide by scale to correct for non-square pixels
+        # offset = offset / scale # Divide by scale to correct for non-square pixels
         pa_north = np.degrees(np.arctan2(offset[0], offset[1])) % 360. % 360.
         return pa_north
 
@@ -1415,3 +1423,4 @@ class AstroImage(object):
                             'photflam': 0.,
                             'photplam': 0.6700,
                          }
+    "Default instrument configuration dictionary."
