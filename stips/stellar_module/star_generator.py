@@ -1,5 +1,7 @@
 """
-Various codes to work with the initial mass function
+Various codes to work with the initial mass function.
+"""
+"""
 
 Written by Adam Ginsburg. Distributed under the MIT license (below):
 
@@ -38,6 +40,8 @@ from astropy import units as u
 from scipy.interpolate import RegularGridInterpolator
 
 from ..utilities import GetStipsData
+
+__all__ = ['StarGenerator']
 
 
 class StarGenerator(object):
@@ -165,24 +169,25 @@ class StarGenerator(object):
     def schechter(self, m, A=1, beta=2, m0=100, integral=False, **kwargs):
         """
         A Schechter function with arbitrary defaults
-        (integral may not be correct - exponent hasn't been dealt with at all)
+        (integral may not be correct - exponent hasn't been dealt with at all):
 
-        $$ A m^{-\\beta} e^{-m/m_0} $$
+            :math:`A m^{-\\beta} e^{-m/m_0}`
 
         Parameters
         ----------
-            m : np.ndarray
-                List of masses for which to compute the Schechter function
-            A : float
-                Arbitrary amplitude of the Schechter function
-            beta : float
-                Power law exponent
-            m0 : float
-                Characteristic mass (mass at which exponential decay takes over)
+        m : np.ndarray
+            List of masses for which to compute the Schechter function
+        A : float
+            Arbitrary amplitude of the Schechter function
+        beta : float
+            Power law exponent
+        m0 : float
+            Characteristic mass (mass at which exponential decay takes over)
 
         Returns
         -------
-            p(m) - the (unnormalized) probability of an object of a given mass
+        p(m)
+            the (unnormalized) probability of an object of a given mass
             as a function of that object's mass
             (though you could interpret mass as anything, it's just a number)
 
@@ -194,18 +199,20 @@ class StarGenerator(object):
     def modified_schechter(self, m, m1=0.5, **kwargs):
         """
         A Schechter function with a low-level exponential cutoff
-        "
+
         Parameters
         ----------
-            m : np.ndarray
-                List of masses for which to compute the Schechter function
-            m1 : float
-                Characteristic minimum mass (exponential decay below this mass)
-            ** See schecter for other parameters **
+        m : np.ndarray
+            List of masses for which to compute the Schechter function
+        m1 : float
+            Characteristic minimum mass (exponential decay below this mass)
+        kwargs
+            See :func:`schecter` for details
 
         Returns
         -------
-            p(m) - the (unnormalized) probability of an object of a given mass
+        p(m)
+            the (unnormalized) probability of an object of a given mass
             as a function of that object's mass
             (though you could interpret mass as anything, it's just a number)
         """
@@ -282,7 +289,7 @@ class StarGenerator(object):
                 countrates[np.where(mags > mags_max)] = countrates_max[np.where(mags > mags_max)]
         else:
             self.log('warning', 'Could not find result file "result_{}_{}.npy" from {}'.format(instrument.lower(), filter.lower(), self.gridpath))
-#             raise FileNotFoundError('Could not find result file "result_{}_{}.npy" from {}'.format(instrument.lower(), filter.lower(), self.gridpath))
+            # raise FileNotFoundError('Could not find result file "result_{}_{}.npy" from {}'.format(instrument.lower(), filter.lower(), self.gridpath))
             import synphot as syn
             import stsynphot as stsyn
             countrates = np.array(())

@@ -21,14 +21,17 @@ from ..astro_image import AstroImage
 from ..utilities import GetStipsData, OffsetPosition, SelectParameter, get_pandeia_background, StipsDataTable
 from ..utilities.makePSF import PSF_GRID_SIZE
 
+__all__ = ['Instrument']
+
+
 class Instrument(object):
     """
-    The Instrument class represents a virtual base class which will be implemented as a variety of
-        JWST, HST, and Roman actual instruments. The Instrument class contains:
+    The Instrument class represents a virtual base class which can be
+    implemented as a variety of actual Roman instruments. The Instrument class contains:
 
-        detectors : array of detectors, each an AstroImage, and each with its own RA/DEC
-        filter    : string, what filter of the instrument is being observed
-        out_path  : place to put temporary files and the like
+        - detectors : array of detectors, each an AstroImage, and each with its own RA/DEC
+        - filter    : string, what filter of the instrument is being observed
+        - out_path  : place to put temporary files and the like
     """
 
     def __init__(self, **kwargs):
@@ -110,16 +113,18 @@ class Instrument(object):
             Takes an input catalogue, and observes that catalogue with all detectors.
 
             It currently assumes that the input catalogue has the following columns:
-                RA: RA of source
-                DEC: DEC of source
-                FLUX: flux of source
-                TYPE: type of source (point, sersic)
-                N: sersic index
-                Re: radius containing half of the light of the sersic profile
-                Phi: angle of the major axis of the sersic profile
-                Ratio: axial ratio of the Sersic profile
-            Obtaining the correct values for FLUX (if not done before initialization) is a job for
-            the subclasses.
+
+                - RA: RA of source
+                - DEC: DEC of source
+                - FLUX: flux of source
+                - TYPE: type of source (point, sersic)
+                - N: sersic index
+                - Re: radius containing half of the light of the sersic profile
+                - Phi: angle of the major axis of the sersic profile
+                - Ratio: axial ratio of the Sersic profile
+
+            Obtaining the correct values for FLUX (if not done before
+            initialization) is a job for the subclasses.
         """
         cls._log("info", "Initializing with catalogue {}".format(catalogue))
         ins = cls(**kwargs)
@@ -241,16 +246,18 @@ class Instrument(object):
             Takes an input catalogue, and observes that catalogue with all detectors.
 
             It currently assumes that the input catalogue has the following columns:
-                RA: RA of source
-                DEC: DEC of source
-                FLUX: flux of source
-                TYPE: type of source (point, sersic)
-                N: sersic index
-                Re: radius containing half of the light of the sersic profile
-                Phi: angle of the major axis of the sersic profile
-                Ratio: axial ratio of the Sersic profile
-            Obtaining the correct values for FLUX (if not done before initialization) is a job for
-            the subclasses.
+
+                - RA: RA of source
+                - DEC: DEC of source
+                - FLUX: flux of source
+                - TYPE: type of source (point, sersic)
+                - N: sersic index
+                - Re: radius containing half of the light of the sersic profile
+                - Phi: angle of the major axis of the sersic profile
+                - Ratio: axial ratio of the Sersic profile
+
+            Obtaining the correct values for FLUX (if not done before
+            initialization) is a job for the subclasses.
         """
         self._log("info", "Adding catalogue {}".format(catalogue))
         cat = self.convertCatalogue(catalogue, obs_num)
@@ -318,14 +325,14 @@ class Instrument(object):
 
     def convertCatalogue(self, catalogue, obs_num):
         """
-        Converts a catalogue to the expected format for AstroImage, including doing unit conversions
-        of columns if necessary. Acceptable formats are:
+        Converts a catalogue to the expected format for AstroImage, including
+        doing unit conversions of columns if necessary. Acceptable formats are:
+
             - Phoenix (models from the Phoenix stellar grid)
             - BC95 (galaxy models from BC95)
             - Internal (has columns RA/DEC/FLUX/TYPE/N/Re/Phi/Ratio/ID/Notes)
             - Mixed (has columns RA/DEC/FLUX/UNITS/TYPE/N/Re/Phi/Ratio/ID/Notes)
-            - Generic (has columns RA/DEC/FILTER where FILTER == self.filter (and possibly also
-                       other filters)
+            - Generic (has columns RA/DEC/FILTER where FILTER == self.filter and possibly also other filters)
 
         catalogue: catalogue name of input catalogue
 
@@ -343,22 +350,22 @@ class Instrument(object):
             meta = {k.lower(): v for k, v in in_data_table.meta.items()}
         # Check for built-in metadata
         table_type = ""
-#         if 'keywords' in in_meta:
-#             if 'type' in in_meta['keywords']:
-#                 table_type = in_meta['keywords']['type']['value']
+        # if 'keywords' in in_meta:
+        #     if 'type' in in_meta['keywords']:
+        #         table_type = in_meta['keywords']['type']['value']
         if 'type' in meta:
             table_type = meta['type']
         if table_type in ['phoenix', 'phoenix_realtime', 'bc95']:
             pass
         elif table_type == 'internal':
             filter = meta['filter'].lower()
-#             filter = t.meta['keywords']['filter']['value'].lower()
+            # filter = t.meta['keywords']['filter']['value'].lower()
             if filter != self.filter.lower():
                 raise ValueError("Adding catalogue with filter {} to {} {}".format(filter, self.DETECTOR, self.filter))
             return catalogue
         elif table_type == 'mixed':
             filter = meta['filter'].lower()
-#             filter = t.meta['keywords']['filter']['value'].lower()
+            # filter = t.meta['keywords']['filter']['value'].lower()
             if filter != self.filter.lower():
                 raise ValueError("Adding catalogue with filter {} to {} {}".format(filter, self.DETECTOR, self.filter))
         elif table_type == 'multifilter':

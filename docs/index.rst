@@ -55,3 +55,4 @@ Using STIPS
   bugs
   release
   help
+  api

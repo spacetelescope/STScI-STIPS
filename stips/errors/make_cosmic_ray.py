@@ -1,6 +1,7 @@
 """
 Functions to simulate cosmic rays.
-
+"""
+"""
 :Authors: Pey Lian Lim (Python); Mike Regan (IDL)
 
 :Organization: Space Telescope Science Institute
@@ -12,6 +13,8 @@ Functions to simulate cosmic rays.
 
 # External modules
 import numpy as np
+
+__all__ = ['GaussPsf2D', 'MakeCosmicRay', 'GetCrTemplate', 'GetCrProbs']
 
 
 def GaussPsf2D(npix, fwhm, normalize=True):

@@ -67,10 +67,19 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx_rtd_theme',
-    'sphinx_issues'
+    'sphinx_issues',
+    'sphinx_automodapi.automodapi',
 ]
 
 numpydoc_show_class_members = False
+
+automodapi_toctree_template = "automodapi_toctree.rst"
+automodapi_inheritance_diagram = False
+
+autodoc_default_options = {
+    'inherited-members': False,
+    'show-inheritance': True,
+}
 
 # ignore checkpoint paths when generating API docs
 autoapi_ignore = ['*.ipynb_checkpoints*']
@@ -170,7 +179,7 @@ autoapi_dirs = ["../stips"]
 #
 # NOTE that this will also suppress module-not-found errors, but hopefully the run tests
 # will handle anything of the sort.
-suppress_warnings = ["autoapi.python_import_resolution"]
+suppress_warnings = ["autoapi.python_import_resolution", "toc.not_included"]
 
 # -- Options for the edit_on_github extension ---------------------------------
 

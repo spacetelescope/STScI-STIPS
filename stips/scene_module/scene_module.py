@@ -14,6 +14,8 @@ from ..utilities import OffsetPosition
 from ..utilities import SelectParameter
 from ..utilities import StipsDataTable
 
+__all__ = ['SceneModule']
+
 
 class SceneModule(object):
 
@@ -79,15 +81,16 @@ class SceneModule(object):
         Generate a stellar population.
 
         Output list will have these columns:
-            # ID
-            # RA
-            # DEC
-            # Distance
-            # Age
-            # Metallicity
-            # Mass
-            # Count Rate (in the chosen instrument/filter), Absolute
-            # Count Rate (in the chosen instrument/filter), Observed
+
+            - ID
+            - RA
+            - DEC
+            - Distance
+            - Age
+            - Metallicity
+            - Mass
+            - Count Rate (in the chosen instrument/filter), Absolute
+            - Count Rate (in the chosen instrument/filter), Observed
 
         Parameters
         ----------
@@ -96,6 +99,7 @@ class SceneModule(object):
 
         pop: dictionary
             Information about the population. Includes:
+
                 n_stars: int
                     Number of stars
                 age_low,age_high: floating point
@@ -261,18 +265,19 @@ class SceneModule(object):
         Generate galaxies list.
 
         Output list will have these columns:
-            # ID
-            # RA
-            # DEC
-            # Redshift
-            # Model
-            # Age
-            # Profile
-            # Half-flux_radius
-            # Axial_ratio
-            # Position_angle
-            # Johnson,V absolute
-            # Johnson,V apparent
+
+            - ID
+            - RA
+            - DEC
+            - Redshift
+            - Model
+            - Age
+            - Profile
+            - Half-flux_radius
+            - Axial_ratio
+            - Position_angle
+            - Johnson,V absolute
+            - Johnson,V apparent
 
         Parameters
         ----------
@@ -281,6 +286,7 @@ class SceneModule(object):
 
         gals: dictionary
             Information about the galaxies. Includes:
+
                 n_gals: int
                     Number of galaxies
                 z_low,z_high: float
